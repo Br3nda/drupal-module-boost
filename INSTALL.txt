@@ -1,0 +1,44 @@
+// $Id: INSTALL.txt,v 1.1 2006/11/21 03:39:19 arto Exp $
+
+REQUIREMENTS
+------------
+This version of Boost is designed for Drupal 4.7 running on a Unix platform.
+Drupal's clean URLs MUST be enabled and working properly.
+
+The `path' and `pathauto' modules are recommended.
+
+In order for the static files to be correctly expired, the Drupal cron job
+must be correctly setup to execute more often than, or as often as, the
+cache lifetime interval.
+
+Since the static page caching is implemented with mod_rewrite directives,
+Apache version 1.3 or 2.x with mod_rewrite enabled is required (if Drupal's
+clean URLs work for you, you're fine; if not, get them working first).
+Other web servers, such as Lighttpd, are NOT supported at present.
+
+The `drush' module is required for (optional) command line usage.
+
+INSTALLATION
+------------
+1. Go to administer >> settings and ensure that Drupal's clean URLs are
+   enabled and working properly on your site.
+
+2. Copy all the module files into a subdirectory called modules/boost/
+   under your Drupal installation directory.
+
+3. Go to administer >> modules and enable the Boost module.
+
+4. Go to administer >> settings >> boost to review and change the
+   configuration options to your liking.
+
+5. Go to administer >> settings and enable static caching.
+
+6. Log out from Drupal (or use another browser) and browse around your site
+   as the anonymous user. Ensure that static files are indeed being
+   generated into the Boost cache directory.
+
+7. IMPORTANT: replace your .htaccess file in the Drupal installation
+   directory with the file from modules/boost/htaccess/boosted.txt.
+   (If you fail to do this, static page caching will NOT work!)
+
+8. (See README.txt for information on submitting bug reports.)
