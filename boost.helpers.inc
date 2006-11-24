@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.helpers.inc,v 1.1 2006/11/21 03:39:19 arto Exp $
+// $Id: boost.helpers.inc,v 1.2 2006/11/24 23:58:38 arto Exp $
 
 /**
  * @file
@@ -42,8 +42,8 @@ function _boost_symlink($target, $link) {
   if (!file_exists($target) || !file_exists(dirname($link)))
     return FALSE;
 
-  $target = explode('/', realpath($target));
-  $link = explode('/', realpath($link));
+  $target = explode('/', $target);
+  $link = explode('/', $link);
 
   // Only bother creating a relative link if the paths are in the same
   // top-level directory; otherwise just symlink to the absolute path.
