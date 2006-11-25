@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.helpers.inc,v 1.2 2006/11/24 23:58:38 arto Exp $
+// $Id: boost.helpers.inc,v 1.3 2006/11/25 10:39:55 arto Exp $
 
 /**
  * @file
@@ -21,18 +21,35 @@ function _boost_mkdir_p($pathname, $mode = 0775, $recursive = TRUE) {
 
 /**
  * Recursive version of rmdir(); use with extreme caution.
+ *
+ * @param $dirname
+ *   the top-level directory that will be recursively removed
+ * @param $callback
+ *   optional predicate function for determining if a file should be removed
  */
 function _boost_rmdir_rf($dirname, $callback = NULL) {
+  $empty = TRUE; // Start with an optimistic mindset
+
   foreach (glob($dirname . '/*', GLOB_NOSORT) as $file) {
     if (is_dir($file)) {
-      _boost_rmdir_rf($file, $callback);
+      if (!_boost_rmdir_rf($file, $callback))
+        $empty = FALSE;
     }
     else if (is_file($file)) {
-      if (!$callback || (function_exists($callback) && $callback($file)))
-        @unlink($file);
+      if (function_exists($callback)) {
+        if (!$callback($file)) {
+          $empty = FALSE;
+          continue;
+        }
+      }
+      @unlink($file);
     }
   }
-  return @rmdir($dirname);
+
+  // The reason for this elaborate safeguard is that Drupal will log even
+  // warnings that should have been suppressed with the @ sign. Otherwise,
+  // we'd just rely on the FALSE return value from rmdir().
+  return ($empty && @rmdir($dirname));
 }
 
 /**
