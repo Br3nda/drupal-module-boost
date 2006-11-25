@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.1 2006/11/21 03:39:19 arto Exp $
+// $Id: boost.module,v 1.2 2006/11/25 16:42:35 arto Exp $
 
 /**
  * @file
@@ -110,6 +110,47 @@ function boost_init() {
     else if (!empty($old)) { // the cache was previously enabled
       if (boost_cache_expire_all())
         drupal_set_message('Static cache files deleted.');
+    }
+  }
+}
+
+/**
+ * Implementation of hook_exit(). Performs cleanup tasks.
+ *
+ * For POST requests by anonymous visitors, this adds a dummy query string
+ * to any URL being redirected to using drupal_goto().
+ *
+ * This is pretty much a hack that assumes a bit too much familiarity with
+ * what happens under the hood of the Drupal core function drupal_goto().
+ *
+ * It's necessary, though, in order for any session messages set on form
+ * submission to actually show up on the next page if that page has been
+ * cached by Boost.
+ */
+function boost_exit($destination = NULL) {
+  // Check that hook_exit() was invoked by drupal_goto() for a POST request:
+  if (!empty($destination) && $_SERVER['REQUEST_METHOD'] == 'POST') {
+
+    // Check that we're dealing with an anonymous visitor. and that some
+    // session messages have actually been set during this page request:
+    global $user;
+    if (empty($user->uid) && ($messages = drupal_set_message())) {
+
+      // Check that the page we're redirecting to has been cached by Boost
+      // and really necessitates special handling:
+      extract(parse_url($destination));
+      $path = ($path == base_path() ? '' : substr($path, strlen(base_path())));
+      if (boost_is_cached($path) && empty($query)) {
+        // FIXME: call any remaining exit hooks since we're about to terminate.
+
+        // Add a query string to ensure we don't serve a static copy of
+        // the page we're redirecting to, which would prevent the session
+        // messages from showing up:
+        $destination = url($path, 't=' . time(), $fragment, TRUE);
+
+        // Do what drupal_goto() would do if we were to return to it:
+        exit(header('Location: ' . $destination));
+      }
     }
   }
 }

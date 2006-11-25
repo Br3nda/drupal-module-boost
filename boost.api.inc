@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.api.inc,v 1.1 2006/11/21 03:39:19 arto Exp $
+// $Id: boost.api.inc,v 1.2 2006/11/25 16:42:35 arto Exp $
 
 /**
  * @file
@@ -41,6 +41,18 @@ function boost_is_cacheable($path) {
   }
   $regexp = '/^('. preg_replace(array('/(\r\n?|\n)/', '/\\\\\*/', '/(^|\|)\\\\<front\\\\>($|\|)/'), array('|', '.*', '\1'. preg_quote(variable_get('site_frontpage', 'node'), '/') .'\2'), preg_quote(BOOST_CACHEABILITY_PAGES, '/')) .')$/';
   return !(BOOST_CACHEABILITY_OPTION xor preg_match($regexp, $alias));
+}
+
+/**
+ * Determines whether a given Drupal page is currently cached or not.
+ */
+function boost_is_cached($path) {
+  $path = (empty($path) ? BOOST_FRONTPAGE : $path);
+  $alias = drupal_get_path_alias($path);
+  $path = drupal_get_normal_path($path); // normalize path
+
+  // TODO: also determine if alias/symlink exists?
+  return file_exists(boost_file_path($path));
 }
 
 /**
