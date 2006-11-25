@@ -82,16 +82,20 @@ DirectoryIndex index.php
   # Rewrite rules for static page caching provided by the Boost module
   # BOOST START
   RewriteCond %{REQUEST_URI} !^/cache
+  RewriteCond %{REQUEST_URI} !^/user/login
+  RewriteCond %{REQUEST_URI} !^/admin
+  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
   RewriteCond %{REQUEST_METHOD} ^GET$
   RewriteCond %{QUERY_STRING} ^$
-  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
   RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}/0/%{REQUEST_URI} -d
   RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}/0/%{REQUEST_URI}/index.html -f
   RewriteRule ^(.*)$ cache/%{HTTP_HOST}/0/$1/index.html [L]
   RewriteCond %{REQUEST_URI} !^/cache
+  RewriteCond %{REQUEST_URI} !^/user/login
+  RewriteCond %{REQUEST_URI} !^/admin
+  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
   RewriteCond %{REQUEST_METHOD} ^GET$
   RewriteCond %{QUERY_STRING} ^$
-  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
   RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}/0/%{REQUEST_URI}.html -f
   RewriteRule ^(.*)$ cache/%{HTTP_HOST}/0/$1.html [L]
   # BOOST END
@@ -102,4 +106,4 @@ DirectoryIndex index.php
   RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
 </IfModule>
 
-# $Id: boosted.txt,v 1.1 2006/11/21 03:39:19 arto Exp $
+# $Id: boosted.txt,v 1.2 2006/11/25 00:19:50 arto Exp $
