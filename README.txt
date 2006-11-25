@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.1 2006/11/21 03:39:19 arto Exp $
+// $Id: README.txt,v 1.2 2006/11/25 00:10:08 arto Exp $
 
 NOTE: this module is currently in an alpha state. Come back in a bit unless
 you're an experienced user and don't mind figuring things out on your own.
@@ -98,6 +98,16 @@ served as per the following simple rules:
 
 IMPORTANT NOTES
 ---------------
+* Drupal URL aliases get written out to disk as relative symbolic links
+  pointing to the file representing the internal Drupal URL path. For this
+  to work correctly with Apache, ensure your .htaccess file contains the
+  following line (as it will by default if you've installed the file shipped
+  with Boost):
+    Options +FollowSymLinks
+* To check whether you got a static or dynamic version of a page, look at
+  the very end of the page's HTML source. You have the static version if the
+  last line looks like this:
+    <!-- Page cached by Boost at 2006-11-24 15:06:31 -->
 * If your Drupal URL paths contain non-ASCII characters, you may have to
   tweak your locate settings on the server in order to ensure the URL paths
   get correctly translated into directory paths on the file system.
