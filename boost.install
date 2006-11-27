@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.1 2006/11/21 03:39:19 arto Exp $
+// $Id: boost.install,v 1.2 2006/11/27 16:43:12 arto Exp $
 
 /**
  * @file
@@ -12,6 +12,8 @@
  * Implementation of hook_install(). Installs the current version of the database schema.
  */
 function boost_install() {
+  // Ensure that the module is loaded early in the bootstrap:
+  db_query("UPDATE {system} SET weight = -90 WHERE name = 'boost'");
 
   // Forcibly disable Drupal's built-in SQL caching to prevent any conflicts of interest:
   if (variable_get('cache', CACHE_DISABLED) != CACHE_DISABLED) {
