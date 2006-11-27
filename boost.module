@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.2 2006/11/25 16:42:35 arto Exp $
+// $Id: boost.module,v 1.3 2006/11/27 16:34:49 arto Exp $
 
 /**
  * @file
@@ -85,6 +85,10 @@ function boost_menu($may_cache) {
  * Implementation of hook_init(). Performs page setup tasks.
  */
 function boost_init() {
+  // Stop right here unless we're being called for an ordinary page request
+  if (strpos($_SERVER['PHP_SELF'], 'index.php') === FALSE)
+    return;
+
   // TODO: check interaction with other modules that use ob_start(); this
   // may have to be moved to an earlier stage of the page request.
   if (!variable_get('cache', CACHE_DISABLED) && BOOST_ENABLED) {
@@ -279,7 +283,9 @@ function _boost_ob_handler($buffer) {
 
   // Check the currently set content type; at present we can't deal with anything else than HTML.
   if (_boost_get_content_type() == 'text/html') {
-    boost_cache_set($_GET['q'], $buffer);
+    if (strlen($buffer) > 0) { // Sanity check
+      boost_cache_set($_GET['q'], $buffer);
+    }
   }
 
   // Allow the page request to finish up normally
