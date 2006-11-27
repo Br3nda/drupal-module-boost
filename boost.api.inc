@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.api.inc,v 1.2 2006/11/25 16:42:35 arto Exp $
+// $Id: boost.api.inc,v 1.3 2006/11/27 16:32:32 arto Exp $
 
 /**
  * @file
@@ -60,7 +60,9 @@ function boost_is_cached($path) {
  */
 function boost_cache_clear_all() {
   clearstatcache();
-  return _boost_rmdir_rf(boost_cache_directory());
+  if (($cache_dir = boost_cache_directory()) && file_exists($cache_dir)) {
+    return _boost_rmdir_rf($cache_dir);
+  }
 }
 
 /**
@@ -68,7 +70,9 @@ function boost_cache_clear_all() {
  */
 function boost_cache_expire_all() {
   clearstatcache();
-  _boost_rmdir_rf(boost_cache_directory(), 'boost_file_is_expired');
+  if (($cache_dir = boost_cache_directory()) && file_exists($cache_dir)) {
+    _boost_rmdir_rf($cache_dir, 'boost_file_is_expired');
+  }
   return TRUE;
 }
 
