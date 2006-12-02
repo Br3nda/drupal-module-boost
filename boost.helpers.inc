@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.helpers.inc,v 1.3 2006/11/25 10:39:55 arto Exp $
+// $Id: boost.helpers.inc,v 1.4 2006/12/02 12:53:26 arto Exp $
 
 /**
  * @file
@@ -78,6 +78,20 @@ function _boost_symlink($target, $link) {
   }
 
   return symlink(implode('/', $target), implode('/', $link));
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// PHP4 COMPATIBILITY
+
+if (!function_exists('file_put_contents')) {
+  function file_put_contents($filename, $data) {
+    if ($fp = fopen($filename, 'wb')) {
+      fwrite($fp, $data);
+      fclose($fp);
+      return filesize($filename);
+    }
+    return FALSE;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
