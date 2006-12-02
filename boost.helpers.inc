@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.helpers.inc,v 1.4 2006/12/02 12:53:26 arto Exp $
+// $Id: boost.helpers.inc,v 1.3.2.1 2006/12/02 16:27:30 arto Exp $
 
 /**
  * @file
