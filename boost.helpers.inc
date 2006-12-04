@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.helpers.inc,v 1.4 2006/12/02 12:53:26 arto Exp $
+// $Id: boost.helpers.inc,v 1.5 2006/12/04 22:37:03 arto Exp $
 
 /**
  * @file
@@ -43,6 +43,9 @@ function _boost_rmdir_rf($dirname, $callback = NULL) {
         }
       }
       @unlink($file);
+    }
+    else {
+      $empty = FALSE; // it's probably a symbolic link
     }
   }
 
