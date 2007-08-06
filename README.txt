@@ -1,11 +1,11 @@
-// $Id: README.txt,v 1.2.2.1 2007/08/06 14:36:47 arto Exp $
+// $Id: README.txt,v 1.2.2.1.2.1 2007/08/06 14:48:24 arto Exp $
 
 NOTE: this module is currently in an alpha state. Come back in a bit unless
 you're an experienced user and don't mind figuring things out on your own.
 
 DESCRIPTION
 -----------
-This module provides static page caching for Drupal 4.7, enabling a
+This module provides static page caching for Drupal 5.x, enabling a
 potentially very significant performance and scalability boost for
 heavily-trafficked Drupal sites.
 
