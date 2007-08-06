@@ -79,27 +79,37 @@ DirectoryIndex index.php
   #RewriteCond %{QUERY_STRING} ^mod=([^&]+)$
   #RewriteRule module.php index.php?q=%1 [L]
 
-  # Rewrite rules for static page caching provided by the Boost module
+  # Rewrite rules for static page caching provided by the Boost module:
   # BOOST START
-  <IfModule mod_mime.c>
-  AddCharset utf-8 .html
+  <IfModule mod_headers.c>
+    Header add Expires "Sun, 19 Nov 1978 05:00:00 GMT"
+    Header add Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
   </IfModule>
+  <IfModule mod_mime.c>
+    AddCharset utf-8 .html
+  </IfModule>
+  RewriteCond %{REQUEST_METHOD} ^GET$
+  RewriteCond %{REQUEST_URI} ^/$
+  RewriteCond %{QUERY_STRING} ^$
+  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0/index.html -f
+  RewriteRule ^(.*)$ cache/%{SERVER_NAME}/0/index.html [L]
+  RewriteCond %{REQUEST_METHOD} ^GET$
   RewriteCond %{REQUEST_URI} !^/cache
   RewriteCond %{REQUEST_URI} !^/user/login
   RewriteCond %{REQUEST_URI} !^/admin
-  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
-  RewriteCond %{REQUEST_METHOD} ^GET$
   RewriteCond %{QUERY_STRING} ^$
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0/%{REQUEST_URI} -d
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0/%{REQUEST_URI}/index.html -f
+  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0%{REQUEST_URI} -d
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0%{REQUEST_URI}/index.html -f
   RewriteRule ^(.*)$ cache/%{SERVER_NAME}/0/$1/index.html [L]
+  RewriteCond %{REQUEST_METHOD} ^GET$
   RewriteCond %{REQUEST_URI} !^/cache
   RewriteCond %{REQUEST_URI} !^/user/login
   RewriteCond %{REQUEST_URI} !^/admin
-  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
-  RewriteCond %{REQUEST_METHOD} ^GET$
   RewriteCond %{QUERY_STRING} ^$
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0/%{REQUEST_URI}.html -f
+  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0%{REQUEST_URI}.html -f
   RewriteRule ^(.*)$ cache/%{SERVER_NAME}/0/$1.html [L]
   # BOOST END
 
@@ -109,4 +119,4 @@ DirectoryIndex index.php
   RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
 </IfModule>
 
-# $Id: boosted.txt,v 1.2.2.2 2006/12/06 20:12:52 arto Exp $
+# $Id: boosted.txt,v 1.2.2.3 2007/08/06 14:36:47 arto Exp $

@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.api.inc,v 1.3 2006/11/27 16:32:32 arto Exp $
+// $Id: boost.api.inc,v 1.3.2.1 2007/08/06 14:36:47 arto Exp $
 
 /**
  * @file
@@ -117,8 +117,11 @@ function boost_cache_get($path) {
  * Replaces the cached contents of the specified page, if stale.
  */
 function boost_cache_set($path, $data = '') {
-  // Append the Boost footer with the current timestamp
-  $data = rtrim($data) . "\n" . str_replace('%date', date('Y-m-d H:i:s'), BOOST_BANNER);
+  // Append the Boost footer with the relevant timestamps
+  $time = time();
+  $cached_at = date('Y-m-d H:i:s', $time);
+  $expires_at = date('Y-m-d H:i:s', $time + variable_get('cache_lifetime', 600));
+  $data = rtrim($data) . "\n" . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER);
 
   // Execute the pre-process function if one has been defined
   if (function_exists(BOOST_PRE_PROCESS_FUNCTION))
@@ -169,7 +172,7 @@ function boost_cache_directory($user_id = 0, $host = NULL) {
  * Returns the static file path for a Drupal page.
  */
 function boost_file_path($path) {
-  if ($path == BOOST_FRONTPAGE)
+  if (empty($path) || $path == BOOST_FRONTPAGE)
     $path = 'index'; // special handling for Drupal front page
   return implode('/', array(boost_cache_directory(), $path)) . BOOST_FILE_EXTENSION;
 }

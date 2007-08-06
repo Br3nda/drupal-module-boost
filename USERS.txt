@@ -1,4 +1,4 @@
-// $Id: USERS.txt,v 1.1 2006/11/25 14:24:05 arto Exp $
+// $Id: USERS.txt,v 1.1.2.1 2007/08/06 14:36:47 arto Exp $
 
 This lists some of the users of Boost, describing the setup of the website
 in question as well as providing rationale on how Boost benefits the site.
