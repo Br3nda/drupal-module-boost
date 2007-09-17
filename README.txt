@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.2.2.1.2.1 2007/08/06 14:48:24 arto Exp $
+// $Id: README.txt,v 1.2.2.1.2.2 2007/09/17 16:18:22 arto Exp $
 
 NOTE: this module is currently in an alpha state. Come back in a bit unless
 you're an experienced user and don't mind figuring things out on your own.
