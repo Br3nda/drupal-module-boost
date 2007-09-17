@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.api.inc,v 1.3.2.1 2007/08/06 14:36:47 arto Exp $
+// $Id: boost.api.inc,v 1.3.2.2 2007/09/17 16:27:56 arto Exp $
 
 /**
  * @file
@@ -86,14 +86,12 @@ function boost_cache_expire($path, $wildcard = FALSE) {
   $alias = drupal_get_path_alias($path);
   $path = drupal_get_normal_path($path); // normalize path
 
-  $filename = boost_file_path($path);
-  if (file_exists($filename))
+  if (($filename = boost_file_path($path)) && file_exists($filename)) {
     @unlink($filename);
+  }
 
-  if ($alias != $path) {
-    $symlink = boost_file_path($alias);
-    if (is_link($symlink))
-      @unlink($symlink);
+  if ($alias != $path && ($symlink = boost_file_path($alias)) && is_link($symlink)) {
+    @unlink($symlink);
   }
 
   return TRUE;
@@ -105,9 +103,11 @@ function boost_cache_expire($path, $wildcard = FALSE) {
 function boost_cache_get($path) {
   $path = drupal_get_normal_path($path); // normalize path
 
-  $filename = boost_file_path($path);
-  if (file_exists($filename) && is_readable($filename))
-    return file_get_contents($filename);
+  if (($filename = boost_file_path($path))) {
+    if (file_exists($filename) && is_readable($filename)) {
+      return file_get_contents($filename);
+    }
+  }
 
   return NULL;
 }
@@ -131,23 +131,24 @@ function boost_cache_set($path, $data = '') {
   $path = drupal_get_normal_path($path); // normalize path
 
   // Create or update the static file as needed
-  $filename = boost_file_path($path);
-  _boost_mkdir_p(dirname($filename));
-  if (!file_exists($filename) || boost_file_is_expired($filename)) {
-    if (file_put_contents($filename, $data) === FALSE) {
-      watchdog('boost', t('Unable to write file: %file', array('%file' => $filename)), WATCHDOG_WARNING);
+  if (($filename = boost_file_path($path))) {
+    _boost_mkdir_p(dirname($filename));
+    if (!file_exists($filename) || boost_file_is_expired($filename)) {
+      if (file_put_contents($filename, $data) === FALSE) {
+        watchdog('boost', t('Unable to write file: %file', array('%file' => $filename)), WATCHDOG_WARNING);
+      }
     }
-  }
 
-  // If a URL alias is defined, create that as a symlink to the actual file
-  if ($alias != $path) {
-    $symlink = boost_file_path($alias);
-    _boost_mkdir_p(dirname($symlink));
-    if (!is_link($symlink) || realpath(readlink($symlink)) != realpath($filename)) {
-      if (file_exists($symlink))
-        @unlink($symlink);
-      if (!_boost_symlink($filename, $symlink)) {
-        watchdog('boost', t('Unable to create symlink: %link to %target', array('%link' => $symlink, '%target' => $filename)), WATCHDOG_WARNING);
+    // If a URL alias is defined, create that as a symlink to the actual file
+    if ($alias != $path && ($symlink = boost_file_path($alias))) {
+      _boost_mkdir_p(dirname($symlink));
+      if (!is_link($symlink) || realpath(readlink($symlink)) != realpath($filename)) {
+        if (file_exists($symlink)) {
+          @unlink($symlink);
+        }
+        if (!_boost_symlink($filename, $symlink)) {
+          watchdog('boost', t('Unable to create symlink: %link to %target', array('%link' => $symlink, '%target' => $filename)), WATCHDOG_WARNING);
+        }
       }
     }
   }
@@ -172,9 +173,16 @@ function boost_cache_directory($user_id = 0, $host = NULL) {
  * Returns the static file path for a Drupal page.
  */
 function boost_file_path($path) {
-  if (empty($path) || $path == BOOST_FRONTPAGE)
-    $path = 'index'; // special handling for Drupal front page
-  return implode('/', array(boost_cache_directory(), $path)) . BOOST_FILE_EXTENSION;
+  if (empty($path) || $path == BOOST_FRONTPAGE) {
+    $path = 'index'; // special handling for Drupal's front page
+  }
+
+  // Compose the full file system path to the static file
+  $cache_dir = boost_cache_directory();
+  $cache_file = implode('/', array($cache_dir, $path)) . BOOST_FILE_EXTENSION;
+
+  // Security check to make sure the file actually is where it should be
+  return file_check_location($cache_file, $cache_dir);
 }
 
 /**
