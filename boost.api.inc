@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.api.inc,v 1.3.2.1.2.2 2007/09/17 16:18:22 arto Exp $
+// $Id: boost.api.inc,v 1.3.2.1.2.3 2007/09/21 12:00:44 arto Exp $
 
 /**
  * @file
@@ -177,12 +177,13 @@ function boost_file_path($path) {
     $path = 'index'; // special handling for Drupal's front page
   }
 
-  // Compose the full file system path to the static file
-  $cache_dir = boost_cache_directory();
-  $cache_file = implode('/', array($cache_dir, $path)) . BOOST_FILE_EXTENSION;
+  // Convert any undesirable characters in the path to underscores
+  $path = preg_replace('@[^/a-z0-9_-]@i', '_', $path);
 
-  // Security check to make sure the file actually is where it should be
-  return file_check_location($cache_file, $cache_dir);
+  // Limit the maximum directory nesting depth of the path
+  $path = implode('/', array_slice(explode('/', $path), 0, BOOST_MAX_PATH_DEPTH));
+
+  return boost_cache_directory() . '/' . $path . BOOST_FILE_EXTENSION;
 }
 
 /**

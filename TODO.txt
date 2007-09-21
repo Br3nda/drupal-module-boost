@@ -1,4 +1,4 @@
-// $Id: TODO.txt,v 1.1.2.1.2.2 2007/09/17 16:18:22 arto Exp $
+// $Id: TODO.txt,v 1.1.2.1.2.3 2007/09/21 12:00:44 arto Exp $
 
 This is a listing of known bugs, features that mostly work but are still
 somewhat in progress, features that are being considered or planned for
