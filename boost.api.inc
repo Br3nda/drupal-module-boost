@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.api.inc,v 1.3.2.1.2.3 2007/09/21 12:00:44 arto Exp $
+// $Id: boost.api.inc,v 1.3.2.1.2.4 2007/09/21 12:27:58 arto Exp $
 
 /**
  * @file
@@ -177,11 +177,15 @@ function boost_file_path($path) {
     $path = 'index'; // special handling for Drupal's front page
   }
 
-  // Convert any undesirable characters in the path to underscores
-  $path = preg_replace('@[^/a-z0-9_-]@i', '_', $path);
+  // Under no circumstances should the incoming path contain '..' or null
+  // bytes; we also limit the maximum directory nesting depth of the path
+  if (strpos($path, '..') !== FALSE || strpos($path, "\0") !== FALSE ||
+      count(explode('/', $path)) > BOOST_MAX_PATH_DEPTH) {
+    return FALSE;
+  }
 
-  // Limit the maximum directory nesting depth of the path
-  $path = implode('/', array_slice(explode('/', $path), 0, BOOST_MAX_PATH_DEPTH));
+  // Convert any other undesirable characters in the path to underscores
+  $path = preg_replace('@[^/a-z0-9_-]@i', '_', $path);
 
   return boost_cache_directory() . '/' . $path . BOOST_FILE_EXTENSION;
 }
