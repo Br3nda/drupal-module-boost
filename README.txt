@@ -1,7 +1,4 @@
-// $Id: README.txt,v 1.2.2.2 2007/09/30 19:08:13 arto Exp $
-
-NOTE: this module is currently in an alpha state. Come back in a bit unless
-you're an experienced user and don't mind figuring things out on your own.
+// $Id: README.txt,v 1.2.2.3 2007/09/30 19:17:34 arto Exp $
 
 DESCRIPTION
 -----------
@@ -18,7 +15,6 @@ FEATURES
   site, reducing web server load and boosting your site's scalability.
 * On-demand page caching (static file created after first page request).
 * Full support for multi-site Drupal installations.
-* Command line administration support (requires the drush module).
 
 INSTALLATION
 ------------
@@ -135,7 +131,7 @@ LIMITATIONS
 * At the moment, Windows users are S.O.L. due to the use of symlinks and
   Unix-specific shell commands. The author has no personal interest in
   supporting Windows but will accept well-documented, non-detrimental
-  patches to that effect.
+  patches to that effect (see http://drupal.org/node/174380).
 
 BUG REPORTS
 -----------
