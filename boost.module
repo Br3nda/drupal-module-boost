@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.4 2007/09/21 12:50:08 arto Exp $
+// $Id: boost.module,v 1.3.2.2.2.5 2007/09/30 19:10:01 arto Exp $
 
 /**
  * @file
@@ -158,16 +158,16 @@ function boost_exit($destination = NULL) {
     global $user;
     if (empty($user->uid) && ($messages = drupal_set_message())) {
 
-      // Check that the page we're redirecting to has been cached by Boost
-      // and really necessitates special handling:
+      // Check that the page we're redirecting to really necessitates
+      // special handling, i.e. it doesn't have a query string:
       extract(parse_url($destination));
       $path = ($path == base_path() ? '' : substr($path, strlen(base_path())));
-      if (boost_is_cached($path) && empty($query)) {
-        // FIXME: call any remaining exit hooks since we're about to terminate.
+      if (empty($query)) {
+        // FIXME: call any remaining exit hooks since we're about to terminate?
 
-        // Add a query string to ensure we don't serve a static copy of
-        // the page we're redirecting to, which would prevent the session
-        // messages from showing up:
+        // If no query string was previously set, add one just to ensure we
+        // don't serve a static copy of the page we're redirecting to, which
+        // would prevent the session messages from showing up:
         $destination = url($path, 't=' . time(), $fragment, TRUE);
 
         // Do what drupal_goto() would do if we were to return to it:
