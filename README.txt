@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.2.2.1 2007/08/06 14:36:47 arto Exp $
+// $Id: README.txt,v 1.2.2.2 2007/09/30 19:08:13 arto Exp $
 
 NOTE: this module is currently in an alpha state. Come back in a bit unless
 you're an experienced user and don't mind figuring things out on your own.
@@ -146,4 +146,5 @@ CREDITS
 -------
 Developed and maintained by Arto Bendiken <http://bendiken.net/>
 Ported to Drupal 5.x by Alexander I. Grafov <http://drupal.ru/>
-Miscellaneous contributions by: Jacob Peddicord, Justin Miller.
+Miscellaneous contributions by: Jacob Peddicord, Justin Miller, Barry
+Jaspan.
