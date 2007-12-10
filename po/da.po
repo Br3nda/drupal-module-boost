@@ -2,9 +2,9 @@
 # Copyright 2007 Morten Wulff <wulff@ratatosk.net>
 msgid ""
 msgstr ""
-"Project-Id-Version: Danish translation of Drupal (boost.module) $Id: da.po,v 1.1.2.4 2007/12/10 19:07:30 wulff Exp $\n"
+"Project-Id-Version: Danish translation of Drupal (boost.module) $Id: da.po,v 1.1.2.5 2007/12/10 19:10:05 wulff Exp $\n"
 "POT-Creation-Date: 2007-12-03 20:55+0100\n"
-"PO-Revision-Date: 2007-12-10 20:07+0100\n"
+"PO-Revision-Date: 2007-12-10 20:09+0100\n"
 "Last-Translator: Morten Wulff <wulff@ratatosk.net>\n"
 "Language-Team: Danish <l10n@drupaldanmark.dk>\n"
 "MIME-Version: 1.0\n"
@@ -40,7 +40,7 @@ msgstr "Cache-sti"
 
 #: boost.admin.inc:38
 msgid "A file system path where the cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named 'cache' under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work."
-msgstr "Stien hvor mellemlagerfilerne gemmes. Mappen skal eksistere og Drupal skal kunne skrive til den. Standardindstillingen er at gemme filerne i mappen 'cache' i Drupal's rod-bibliotek. Hvis du ændrer indstillingen, skal du også ændre omskrivningsreglerne i din webserver-konfiguration (.htaccess/lighttpd.conf) for at få cachen til at virke."
+msgstr "Stien hvor cache-filerne gemmes. Mappen skal eksistere og Drupal skal kunne skrive til den. Standardindstillingen er at gemme filerne i mappen 'cache' i Drupal's rod-bibliotek. Hvis du ændrer indstillingen, skal du også ændre omskrivningsreglerne i din webserver-konfiguration (.htaccess/lighttpd.conf) for at få cachen til at virke."
 
 #: boost.admin.inc:54
 msgid "Cache every page except the listed pages."
@@ -68,7 +68,7 @@ msgstr "Indstillinger"
 
 #: boost.admin.inc:67
 msgid "Cache specific pages"
-msgstr "Gem følgende sider i mellemlageret"
+msgstr "Gem følgende sider i cachen"
 
 #: boost.admin.inc:73
 msgid "Pages"
