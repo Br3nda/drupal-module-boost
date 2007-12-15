@@ -2,9 +2,9 @@
 # Copyright 2007 Morten Wulff <wulff@ratatosk.net>
 msgid ""
 msgstr ""
-"Project-Id-Version: Danish translation of Drupal (boost.module) $Id: da.po,v 1.1.2.6 2007/12/10 19:15:25 wulff Exp $\n"
+"Project-Id-Version: Danish translation of Drupal (boost.module) $Id: da.po,v 1.1.2.7 2007/12/15 10:33:39 wulff Exp $\n"
 "POT-Creation-Date: 2007-12-03 20:55+0100\n"
-"PO-Revision-Date: 2007-12-10 20:11+0100\n"
+"PO-Revision-Date: 2007-12-15 11:33+0100\n"
 "Last-Translator: Morten Wulff <wulff@ratatosk.net>\n"
 "Language-Team: Danish <l10n@drupaldanmark.dk>\n"
 "MIME-Version: 1.0\n"
@@ -36,11 +36,11 @@ msgstr "På sites med høj trafik kan det være nødvendigt at angive en levetid
 
 #: boost.admin.inc:33
 msgid "Cache file path"
-msgstr "Cache-sti"
+msgstr "Cache-katalog"
 
 #: boost.admin.inc:38
 msgid "A file system path where the cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named 'cache' under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work."
-msgstr "Stien hvor cache-filerne gemmes. Mappen skal eksistere og Drupal skal kunne skrive til den. Standardindstillingen er at gemme filerne i mappen 'cache' i Drupal's rod-bibliotek. Hvis du ændrer indstillingen, skal du også ændre omskrivningsreglerne i din webserver-konfiguration (.htaccess/lighttpd.conf) for at få cachen til at virke."
+msgstr "Kataloget hvor cache-filerne gemmes. Kataloget skal eksistere, og Drupal skal kunne skrive til det. Standardindstillingen er at gemme filerne i kataloget 'cache' i Drupals rodkatalog. Hvis du ændrer indstillingen, skal du også ændre omskrivningsreglerne i din webserver-konfiguration (.htaccess/lighttpd.conf) for at få cachen til at virke."
 
 #: boost.admin.inc:54
 msgid "Cache every page except the listed pages."
