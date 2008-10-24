@@ -1,4 +1,4 @@
-// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.1 2008/10/24 23:10:23 arto Exp $
+// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.2 2008/10/24 23:54:23 arto Exp $
 
 REQUIREMENTS
 ------------
@@ -16,31 +16,33 @@ Apache version 1.3 or 2.x with mod_rewrite enabled is required (if Drupal's
 clean URLs work for you, you're fine; if not, get them working first).
 Other web servers, such as Lighttpd, are NOT supported at present.
 
-The `drush' module is required for (optional) command line usage.
-
 INSTALLATION
 ------------
-1. Go to Administer >> Site configuration >> Clean URLs and ensure that
-   Drupal's clean URLs are enabled and working properly on your site.
 
-2. Copy all the module files into a subdirectory called modules/boost/
-   under your Drupal installation directory.
+  1. Go to [Administer >> Site configuration >> Clean URLs] and ensure that
+     Drupal's clean URLs are enabled and working correctly on your site.
 
-3. Go to Administer >> Site building >> Modules and enable the Boost module.
+  2. Copy all the module files into a subdirectory called
+     sites/all/modules/boost/ under your Drupal installation directory.
 
-4. Go to Administer >> Site configuration >> Performance >> Boost to review
-   and change the module's configuration options to your liking.
+  3. Go to [Administer >> Site building >> Modules] and enable the Boost
+     module. You will find it in the section labelled "Caching".
 
-5. Go to Administer >> Site configuration >> Performance, specify the cache
-   directory (must be writable by the web server) and enable static caching.
+  4. Go to [Administer >> Site configuration >> Performance >> Boost] to
+     review and change the module's configuration options to your liking.
 
-6. Log out from Drupal (or use another browser) and browse around your site
-   as the anonymous user. Ensure that static files are indeed being
-   generated into the Boost cache directory you specified above.
+  5. Go to [Administer >> Site configuration >> Performance], specify the
+     cache directory (must be writable by the web server) and enable static
+     caching.
 
-7. IMPORTANT: replace your .htaccess file in the Drupal installation
-   directory with the file from modules/boost/htaccess/boosted.txt,
-   customizing the mod_rewrite rules to your particular setup if needed.
-   (If you fail to do this, static page caching will NOT work!)
+  6. Log out from Drupal (or use another browser) to browse around your site
+     as the anonymous user. Ensure that static files are indeed being
+     generated into the Boost cache directory you specified above.
 
-8. (See README.txt for information on submitting bug reports.)
+  7. IMPORTANT: after backing up the original .htaccess file in your Drupal
+     installation directory, replace it with the file from
+     sites/all/modules/boost/htaccess/boosted.txt, customizing the
+     mod_rewrite rules to your particular setup if needed. (If you fail to
+     do this, static page caching will NOT work!)
+
+  8. (See README.txt for information on submitting bug reports.)
