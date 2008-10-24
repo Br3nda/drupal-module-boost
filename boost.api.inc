@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.api.inc,v 1.3.2.1.2.7 2008/10/24 23:03:53 arto Exp $
+// $Id: boost.api.inc,v 1.3.2.1.2.5.2.1 2008/10/24 23:10:23 arto Exp $
 
 /**
  * @file
@@ -135,7 +135,7 @@ function boost_cache_set($path, $data = '') {
     _boost_mkdir_p(dirname($filename));
     if (!file_exists($filename) || boost_file_is_expired($filename)) {
       if (file_put_contents($filename, $data) === FALSE) {
-        watchdog('boost', t('Unable to write file: %file', array('%file' => $filename)), WATCHDOG_WARNING);
+        watchdog('boost', 'Unable to write file: %file', array('%file' => $filename), array(), WATCHDOG_WARNING);
       }
     }
 
@@ -147,7 +147,7 @@ function boost_cache_set($path, $data = '') {
           @unlink($symlink);
         }
         if (!_boost_symlink($filename, $symlink)) {
-          watchdog('boost', t('Unable to create symlink: %link to %target', array('%link' => $symlink, '%target' => $filename)), WATCHDOG_WARNING);
+          watchdog('boost', 'Unable to create symlink: %link to %target', array('%link' => $symlink, '%target' => $filename), array(), WATCHDOG_WARNING);
         }
       }
     }
