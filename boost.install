@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3 2007/09/21 12:00:44 arto Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.1 2008/10/24 23:44:48 arto Exp $
 
 /**
  * @file
@@ -7,21 +7,46 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
+// Core API hooks
+
+/**
+ * Implementation of hook_enable().
+ */
+function boost_enable() {
+  drupal_set_message(t('Boost successfully installed. Please review the available <a href="@settings">configuration settings</a>.', array('@settings' => url('admin/settings/performance/boost'))));
+}
 
 /**
  * Implementation of hook_install(). Installs the current version of the database schema.
  */
 function boost_install() {
   // Ensure that the module is loaded early in the bootstrap:
-  db_query("UPDATE {system} SET weight = -90 WHERE name = 'boost'");
+  db_query("UPDATE {system} SET weight = -90 WHERE name = '%s'", 'boost');
 
   // Forcibly disable Drupal's built-in SQL caching to prevent any conflicts of interest:
   if (variable_get('cache', CACHE_DISABLED) != CACHE_DISABLED) {
     variable_set('cache', CACHE_DISABLED);
-    drupal_set_message(t('Drupal standard page caching disabled by Boost.'));
+    drupal_set_message(t('Drupal\'s standard page caching disabled by Boost.'));
   }
-
-  drupal_set_message(t('Boost module successfully installed.'));
 }
 
-//////////////////////////////////////////////////////////////////////////////
+/**
+ * Implementation of hook_uninstall().
+ */
+function boost_uninstall() {
+  db_query("DELETE FROM {variable} WHERE name LIKE '%s_%%'", 'boost');
+  cache_clear_all('variables', 'cache');
+}
+
+/**
+ * Implementation of hook_requirements().
+ */
+function boost_requirements($phase) {
+  $status = array();
+
+  if ($phase == 'runtime') {
+    // TODO: check that the Boost-specific .htaccess modifications are correctly installed.
+  }
+
+  return $status;
+}
