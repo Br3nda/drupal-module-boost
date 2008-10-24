@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.4 2008/10/24 23:01:07 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.5 2008/10/24 23:03:53 arto Exp $
 
 /**
  * @file
@@ -14,7 +14,7 @@
  *
  * Called from hook_form_alter().
  */
-function boost_system_settings_form($form = array()) { 
+function boost_system_settings_form($form = array()) {
   $form['cache'] = array('#type' => 'hidden','#value' => CACHE_DISABLED);
   $form['boost'] = array(
     '#type'          => 'radios',
@@ -46,12 +46,11 @@ function boost_system_settings_form($form = array()) {
 /**
  * Declares administrative settings for the Boost module.
  *
- * @see system_settings_form
- * @ingroup forms
+ * Called from hook_settings().
  */
-function boost_admin_settings($form = array()) { 
+function boost_settings_form($form = array()) {
   //_boost_check_htaccess(); // TODO
- 
+
   $options = array(t('Cache every page except the listed pages.'), t('Cache only the listed pages.'));
   $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are '%blog' for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => theme('placeholder', 'blog'), '%blog-wildcard' => theme('placeholder', 'blog/*'), '%front' => theme('placeholder', '<front>')));
   if (user_access('use PHP for block visibility')) {
@@ -75,6 +74,20 @@ function boost_admin_settings($form = array()) {
     '#default_value' => BOOST_CACHEABILITY_PAGES,
     '#description'   => $description,
   );
+
+  // TODO
+  /*$form['throttle'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Throttle settings'),
+    '#collapsible'   => FALSE,
+  );
+  $form['throttle']['boost_cron_limit'] = array(
+    '#type'          => 'select',
+    '#title'         => t('Pages to update per cron run'),
+    '#default_value' => BOOST_CRON_LIMIT,
+    '#options'       => drupal_map_assoc(array(10, 20, 50, 100, 200, 500, 1000)),
+    '#description'   => t('The maximum number of static pages that will be built or rebuilt in one cron run. Set this number lower if your cron is timing out or if PHP is running out of memory.'),
+  );*/
 
   $form['advanced'] = array(
     '#type'          => 'fieldset',
@@ -114,7 +127,7 @@ function boost_admin_settings($form = array()) {
     '#description'   => t('If you are synchronizing the generated static cache files to an external server through some means such as SFTP or rsync, you can enter a shell command to be executed following a successful cron-triggered cache update. Note that this is an advanced setting that should normally be left blank.'),
   );*/
 
-  return system_settings_form($form);
+  return $form;
 }
 
 //////////////////////////////////////////////////////////////////////////////

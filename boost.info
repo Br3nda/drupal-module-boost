@@ -1,5 +1,4 @@
-; $Id: boost.info,v 1.1.2.1.2.4 2008/10/24 23:01:07 arto Exp $
+; $Id: boost.info,v 1.1.2.1.2.5 2008/10/24 23:03:53 arto Exp $
 name = Boost
 description = Provides a performance and scalability boost through caching Drupal pages as static HTML files.
 package = Caching
-core = 6.x
