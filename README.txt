@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.2.2.1.2.5.2.1 2008/10/24 23:10:23 arto Exp $
+// $Id: README.txt,v 1.2.2.1.2.5.2.2 2008/10/24 23:49:11 arto Exp $
 
 DESCRIPTION
 -----------
@@ -141,6 +141,7 @@ Post feature requests and bug reports to the issue tracking system at:
 CREDITS
 -------
 Developed and maintained by Arto Bendiken <http://bendiken.net/>
+Ported to Drupal 6.x by Ben Lavender <http://bhuga.net/>
 Ported to Drupal 5.x by Alexander I. Grafov <http://drupal.ru/>
 Miscellaneous contributions by: Jacob Peddicord, Justin Miller, Barry
 Jaspan.
