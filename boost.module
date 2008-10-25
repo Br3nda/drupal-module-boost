@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.8 2008/10/25 02:17:50 arto Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.9 2008/10/25 03:16:50 arto Exp $
 
 /**
  * @file
@@ -66,9 +66,15 @@ function boost_init() {
   // TODO: check interaction with other modules that use ob_start(); this
   // may have to be moved to an earlier stage of the page request.
   if (!variable_get('cache', CACHE_DISABLED) && BOOST_ENABLED) {
-    // We only support GET requests by anonymous visitors:
     global $user;
-    if (empty($user->uid) && $_SERVER['REQUEST_METHOD'] == 'GET') {
+
+    // For logged-in users, set a special cookie to prevent them
+    // inadvertently getting served pages from the static page cache.
+    if (!empty($user->uid)) {
+      boost_set_cookie($user);
+    }
+    // We only serve cached pages for GET requests by anonymous visitors:
+    else if ($_SERVER['REQUEST_METHOD'] == 'GET') {
       // Make sure no query string (in addition to ?q=) was set, and that
       // the page is cacheable according to our current configuration:
       if (count($_GET) == 1 && boost_is_cacheable($_GET['q'])) {
@@ -223,12 +229,10 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
     case 'login':
       // Set special cookie to prevent logged-in users getting served pages from the static page cache.
-      $expires = ini_get('session.cookie_lifetime');
-      $expires = (!empty($expires) && is_numeric($expires) ? time() + (int)$expires : 0);
-      setcookie(BOOST_COOKIE, $user->uid, $expires, ini_get('session.cookie_path'), ini_get('session.cookie_domain'), ini_get('session.cookie_secure') == '1');
+      boost_set_cookie($user);
       break;
     case 'logout':
-      setcookie(BOOST_COOKIE, FALSE, time() - 86400, ini_get('session.cookie_path'), ini_get('session.cookie_domain'), ini_get('session.cookie_secure') == '1');
+      boost_set_cookie($user, time() - 86400);
       break;
     case 'insert':
       // TODO: create user-specific cache directory.
@@ -486,6 +490,21 @@ function boost_file_is_expired($filename) {
   if (is_link($filename))
     return FALSE;
   return boost_file_get_age($filename) > variable_get('cache_lifetime', 600);
+}
+
+/**
+ * Sets a special cookie preventing logged-in users getting served pages
+ * from the static page cache.
+ */
+function boost_set_cookie($user, $expires = NULL) {
+  if (!$expires) {
+    $expires = ini_get('session.cookie_lifetime');
+    $expires = (!empty($expires) && is_numeric($expires)) ? time() + (int)$expires : 0;
+    setcookie(BOOST_COOKIE, $user->uid, $expires, ini_get('session.cookie_path'), ini_get('session.cookie_domain'), ini_get('session.cookie_secure') == '1');
+  }
+  else {
+    setcookie(BOOST_COOKIE, FALSE, $expires, ini_get('session.cookie_path'), ini_get('session.cookie_domain'), ini_get('session.cookie_secure') == '1');
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
