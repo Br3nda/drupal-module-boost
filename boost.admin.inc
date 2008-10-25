@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.3 2008/10/25 01:20:25 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.4 2008/10/25 01:39:22 arto Exp $
 
 /**
  * @file
@@ -15,9 +15,12 @@
  * @see hook_form_alter() in boost.module.
  */
 function boost_system_settings($form = array()) {
-  // TODO: this needs a comprehensive rethinking now in Drupal 6.x.
-
+  // Take over the relevant existing settings
+  $form['#title'] = t('Static page cache');
   $form['cache'] = array('#type' => 'hidden','#value' => CACHE_DISABLED);
+  unset($form['page_compression']); // we don't support this
+
+  // Inject Boost-specific settings
   $form['boost'] = array(
     '#type'          => 'radios',
     '#title'         => t('Static page cache'),
@@ -63,6 +66,12 @@ function boost_system_settings_submit($form, &$form_state) {
   }
 }
 
+function boost_system_clear_cache_submit(&$form_state, $form) {
+  boost_cache_expire_all();
+  drupal_flush_all_caches();
+  drupal_set_message(t('Static cache files deleted and all other caches cleared.'));
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Boost settings form
 
@@ -76,6 +85,7 @@ function boost_admin_settings() {
   $form = array();
 
   // Cacheability settings
+  // TODO: update to use Drupal 6.x core code.
   $options = array(t('Cache every page except the listed pages.'), t('Cache only the listed pages.'));
   $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are '%blog' for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
   if (user_access('use PHP for block visibility')) {
@@ -144,7 +154,14 @@ function boost_admin_settings() {
 
 function boost_admin_settings_validate($form, &$form_state) {
   extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
-  // TODO
+
+  if (strpos($boost_file_extension, '.') !== 0) {
+    form_set_error('boost_file_extension', t('Cache file extension %extension must begin with a period.', array('%extension' => $boost_file_extension)));
+  }
+
+  if (!empty($boost_pre_process_function) && !is_callable($boost_pre_process_function)) {
+    form_set_error('boost_pre_process_function', t('The function %function() does not exist.', array('%function' => $boost_pre_process_function)));
+  }
 }
 
 function boost_admin_settings_submit($form, &$form_state) {

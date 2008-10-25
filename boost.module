@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.4 2008/10/25 01:20:25 arto Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.5 2008/10/25 01:39:22 arto Exp $
 
 /**
  * @file
@@ -155,6 +155,7 @@ function boost_form_alter(&$form, $form_state, $form_id) {
     $form['page_cache'] = boost_system_settings($form['page_cache']);
     $form['#validate'][] = 'boost_system_settings_validate';
     $form['#submit'][] = 'boost_system_settings_submit';
+    $form['clear_cache']['clear']['#submit'][0] = 'boost_system_clear_cache_submit';
   }
 }
 
