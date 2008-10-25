@@ -1,4 +1,4 @@
-// $Id: TODO.txt,v 1.1.2.1.2.3 2007/09/21 12:00:44 arto Exp $
+// $Id: TODO.txt,v 1.1.2.1.2.3.2.1 2008/10/25 04:26:44 arto Exp $
 
 This is a listing of known bugs, features that mostly work but are still
 somewhat in progress, features that are being considered or planned for
@@ -14,12 +14,13 @@ speed things along.)
 
 TODO: IN THE WORKS
 ------------------
-* Finish up administration interface for pre-generating static files for all
-  pages on the Drupal site in one go.
+* Add a 'Delete cached page' button to the Boost cache status block.
 * Test interaction with other modules that also make use of ob_start().
 
 TODO: FUTURE IDEAS
 ------------------
+* An administrative interface for pre-generating static files for all pages
+  on the Drupal site in one go using the Batch API.
 * Add a node-specific cache lifetime setting.
 * Add admin-visible block for updating the cached copy of the current page.
 * Other web servers than Apache are not supported at the moment. This is due

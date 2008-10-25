@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.10 2008/10/25 03:24:04 arto Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.11 2008/10/25 04:26:44 arto Exp $
 
 /**
  * @file
@@ -247,6 +247,64 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
   }
 }
 
+/**
+ * Implementation of hook_block().
+ */
+function boost_block($op = 'list', $delta = 0, $edit = array()) {
+  global $user;
+
+  switch ($op) {
+    case 'list':
+      return array(
+        'status' => array(
+          'info'   => t('Boost page cache status'),
+          'region' => 'right',
+          'weight' => 10,
+          'cache'  => BLOCK_NO_CACHE,
+        ),
+      );
+    case 'view':
+      $block = array();
+      switch ($delta) {
+        case 'status':
+          // Don't show the block to anonymous users, nor on any pages that
+          // aren't even cacheable to begin with (e.g. admin/*).
+          if (!empty($user->uid) && boost_is_cacheable($_GET['q'])) {
+            $output = t('This page is being served <strong>live</strong> to anonymous visitors, as it is not currently in the static page cache.');
+
+            if (boost_is_cached($_GET['q'])) {
+              $ttl = boost_file_get_ttl(boost_file_path($_GET['q']));
+              $output = t('This page is being served to anonymous visitors from the static page cache.') . ' ';
+              $output .= t($ttl < 0 ?
+                '<strong>The cached copy expired %interval ago.</strong>' :
+                'The cached copy will expire in %interval.',
+                array('%interval' => format_interval(abs($ttl))));
+            }
+
+            $block['subject'] = '';
+            $block['content'] = theme('boost_cache_status', isset($ttl) ? $ttl : -1, $output);
+          }
+          break;
+      }
+      return $block;
+  }
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function boost_theme() {
+  return array(
+    'boost_cache_status' => array(
+      'arguments' => array('ttl' => NULL, 'text' => NULL),
+    ),
+  );
+}
+
+function theme_boost_cache_status($ttl, $text) {
+  return '<span class="boost cache-status" content="' . $ttl . '"><small>' . $text . '</small></span>';
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Output buffering callback
 
@@ -482,13 +540,22 @@ function boost_file_get_age($filename) {
 }
 
 /**
+ * Returns the remaining time-to-live for a cached file, measured in
+ * seconds.
+ */
+function boost_file_get_ttl($filename) {
+  return variable_get('cache_lifetime', 600) - boost_file_get_age($filename);
+}
+
+/**
  * Determines whether a cached file has expired, i.e. whether its age
  * exceeds the maximum cache lifetime as defined by Drupal's system
  * settings.
  */
 function boost_file_is_expired($filename) {
-  if (is_link($filename))
-    return FALSE;
+  if (is_link($filename)) {
+    return FALSE; // FIXME
+  }
   return boost_file_get_age($filename) > variable_get('cache_lifetime', 600);
 }
 
