@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.2.2.1.2.5.2.3 2008/10/25 02:20:51 arto Exp $
+// $Id: README.txt,v 1.2.2.1.2.5.2.4 2008/10/25 16:13:46 arto Exp $
 
 DESCRIPTION
 -----------
@@ -101,7 +101,7 @@ IMPORTANT NOTES
 * To check whether you got a static or dynamic version of a page, look at
   the very end of the page's HTML source. You have the static version if the
   last line looks like this:
-    <!-- Page cached by Boost at 2006-11-24 15:06:31 -->
+    <!-- Page cached by Boost @ 2008-11-24 15:06:31 -->
 * If your Drupal URL paths contain non-ASCII characters, you may have to
   tweak your locate settings on the server in order to ensure the URL paths
   get correctly translated into directory paths on the file system.
@@ -110,10 +110,10 @@ IMPORTANT NOTES
 
 LIMITATIONS
 -----------
-* Only anonymous visitors will be served cached versions of pages; logged-in
-  users will get dynamic content. This may somewhat limit the usefulness of
-  this module for those community sites that require user registration and
-  login for active participation.
+* Only anonymous visitors will be served cached versions of pages;
+  authenticated users will get dynamic content. This will limit the
+  usefulness of this module for those community sites that require user
+  registration and login for active participation.
 * Only content of the type `text/html' will get cached at present. RSS feeds
   and URL paths that have some other content type (e.g. set by a third-party
   module) will be silently ignored by Boost.
