@@ -120,8 +120,8 @@ DirectoryIndex index.php
   RewriteCond %{REQUEST_URI} !^/admin
   RewriteCond %{QUERY_STRING} ^$
   RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0%{REQUEST_URI} -d
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0%{REQUEST_URI}/index.html -f
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI} -d
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}/index.html -f
   RewriteRule ^(.*)$ cache/%{SERVER_NAME}/$1/index.html [L]
   RewriteCond %{REQUEST_METHOD} ^GET$
   RewriteCond %{REQUEST_URI} !^/cache
@@ -129,7 +129,7 @@ DirectoryIndex index.php
   RewriteCond %{REQUEST_URI} !^/admin
   RewriteCond %{QUERY_STRING} ^$
   RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0%{REQUEST_URI}.html -f
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}.html -f
   RewriteRule ^(.*)$ cache/%{SERVER_NAME}/$1.html [L]
   # BOOST END
 
@@ -140,4 +140,4 @@ DirectoryIndex index.php
   RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
 </IfModule>
 
-# $Id: boosted.txt,v 1.2.2.3.2.5.2.1 2008/10/25 02:34:17 arto Exp $
+# $Id: boosted.txt,v 1.2.2.3.2.5.2.2 2008/10/25 04:05:56 arto Exp $
