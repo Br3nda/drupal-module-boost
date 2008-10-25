@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.6 2008/10/25 02:17:50 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.7 2008/10/25 02:57:27 arto Exp $
 
 /**
  * @file
@@ -137,7 +137,7 @@ function boost_admin_settings_submit($form, &$form_state) {
 
   if (empty($boost) && !empty($boost_previously)) { // the cache was previously enabled
     if (boost_cache_expire_all()) {
-      drupal_set_message(t('Static cache files deleted.'));
+      drupal_set_message(t('Static page cache cleared.'));
     }
   }
 }
@@ -145,13 +145,13 @@ function boost_admin_settings_submit($form, &$form_state) {
 function boost_admin_clear_cache_submit($form, &$form_state) {
   boost_cache_expire_all();
   drupal_flush_all_caches();
-  drupal_set_message(t('Static cache files deleted and all other caches cleared.'));
+  drupal_set_message(t('Static page cache and all other caches cleared.'));
 }
 
 function boost_admin_site_offline_submit($form, &$form_state) {
   if (!empty($form_state['values']['site_offline'])) {
     if (boost_cache_expire_all()) {
-      drupal_set_message(t('Static cache files deleted.'));
+      drupal_set_message(t('Static page cache cleared.'));
     }
   }
 }
