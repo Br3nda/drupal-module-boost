@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.2 2008/10/25 00:26:36 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.3 2008/10/25 01:20:25 arto Exp $
 
 /**
  * @file
@@ -14,7 +14,7 @@
  *
  * @see hook_form_alter() in boost.module.
  */
-function boost_system_settings_form($form = array()) {
+function boost_system_settings($form = array()) {
   // TODO: this needs a comprehensive rethinking now in Drupal 6.x.
 
   $form['cache'] = array('#type' => 'hidden','#value' => CACHE_DISABLED);
@@ -37,6 +37,30 @@ function boost_system_settings_form($form = array()) {
     '#weight'        => -5,
   );
   return $form;
+}
+
+function boost_system_settings_validate($form, &$form_state) {
+  $form_state['values']['boost_previously'] = variable_get('boost', '');
+  extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
+
+  if (!empty($boost)) { // the cache is enabled
+    // Ensure the cache directory exists or can be created:
+    file_check_directory($boost_file_path, FILE_CREATE_DIRECTORY, 'boost_file_path');
+  }
+}
+
+function boost_system_settings_submit($form, &$form_state) {
+  variable_del('boost_previously');
+  extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
+
+  // Forcibly disable Drupal's built-in SQL caching to prevent any conflicts of interest:
+  variable_set('cache', CACHE_DISABLED);
+
+  if (empty($boost) && !empty($boost_previously)) { // the cache was previously enabled
+    if (boost_cache_expire_all()) {
+      drupal_set_message(t('Static cache files deleted.'));
+    }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
