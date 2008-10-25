@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.8 2008/10/25 15:16:21 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.9 2008/10/25 15:57:40 arto Exp $
 
 /**
  * @file
@@ -36,7 +36,7 @@ function boost_admin_settings($form = array()) {
     '#size'          => 60,
     '#maxlength'     => 255,
     '#required'      => TRUE,
-    '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named \'cache\' under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+    '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named %default-path under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.', array('%default-path' => boost_cache_directory(NULL, FALSE))),
     '#weight'        => -5,
   );
 
