@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.4 2008/10/25 01:39:22 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.5 2008/10/25 01:55:50 arto Exp $
 
 /**
  * @file
@@ -7,14 +7,14 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// System settings form
+// Boost settings form
 
 /**
  * Performs alterations to the system settings form before it is rendered.
  *
  * @see hook_form_alter() in boost.module.
  */
-function boost_system_settings($form = array()) {
+function boost_admin_settings($form = array()) {
   // Take over the relevant existing settings
   $form['#title'] = t('Static page cache');
   $form['cache'] = array('#type' => 'hidden','#value' => CACHE_DISABLED);
@@ -39,50 +39,6 @@ function boost_system_settings($form = array()) {
     '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named \'cache\' under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
     '#weight'        => -5,
   );
-  return $form;
-}
-
-function boost_system_settings_validate($form, &$form_state) {
-  $form_state['values']['boost_previously'] = variable_get('boost', '');
-  extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
-
-  if (!empty($boost)) { // the cache is enabled
-    // Ensure the cache directory exists or can be created:
-    file_check_directory($boost_file_path, FILE_CREATE_DIRECTORY, 'boost_file_path');
-  }
-}
-
-function boost_system_settings_submit($form, &$form_state) {
-  variable_del('boost_previously');
-  extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
-
-  // Forcibly disable Drupal's built-in SQL caching to prevent any conflicts of interest:
-  variable_set('cache', CACHE_DISABLED);
-
-  if (empty($boost) && !empty($boost_previously)) { // the cache was previously enabled
-    if (boost_cache_expire_all()) {
-      drupal_set_message(t('Static cache files deleted.'));
-    }
-  }
-}
-
-function boost_system_clear_cache_submit(&$form_state, $form) {
-  boost_cache_expire_all();
-  drupal_flush_all_caches();
-  drupal_set_message(t('Static cache files deleted and all other caches cleared.'));
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Boost settings form
-
-/**
- * Declares administrative settings for the Boost module.
- *
- * @see system_settings_form
- * @ingroup forms
- */
-function boost_admin_settings() {
-  $form = array();
 
   // Cacheability settings
   // TODO: update to use Drupal 6.x core code.
@@ -95,7 +51,8 @@ function boost_admin_settings() {
   $form['cacheability'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Cacheability settings'),
-    '#collapsible'   => FALSE,
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
   );
   $form['cacheability']['boost_cacheability_option'] = array(
     '#type'          => 'radios',
@@ -126,13 +83,13 @@ function boost_admin_settings() {
     '#required'      => TRUE,
     '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.html\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
   );
-  $form['advanced']['boost_fetch_method'] = array(
+  /*$form['advanced']['boost_fetch_method'] = array( // not needed for now
     '#type'          => 'select',
     '#title'         => t('Page fetch method'),
     '#default_value' => BOOST_FETCH_METHOD,
     '#options'       => array('php' => t('PHP fopen() wrapper'), 'wget' => t('Wget shell command'), 'curl' => t('curl shell command')),
     '#description'   => t('The method used to retrieve the contents of the Drupal pages to be cached. The default should work in most cases.'),
-  );
+  );*/
   $form['advanced']['boost_pre_process_function'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Pre-process function'),
@@ -141,7 +98,7 @@ function boost_admin_settings() {
     '#description'   => t('The name of a PHP function used to pre-process the contents of each page before writing them out to static files. The function is called with the contents of the page passed as a string argument, and its return value is used as the data written out to the disk.'),
   );
   // TODO:
-  /*$form['advanced']['boost_post_update_command'] = array(
+  /*$form['advanced']['boost_post_update_command'] = array( // not needed for now
     '#type'          => 'textfield',
     '#title'         => t('Post-update shell command'),
     '#default_value' => BOOST_POST_UPDATE_COMMAND,
@@ -149,22 +106,44 @@ function boost_admin_settings() {
     '#description'   => t('If you are synchronizing the generated static cache files to an external server through some means such as SFTP or rsync, you can enter a shell command to be executed following a successful cron-triggered cache update. Note that this is an advanced setting that should normally be left blank.'),
   );*/
 
-  return system_settings_form($form);
+
+  return $form;
 }
 
 function boost_admin_settings_validate($form, &$form_state) {
+  $form_state['values']['boost_previously'] = variable_get('boost', '');
   extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
+
+  if (!empty($boost)) { // the cache is enabled
+    // Ensure the cache directory exists or can be created:
+    file_check_directory($boost_file_path, FILE_CREATE_DIRECTORY, 'boost_file_path');
+  }
 
   if (strpos($boost_file_extension, '.') !== 0) {
     form_set_error('boost_file_extension', t('Cache file extension %extension must begin with a period.', array('%extension' => $boost_file_extension)));
   }
 
   if (!empty($boost_pre_process_function) && !is_callable($boost_pre_process_function)) {
-    form_set_error('boost_pre_process_function', t('The function %function() does not exist.', array('%function' => $boost_pre_process_function)));
+    form_set_error('boost_pre_process_function', t('Pre-process function %function() does not exist.', array('%function' => $boost_pre_process_function)));
   }
 }
 
 function boost_admin_settings_submit($form, &$form_state) {
+  variable_del('boost_previously');
   extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
-  // TODO
+
+  // Forcibly disable Drupal's built-in SQL caching to prevent any conflicts of interest:
+  variable_set('cache', CACHE_DISABLED);
+
+  if (empty($boost) && !empty($boost_previously)) { // the cache was previously enabled
+    if (boost_cache_expire_all()) {
+      drupal_set_message(t('Static cache files deleted.'));
+    }
+  }
+}
+
+function boost_admin_clear_cache_submit(&$form_state, $form) {
+  boost_cache_expire_all();
+  drupal_flush_all_caches();
+  drupal_set_message(t('Static cache files deleted and all other caches cleared.'));
 }

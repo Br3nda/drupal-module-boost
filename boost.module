@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.5 2008/10/25 01:39:22 arto Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.6 2008/10/25 01:55:50 arto Exp $
 
 /**
  * @file
@@ -49,24 +49,6 @@ function boost_help($path, $arg) {
     case 'admin/settings/performance/boost':
       return '<p>' . t('') . '</p>'; // TODO: add help text.
   }
-}
-
-/**
- * Implementation of hook_menu(). Defines menu items and page callbacks.
- */
-function boost_menu() {
-  return array(
-    // Administer >> Site configuration >> Performance >> Boost
-    'admin/settings/performance/boost' => array(
-      'title' => 'Boost',
-      'description' => 'Configure static page cache settings.',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('boost_admin_settings'),
-      'access arguments' => array('administer site configuration'),
-      'file' => 'boost.admin.inc',
-    ),
-    // TODO: define menu actions for cache administration.
-  );
 }
 
 /**
@@ -152,10 +134,10 @@ function boost_form_alter(&$form, $form_state, $form_id) {
   // CACHE_DISABLED), and add our own control instead.
   if ($form_id == 'system_performance_settings') {
     module_load_include('inc', 'boost', 'boost.admin');
-    $form['page_cache'] = boost_system_settings($form['page_cache']);
-    $form['#validate'][] = 'boost_system_settings_validate';
-    $form['#submit'][] = 'boost_system_settings_submit';
-    $form['clear_cache']['clear']['#submit'][0] = 'boost_system_clear_cache_submit';
+    $form['page_cache'] = boost_admin_settings($form['page_cache']);
+    $form['#validate'][] = 'boost_admin_settings_validate';
+    $form['#submit'][] = 'boost_admin_settings_submit';
+    $form['clear_cache']['clear']['#submit'][0] = 'boost_admin_clear_cache_submit';
   }
 }
 

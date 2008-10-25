@@ -1,4 +1,4 @@
-// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.2 2008/10/24 23:54:23 arto Exp $
+// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.3 2008/10/25 01:55:50 arto Exp $
 
 REQUIREMENTS
 ------------
@@ -28,21 +28,18 @@ INSTALLATION
   3. Go to [Administer >> Site building >> Modules] and enable the Boost
      module. You will find it in the section labelled "Caching".
 
-  4. Go to [Administer >> Site configuration >> Performance >> Boost] to
-     review and change the module's configuration options to your liking.
-
-  5. Go to [Administer >> Site configuration >> Performance], specify the
+  4. Go to [Administer >> Site configuration >> Performance], specify the
      cache directory (must be writable by the web server) and enable static
      caching.
 
-  6. Log out from Drupal (or use another browser) to browse around your site
+  5. Log out from Drupal (or use another browser) to browse around your site
      as the anonymous user. Ensure that static files are indeed being
      generated into the Boost cache directory you specified above.
 
-  7. IMPORTANT: after backing up the original .htaccess file in your Drupal
+  6. IMPORTANT: after backing up the original .htaccess file in your Drupal
      installation directory, replace it with the file from
      sites/all/modules/boost/htaccess/boosted.txt, customizing the
      mod_rewrite rules to your particular setup if needed. (If you fail to
      do this, static page caching will NOT work!)
 
-  8. (See README.txt for information on submitting bug reports.)
+  7. (See README.txt for information on submitting bug reports.)
