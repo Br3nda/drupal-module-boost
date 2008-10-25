@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.5 2008/10/24 23:03:53 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.6 2008/10/25 13:23:08 arto Exp $
 
 /**
  * @file
@@ -52,10 +52,10 @@ function boost_settings_form($form = array()) {
   //_boost_check_htaccess(); // TODO
 
   $options = array(t('Cache every page except the listed pages.'), t('Cache only the listed pages.'));
-  $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are '%blog' for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => theme('placeholder', 'blog'), '%blog-wildcard' => theme('placeholder', 'blog/*'), '%front' => theme('placeholder', '<front>')));
+  $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
   if (user_access('use PHP for block visibility')) {
     $options[] = t('Cache pages for which the following PHP code returns <code>TRUE</code> (PHP-mode, experts only).');
-    $description .= t('If the PHP-mode is chosen, enter PHP code between %php. Note that executing incorrect PHP-code can severely break your Drupal site.', array('%php' => theme('placeholder', '<?php ?>')));
+    $description .= t(' If the PHP-mode is chosen, enter PHP code between %php. Note that executing incorrect PHP-code can severely break your Drupal site.', array('%php' => '<?php ?>'));
   }
   $form['cacheability'] = array(
     '#type'          => 'fieldset',
