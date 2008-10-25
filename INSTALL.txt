@@ -1,4 +1,4 @@
-// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.3 2008/10/25 01:55:50 arto Exp $
+// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.4 2008/10/25 15:29:26 arto Exp $
 
 REQUIREMENTS
 ------------
@@ -37,9 +37,19 @@ INSTALLATION
      generated into the Boost cache directory you specified above.
 
   6. IMPORTANT: after backing up the original .htaccess file in your Drupal
-     installation directory, replace it with the file from
-     sites/all/modules/boost/htaccess/boosted.txt, customizing the
+     installation directory, replace it with the template file from
+     sites/all/modules/boost/htaccess/boosted1.txt, customizing the
      mod_rewrite rules to your particular setup if needed. (If you fail to
      do this, static page caching will NOT work!)
+
+     Note that there is in the same directory also another .htaccess
+     template called boosted2.txt. Should you have any trouble getting
+     static pages served using the boosted1.txt configuration, do try this
+     other file before posting a support issue on drupal.org.
+
+     (For the technically inclined, the difference between the two supplied
+     .htaccess templates is due to boosted1.txt relying on SERVER_NAME
+     versus boosted2.txt using HTTP_HOST. There exist valid use cases for
+     both, especially in more advanced, multi-site Drupal installations.)
 
   7. (See README.txt for information on submitting bug reports.)

@@ -140,4 +140,4 @@ DirectoryIndex index.php
   RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
 </IfModule>
 
-# $Id: boosted.txt,v 1.2.2.3.2.5.2.2 2008/10/25 04:05:56 arto Exp $
+# $Id: boosted1.txt,v 1.1.2.1 2008/10/25 15:29:26 arto Exp $
