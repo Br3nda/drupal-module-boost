@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.6 2008/10/25 01:55:50 arto Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.7 2008/10/25 02:03:49 arto Exp $
 
 /**
  * @file
@@ -434,7 +434,7 @@ function boost_cache_directory($user_id = 0, $host = NULL) {
   $host = (!empty($host) ? $host : $parts['host']);
 
   // FIXME: correctly handle Drupal subdirectory installations.
-  return implode('/', array(getcwd(), BOOST_FILE_PATH, $host, $user_id));
+  return implode('/', array(getcwd(), BOOST_FILE_PATH, $host /*, $user_id*/));
 }
 
 /**
