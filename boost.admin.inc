@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.9 2008/10/25 15:57:40 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.10 2008/10/25 16:09:24 arto Exp $
 
 /**
  * @file
@@ -74,6 +74,13 @@ function boost_admin_settings($form = array()) {
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
   );
+  $form['advanced']['boost_expire_cron'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Purge expired cache files on cron runs'),
+    '#default_value' => (int)variable_get('boost_expire_cron', TRUE),
+    '#options'       => array(0 => t('Disabled'), 1 => t('Enabled')),
+    '#description'   => t('Whether to perform a purge of all expired content from the static page cache on cron runs. How often your cron runs works together with the minimum cache lifetime setting, further above, to determine the <strong>effective</strong> minimum lifetime for items in the static page cache. If you don\'t enable this setting, you will need to put in place some other custom mechanism for purging expired files, or else they will never be removed (unless manually cleared from the administrative interface).'),
+  );
   $form['advanced']['boost_file_extension'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Cache file extension'),
@@ -105,7 +112,6 @@ function boost_admin_settings($form = array()) {
     '#maxlength'     => 255,
     '#description'   => t('If you are synchronizing the generated static cache files to an external server through some means such as SFTP or rsync, you can enter a shell command to be executed following a successful cron-triggered cache update. Note that this is an advanced setting that should normally be left blank.'),
   );*/
-
 
   return $form;
 }
