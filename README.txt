@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.2.2.1.2.5.2.2 2008/10/24 23:49:11 arto Exp $
+// $Id: README.txt,v 1.2.2.1.2.5.2.3 2008/10/25 02:20:51 arto Exp $
 
 DESCRIPTION
 -----------
@@ -43,22 +43,20 @@ Drupal installation directory. The Drupal pages' URL paths are translated
 into file system names in the following manner:
 
   http://mysite.com/
-  => cache/mysite.com/0/index.html
+  => cache/mysite.com/index.html
 
   http://mysite.com/about
-  => cache/mysite.com/0/about.html
+  => cache/mysite.com/about.html
 
   http://mysite.com/about/staff
-  => cache/mysite.com/0/about/staff.html
+  => cache/mysite.com/about/staff.html
 
   http://mysite.com/node/42
-  => cache/mysite.com/0/node/42.html
+  => cache/mysite.com/node/42.html
 
 You'll note that the directory path includes the Drupal site name, enabling
-support for multi-site Drupal installations. The zero that follows, on the
-other hand, denotes the user ID the content has been cached for -- in this
-case the anonymous user (which is the default, and only, choice available
-for the time being).
+support for multi-site Drupal installations.
+
 
 DISPATCH MECHANISM
 ------------------
@@ -133,10 +131,13 @@ LIMITATIONS
   supporting Windows but will accept well-documented, non-detrimental
   patches to that effect (see http://drupal.org/node/174380).
 
+
 BUG REPORTS
 -----------
 Post feature requests and bug reports to the issue tracking system at:
-  http://drupal.org/node/add/project_issue/boost
+
+  <http://drupal.org/node/add/project-issue/boost>
+
 
 CREDITS
 -------
