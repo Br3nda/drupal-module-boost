@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.3 2008/10/25 02:57:27 arto Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.4 2008/10/25 15:16:21 arto Exp $
 
 /**
  * @file
@@ -27,7 +27,7 @@ function boost_enable() {
  */
 function boost_disable() {
   // Make sure that the static page cache is wiped when the module is disabled:
-  boost_cache_expire_all();
+  boost_cache_clear_all();
   drupal_set_message(t('Static page cache cleared.'));
 }
 
