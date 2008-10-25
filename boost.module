@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.17 2008/10/25 16:13:46 arto Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.18 2008/10/25 16:30:34 arto Exp $
 
 /**
  * @file
@@ -480,9 +480,17 @@ function boost_cache_set($path, $data = '') {
   $expires_at = date('Y-m-d H:i:s', $time + variable_get('cache_lifetime', 600));
   $data = rtrim($data) . "\n" . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER);
 
+  // Invoke hook_boost_preprocess($path, $data)
+  foreach (module_implements('boost_preprocess') as $module) {
+    if (($result = module_invoke($module, $path, $data)) != NULL) {
+      $data = $result;
+    }
+  }
+
   // Execute the pre-process function if one has been defined
-  if (function_exists(BOOST_PRE_PROCESS_FUNCTION))
+  if (function_exists(BOOST_PRE_PROCESS_FUNCTION)) {
     $data = call_user_func(BOOST_PRE_PROCESS_FUNCTION, $data);
+  }
 
   $alias = drupal_get_path_alias($path);
   $path = drupal_get_normal_path($path); // normalize path
