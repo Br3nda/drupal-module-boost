@@ -3,7 +3,7 @@
 #
 
 # Protect files and directories from prying eyes.
-<FilesMatch "(\.(engine|inc|info|install|module|profile|po|sh|.*sql|theme|tpl(\.php)?|xtmpl)|code-style\.pl|Entries.*|Repository|Root|Tag|Template)$">
+<FilesMatch "\.(engine|inc|info|install|module|profile|po|sh|.*sql|theme|tpl(\.php)?|xtmpl)$|^(code-style\.pl|Entries.*|Repository|Root|Tag|Template)$">
   Order allow,deny
 </FilesMatch>
 
@@ -13,8 +13,13 @@ Options -Indexes
 # Follow symbolic links in this directory.
 Options +FollowSymLinks
 
-# Customized error messages.
+# Make Drupal handle any 404 errors.
 ErrorDocument 404 /index.php
+
+# Force simple error message for requests for non-existent favicon.ico.
+<Files favicon.ico>
+  ErrorDocument 404 "The requested file favicon.ico was not found.
+</Files>
 
 # Set the default handler.
 DirectoryIndex index.php
@@ -56,8 +61,10 @@ DirectoryIndex index.php
 <IfModule mod_expires.c>
   # Enable expirations.
   ExpiresActive On
+
   # Cache all files for 2 weeks after access (A).
   ExpiresDefault A1209600
+
   # Do not cache dynamically generated pages.
   ExpiresByType text/html A1
 </IfModule>
@@ -78,31 +85,25 @@ DirectoryIndex index.php
   #
   # To redirect all users to access the site WITHOUT the 'www.' prefix,
   # (http://www.example.com/... will be redirected to http://example.com/...)
-  # adapt and uncomment the following:
+  # uncomment and adapt the following:
   # RewriteCond %{HTTP_HOST} ^www\.example\.com$ [NC]
   # RewriteRule ^(.*)$ http://example.com/$1 [L,R=301]
 
-  # Modify the RewriteBase if you are using Drupal in a subdirectory and
-  # the rewrite rules are not working properly.
-  #RewriteBase /drupal
-
-  # Rewrite old-style URLs of the form 'node.php?id=x'.
-  #RewriteCond %{REQUEST_FILENAME} !-f
-  #RewriteCond %{REQUEST_FILENAME} !-d
-  #RewriteCond %{QUERY_STRING} ^id=([^&]+)$
-  #RewriteRule node.php index.php?q=node/view/%1 [L]
-
-  # Rewrite old-style URLs of the form 'module.php?mod=x'.
-  #RewriteCond %{REQUEST_FILENAME} !-f
-  #RewriteCond %{REQUEST_FILENAME} !-d
-  #RewriteCond %{QUERY_STRING} ^mod=([^&]+)$
-  #RewriteRule module.php index.php?q=%1 [L]
+  # Modify the RewriteBase if you are using Drupal in a subdirectory or in a
+  # VirtualDocumentRoot and the rewrite rules are not working properly.
+  # For example if your site is at http://example.com/drupal uncomment and
+  # modify the following line:
+  # RewriteBase /drupal
+  #
+  # If your site is running in a VirtualDocumentRoot at http://example.com/,
+  # uncomment the following line:
+  # RewriteBase /
 
   # Rewrite rules for static page caching provided by the Boost module:
   # BOOST START
   <IfModule mod_headers.c>
     Header add Expires "Sun, 19 Nov 1978 05:00:00 GMT"
-    Header add Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
+    Header add Cache-Control "store, no-cache, must-revalidate, post-check=0, pre-check=0"
   </IfModule>
   <IfModule mod_mime.c>
     AddCharset utf-8 .html
@@ -111,8 +112,8 @@ DirectoryIndex index.php
   RewriteCond %{REQUEST_URI} ^/$
   RewriteCond %{QUERY_STRING} ^$
   RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0/index.html -f
-  RewriteRule ^(.*)$ cache/%{SERVER_NAME}/0/index.html [L]
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/index.html -f
+  RewriteRule ^(.*)$ cache/%{SERVER_NAME}/index.html [L]
   RewriteCond %{REQUEST_METHOD} ^GET$
   RewriteCond %{REQUEST_URI} !^/cache
   RewriteCond %{REQUEST_URI} !^/user/login
@@ -121,7 +122,7 @@ DirectoryIndex index.php
   RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
   RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0%{REQUEST_URI} -d
   RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0%{REQUEST_URI}/index.html -f
-  RewriteRule ^(.*)$ cache/%{SERVER_NAME}/0/$1/index.html [L]
+  RewriteRule ^(.*)$ cache/%{SERVER_NAME}/$1/index.html [L]
   RewriteCond %{REQUEST_METHOD} ^GET$
   RewriteCond %{REQUEST_URI} !^/cache
   RewriteCond %{REQUEST_URI} !^/user/login
@@ -129,13 +130,14 @@ DirectoryIndex index.php
   RewriteCond %{QUERY_STRING} ^$
   RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
   RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}/0%{REQUEST_URI}.html -f
-  RewriteRule ^(.*)$ cache/%{SERVER_NAME}/0/$1.html [L]
+  RewriteRule ^(.*)$ cache/%{SERVER_NAME}/$1.html [L]
   # BOOST END
 
-  # Rewrite current-style URLs of the form 'index.php?q=x'.
+  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'.
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !=/favicon.ico
   RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
 </IfModule>
 
-# $Id: boosted.txt,v 1.2.2.3.2.5 2007/09/21 12:50:08 arto Exp $
+# $Id: boosted.txt,v 1.2.2.3.2.5.2.1 2008/10/25 02:34:17 arto Exp $
