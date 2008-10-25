@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.1 2008/10/24 23:10:23 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.2 2008/10/25 00:26:36 arto Exp $
 
 /**
  * @file
@@ -7,27 +7,25 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// DRUPAL SYSTEM SETTINGS
+// System settings form
 
 /**
  * Performs alterations to the system settings form before it is rendered.
  *
- * Called from hook_form_alter().
+ * @see hook_form_alter() in boost.module.
  */
-function boost_system_settings_form($form = array()) { 
+function boost_system_settings_form($form = array()) {
+  // TODO: this needs a comprehensive rethinking now in Drupal 6.x.
+
   $form['cache'] = array('#type' => 'hidden','#value' => CACHE_DISABLED);
   $form['boost'] = array(
     '#type'          => 'radios',
     '#title'         => t('Static page cache'),
     '#default_value' => variable_get('boost', CACHE_DISABLED),
-    '#options'       => array(CACHE_DISABLED => t('Disabled'),
-                              CACHE_ENABLED  => t('Enabled')),
-    '#description'   => t('Static page caching is a mechanism which stores dynamically generated web pages as HTML files in a special cache directory located under the Drupal installation directory. By caching a web page in this manner, the web server can serve it out in the fastest possible manner, without invoking PHP or Drupal at all. While this does provide a significant performance and scalability boost, you should note that it could have negative usability side-effects unless your site is targeted at an audience consisting mostly of "anonymous" visitors.'),
+    '#options'       => array(CACHE_DISABLED => t('Disabled'), 1 => t('Enabled')),
+    '#description'   => t('Static page caching is a mechanism that stores dynamically generated web pages as HTML files in a special cache directory located under the Drupal installation directory. By caching a web page in this manner, the web server can serve it out in the fastest possible manner, without invoking PHP or Drupal at all. While this does provide a significant performance and scalability boost, you should note that it could have negative usability side-effects unless your site is targeted at an audience consisting mostly of "anonymous" visitors.'),
+    '#weight'        => -10,
   );
-  $lifetime = &$form['cache_lifetime'];
-  $lifetime['#description'] = t('On high-traffic sites it can become necessary to enforce a minimum cache lifetime. The minimum cache lifetime is the minimum amount of time that will go by before the cache is emptied and recreated. A larger minimum cache lifetime offers better performance, but users will not see new content for a longer period of time.');
-  unset($form['cache_lifetime']);
-  $form['cache_lifetime'] = &$lifetime;
   $form['boost_file_path'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Cache file path'),
@@ -35,13 +33,14 @@ function boost_system_settings_form($form = array()) {
     '#size'          => 60,
     '#maxlength'     => 255,
     '#required'      => TRUE,
-    '#description'   => t('A file system path where the cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named \'cache\' under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+    '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named \'cache\' under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+    '#weight'        => -5,
   );
   return $form;
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// BOOST SETTINGS
+// Boost settings form
 
 /**
  * Declares administrative settings for the Boost module.
@@ -49,14 +48,15 @@ function boost_system_settings_form($form = array()) {
  * @see system_settings_form
  * @ingroup forms
  */
-function boost_admin_settings($form = array()) { 
-  //_boost_check_htaccess(); // TODO
- 
+function boost_admin_settings() {
+  $form = array();
+
+  // Cacheability settings
   $options = array(t('Cache every page except the listed pages.'), t('Cache only the listed pages.'));
-  $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are '%blog' for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => theme('placeholder', 'blog'), '%blog-wildcard' => theme('placeholder', 'blog/*'), '%front' => theme('placeholder', '<front>')));
+  $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are '%blog' for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
   if (user_access('use PHP for block visibility')) {
     $options[] = t('Cache pages for which the following PHP code returns <code>TRUE</code> (PHP-mode, experts only).');
-    $description .= t('If the PHP-mode is chosen, enter PHP code between %php. Note that executing incorrect PHP-code can severely break your Drupal site.', array('%php' => theme('placeholder', '<?php ?>')));
+    $description .= t('If the PHP-mode is chosen, enter PHP code between %php. Note that executing incorrect PHP-code can severely break your Drupal site.', array('%php' => '<?php ?>'));
   }
   $form['cacheability'] = array(
     '#type'          => 'fieldset',
@@ -76,6 +76,7 @@ function boost_admin_settings($form = array()) {
     '#description'   => $description,
   );
 
+  // Advanced settings
   $form['advanced'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Advanced settings'),
@@ -117,4 +118,12 @@ function boost_admin_settings($form = array()) {
   return system_settings_form($form);
 }
 
-//////////////////////////////////////////////////////////////////////////////
+function boost_admin_settings_validate($form, &$form_state) {
+  extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
+  // TODO
+}
+
+function boost_admin_settings_submit($form, &$form_state) {
+  extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
+  // TODO
+}
