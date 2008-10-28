@@ -1,4 +1,4 @@
-# $Id: boost.pot,v 1.1.2.1 2007/12/03 20:05:54 wulff Exp $
+# $Id: boost.pot,v 1.1.2.1 2008/10/28 10:48:45 arto Exp $
 #
 # LANGUAGE translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>

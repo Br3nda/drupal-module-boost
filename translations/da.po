@@ -2,7 +2,7 @@
 # Copyright 2007 Morten Wulff <wulff@ratatosk.net>
 msgid ""
 msgstr ""
-"Project-Id-Version: Danish translation of Drupal (boost.module) $Id: da.po,v 1.1.2.7 2007/12/15 10:33:39 wulff Exp $\n"
+"Project-Id-Version: Danish translation of Drupal (boost.module) $Id: da.po,v 1.1.2.1 2008/10/28 10:48:45 arto Exp $\n"
 "POT-Creation-Date: 2007-12-03 20:55+0100\n"
 "PO-Revision-Date: 2007-12-15 11:33+0100\n"
 "Last-Translator: Morten Wulff <wulff@ratatosk.net>\n"
