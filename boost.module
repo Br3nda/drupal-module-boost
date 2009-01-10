@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.9 2008/10/25 14:56:31 arto Exp $
+// $Id: boost.module,v 1.3.2.2.2.10 2009/01/10 01:03:17 joshk Exp $
 
 /**
  * @file
@@ -306,7 +306,7 @@ function _boost_ob_handler($buffer) {
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
 
   // Check the currently set content type; at present we can't deal with anything else than HTML.
-  if (_boost_get_content_type() == 'text/html') {
+  if (_boost_get_content_type() == 'text/html' && _boost_get_http_status() == 200) {
     if (strlen($buffer) > 0) { // Sanity check
       boost_cache_set($GLOBALS['_boost_path'], $buffer);
     }
@@ -324,14 +324,27 @@ function _boost_ob_handler($buffer) {
  * has overridden the content type.
  */
 function _boost_get_content_type($default = NULL) {
-  static $regex = '/^Content-Type:\s*([\w\d\/\-]+)/i';
-
-  // The last Content-Type header is the one that counts:
-  $headers = preg_grep($regex, explode("\n", drupal_set_header()));
-  if (!empty($headers) && preg_match($regex, array_pop($headers), $matches))
-    return $matches[1]; // found it
-
-  return $default;
+  static $regex = '!^Content-Type:\s*([\w\d\/\-]+)!i';
+  return _boost_get_http_header($regex, $default);
 }
+
+/**
+ * Determines the HTTP response code that the current page request will be
+ * returning by examining the HTTP headers that have been output so far.
+ */
+function _boost_get_http_status($default = 200) {
+  static $regex = '!^HTTP/1.1\s+(\d+)!';
+  return (int)_boost_get_http_header($regex, $default);
+}
+
+function _boost_get_http_header($regex, $default = NULL) {
+  // The last header is the one that counts:
+  $headers = preg_grep($regex, explode("\n", drupal_set_header()));
+  if (!empty($headers) && preg_match($regex, array_pop($headers), $matches)) {
+    return $matches[1]; // found it
+  }
+  return $default; // no such luck
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
