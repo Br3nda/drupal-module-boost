@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.21 2009/04/06 21:04:01 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.22 2009/04/06 21:10:37 mikeytown2 Exp $
 
 /**
  * @file
@@ -515,7 +515,7 @@ function boost_cache_set($path, $data = '') {
   if (function_exists(BOOST_PRE_PROCESS_FUNCTION)) {
     $data = call_user_func(BOOST_PRE_PROCESS_FUNCTION, $data);
   }
-
+  db_set_active();
   $alias = drupal_get_path_alias($path);
   $path = drupal_get_normal_path($path); // normalize path
 
