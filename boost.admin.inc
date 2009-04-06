@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.10 2008/10/25 16:09:24 arto Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.11 2009/04/06 20:59:50 mikeytown2 Exp $
 
 /**
  * @file
@@ -160,4 +160,12 @@ function boost_admin_site_offline_submit($form, &$form_state) {
       drupal_set_message(t('Static page cache cleared.'));
     }
   }
+}
+
+function boost_admin_modules_submit($form, &$form_state) {
+  boost_cache_clear_all();
+}
+
+function boost_admin_themes_submit($form, &$form_state) {
+  boost_cache_clear_all();
 }

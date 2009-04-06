@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.19 2009/04/06 20:52:28 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.20 2009/04/06 20:59:50 mikeytown2 Exp $
 
 /**
  * @file
@@ -150,6 +150,22 @@ function boost_form_alter(&$form, $form_state, $form_id) {
     case 'system_site_maintenance_settings':
       module_load_include('inc', 'boost', 'boost.admin');
       $form['#submit'][] = 'boost_admin_site_offline_submit';
+      break;
+
+    // Alter Drupal's modules build form in order to ensure that
+    // the static page cache gets wiped if the administrator decides to
+    // change enabled modules
+    case 'system_modules':
+      module_load_include('inc', 'boost', 'boost.admin');
+      $form['#submit'][] = 'boost_admin_modules_submit';
+      break;
+
+    // Alter Drupal's theme build form in order to ensure that
+    // the static page cache gets wiped if the administrator decides to
+    // change theme
+    case 'system_themes_form':
+      module_load_include('inc', 'boost', 'boost.admin');
+      $form['#submit'][] = 'boost_admin_themes_submit';
       break;
   }
 }
