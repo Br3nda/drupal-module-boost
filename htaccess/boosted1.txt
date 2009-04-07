@@ -131,6 +131,15 @@ DirectoryIndex index.php
   RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
   RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}.html -f
   RewriteRule ^(.*)$ cache/%{SERVER_NAME}/$1.html [L]
+
+  RewriteCond %{REQUEST_METHOD} ^GET$
+  RewriteCond %{REQUEST_URI} !^/cache
+  RewriteCond %{REQUEST_URI} !^/user/login
+  RewriteCond %{REQUEST_URI} !^/admin
+  RewriteCond %{QUERY_STRING} !^$
+  RewriteCond %{HTTP_COOKIE} !DRUPAL_UID
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}.html -f
+  RewriteRule ^(.*)$ cache/%{SERVER_NAME}/$1_%{QUERY_STRING}.html [L]
   # BOOST END
 
   # Rewrite URLs of the form 'x' to the form 'index.php?q=x'.
@@ -140,4 +149,4 @@ DirectoryIndex index.php
   RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
 </IfModule>
 
-# $Id: boosted1.txt,v 1.1.2.1 2008/10/25 15:29:26 arto Exp $
+# $Id: boosted1.txt,v 1.1.2.2 2009/04/07 01:16:02 mikeytown2 Exp $
