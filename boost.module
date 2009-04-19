@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.23 2009/04/07 01:16:02 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.24 2009/04/19 07:13:02 mikeytown2 Exp $
 
 /**
  * @file
@@ -72,7 +72,17 @@ function boost_init() {
     // We only serve cached pages for GET requests by anonymous visitors.
     // Also pages with 'nocache' parameter in request will never be cached
     else if ($_SERVER['REQUEST_METHOD'] == 'GET' && !isset($_GET['nocache'])) {
+      // TODO: rename fname, $GLOBALS['_boost_path'] to more intuitive and non-misleading names like query_string_part_of_filename ...
+
+      // We use $_REQUEST['q'] because drupal_init_path() had already changed $_GET['q']
+      $GLOBALS['_boost_path'] = $_REQUEST['q'];
+      if (empty($GLOBALS['_boost_path'])) {
+        // special handling for Drupal's front page
+        $GLOBALS['_boost_path'] = 'index';
+      }
+
       // Make the proper filename for our query
+      // $_GET here is okay to use - $_GET['q'] is not involved here - see != 'q' below
       $fname = '';
       foreach ($_GET as $key => $val) {
         if ($key != 'q') {
@@ -82,12 +92,11 @@ function boost_init() {
       $fname = (empty($fname) ? '' : '_' . $fname);
 
       // Make sure the page is cacheable according to our current configuration:
-      if (boost_is_cacheable($_GET['q'])) {
+      if (boost_is_cacheable($GLOBALS['_boost_path'])) {
         // In the event of errors such as drupal_not_found(), GET['q'] is
         // changed before _boost_ob_handler() is called. Apache is going to
         // look in the cache for the original path, however, so we need to
         // preserve it.
-        $GLOBALS['_boost_path'] = $_GET['q'];
         $GLOBALS['_boost_query'] = $fname;
 
         ob_start('_boost_ob_handler');
@@ -301,11 +310,11 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
         case 'status':
           // Don't show the block to anonymous users, nor on any pages that
           // aren't even cacheable to begin with (e.g. admin/*).
-          if (!empty($user->uid) && boost_is_cacheable($_GET['q'])) {
+          if (!empty($user->uid) && boost_is_cacheable($GLOBALS['_boost_path'])) {
             $output = t('This page is being served <strong>live</strong> to anonymous visitors, as it is not currently in the static page cache.');
 
-            if (boost_is_cached($_GET['q'])) {
-              $ttl = boost_file_get_ttl(boost_file_path($_GET['q']));
+            if (boost_is_cached($GLOBALS['_boost_path'])) {
+              $ttl = boost_file_get_ttl(boost_file_path($GLOBALS['_boost_path']));
               $output = t('This page is being served to anonymous visitors from the static page cache.') . ' ';
               $output .= t($ttl < 0 ?
                 '<strong>The cached copy expired %interval ago.</strong>' :
@@ -405,21 +414,21 @@ function _boost_get_http_header($regex, $default = NULL) {
  * RSS feeds provided by Drupal, since they would require special handling
  * in the mod_rewrite ruleset as they shouldn't be sent out using the
  * text/html content type.
+ * TODO: don't cache pages with unacceptable symbols
  */
 function boost_is_cacheable($path) {
-  $alias = drupal_get_path_alias($path);
-  $path = drupal_get_normal_path($path); // normalize path
+  $normal_path = drupal_get_normal_path($path); // normalize path
 
   // Never cache the basic user login/registration pages or any administration pages
-  if ($path == 'user' || preg_match('!^user/(login|register|password)!', $path) || preg_match('!^admin!', $path))
+  if ($normal_path == 'user' || preg_match('!^user/(login|register|password)!', $normal_path) || preg_match('!^admin!', $normal_path))
     return FALSE;
 
   // At present, RSS feeds are not cacheable due to content type restrictions
-  if ($path == 'rss.xml' || preg_match('!/feed$!', $path))
+  if ($normal_path == 'rss.xml' || preg_match('!/feed$!', $normal_path))
     return FALSE;
 
   // Don't cache comment reply pages
-  if (preg_match('!^comment/reply!', $path))
+  if (preg_match('!^comment/reply!', $normal_path))
     return FALSE;
 
   // Match the user's cacheability settings against the path
@@ -428,18 +437,17 @@ function boost_is_cacheable($path) {
     return !empty($result);
   }
   $regexp = '/^('. preg_replace(array('/(\r\n?|\n)/', '/\\\\\*/', '/(^|\|)\\\\<front\\\\>($|\|)/'), array('|', '.*', '\1'. preg_quote(variable_get('site_frontpage', 'node'), '/') .'\2'), preg_quote(BOOST_CACHEABILITY_PAGES, '/')) .')$/';
-  return !(BOOST_CACHEABILITY_OPTION xor preg_match($regexp, $alias));
+  return !(BOOST_CACHEABILITY_OPTION xor preg_match($regexp, $path));
+  // TODO: investigate if $path or $normal_path should be used on the above line. $normal_path was introduced in a recent patch - around http://drupal.org/node/174380#comment-1477658
+  // TODO: document the above fat $regexp
 }
 
 /**
  * Determines whether a given Drupal page is currently cached or not.
  */
 function boost_is_cached($path) {
-  $path = (empty($path) ? drupal_get_normal_path(variable_get('site_frontpage', 'node')) : $path);
-  $alias = drupal_get_path_alias($path);
-  $path = drupal_get_normal_path($path); // normalize path
-
-  // TODO: also determine if alias/symlink exists?
+  // no more need to check if path is empty cause it is done on the input of this function before calling it
+  // no more need to use drupal_get_normal_path - we do not need the internal path (node/56) - we are fine with aliases
   return file_exists(boost_file_path($path));
 }
 
@@ -468,15 +476,8 @@ function boost_cache_expire_all($callback = 'boost_file_is_expired') {
 function boost_cache_expire($path, $wildcard = FALSE) {
   // TODO: handle wildcard.
 
-  $alias = drupal_get_path_alias($path);
-  $path = drupal_get_normal_path($path); // normalize path
-
   if (($filename = boost_file_path($path)) && file_exists($filename)) {
     @unlink($filename);
-  }
-
-  if ($alias != $path && ($symlink = boost_file_path($alias)) && is_link($symlink)) {
-    @unlink($symlink);
   }
 
   return TRUE;
@@ -486,8 +487,6 @@ function boost_cache_expire($path, $wildcard = FALSE) {
  * Returns the cached contents of the specified page, if available.
  */
 function boost_cache_get($path) {
-  $path = drupal_get_normal_path($path); // normalize path
-
   if (($filename = boost_file_path($path))) {
     if (file_exists($filename) && is_readable($filename)) {
       return file_get_contents($filename);
@@ -520,8 +519,6 @@ function boost_cache_set($path, $data = '') {
     $data = call_user_func(BOOST_PRE_PROCESS_FUNCTION, $data);
   }
   db_set_active();
-  $alias = drupal_get_path_alias($path);
-  $path = drupal_get_normal_path($path); // normalize path
 
   // Create or update the static file as needed
   if (($filename = boost_file_path($path))) {
@@ -529,19 +526,6 @@ function boost_cache_set($path, $data = '') {
     if (!file_exists($filename) || boost_file_is_expired($filename)) {
       if (file_put_contents($filename, $data) === FALSE) {
         watchdog('boost', 'Unable to write file: %file', array('%file' => $filename), array(), WATCHDOG_WARNING);
-      }
-    }
-
-    // If a URL alias is defined, create that as a symlink to the actual file
-    if ($alias != $path && ($symlink = boost_file_path($alias))) {
-      _boost_mkdir_p(dirname($symlink));
-      if (!is_link($symlink) || realpath(readlink($symlink)) != realpath($filename)) {
-        if (file_exists($symlink)) {
-          @unlink($symlink);
-        }
-        if (!_boost_symlink($filename, $symlink)) {
-          watchdog('boost', 'Unable to create symlink: %link to %target', array('%link' => $symlink, '%target' => $filename), array(), WATCHDOG_WARNING);
-        }
       }
     }
   }
@@ -565,9 +549,8 @@ function boost_cache_directory($host = NULL, $absolute = TRUE) {
  * Returns the static file path for a Drupal page.
  */
 function boost_file_path($path) {
-  if (empty($path) || $path == drupal_get_normal_path(variable_get('site_frontpage', 'node'))) {
-    $path = 'index'; // special handling for Drupal's front page
-  }
+  // special handling for Drupal's front page no more needed - already done on the input
+
   if ($GLOBALS['_boost_query']) {
     $path .= $GLOBALS['_boost_query'];
   }
@@ -676,34 +659,6 @@ function _boost_rmdir_rf($dirname, $callback = NULL) {
   // warnings that should have been suppressed with the @ sign. Otherwise,
   // we'd just rely on the FALSE return value from rmdir().
   return ($empty && @rmdir($dirname));
-}
-
-/**
- * Creates a symbolic link using a computed relative path where possible.
- */
-function _boost_symlink($target, $link) {
-  if (!file_exists($target) || !file_exists(dirname($link)))
-    return FALSE;
-
-  $target = explode('/', $target);
-  $link = explode('/', $link);
-
-  // Only bother creating a relative link if the paths are in the same
-  // top-level directory; otherwise just symlink to the absolute path.
-  if ($target[1] == $link[1]) {
-    // Remove the common path prefix
-    $cwd = array();
-    while (count($target) > 0 && count($link) > 0 && reset($target) == reset($link)) {
-      $cwd[] = array_shift($target);
-      array_shift($link);
-    }
-    // Compute the required relative path
-    if (count($link) > 1)
-      $target = array_merge(array_fill(0, count($link) - 1, '..'), $target);
-    $link = array_merge($cwd, $link);
-  }
-
-  return symlink(implode('/', $target), implode('/', $link));
 }
 
 //////////////////////////////////////////////////////////////////////////////
