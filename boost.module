@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.26 2009/04/19 08:06:11 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.27 2009/04/19 08:17:28 mikeytown2 Exp $
 
 /**
  * @file
@@ -63,6 +63,7 @@ function boost_init() {
   // may have to be moved to an earlier stage of the page request.
   if (!variable_get('cache', CACHE_DISABLED) && BOOST_ENABLED) {
     global $user;
+	$GLOBALS['_boost_path'] = (empty($_REQUEST['q'])) ? 'index' : $_REQUEST['q'];
 
     // For authenticated users, set a special cookie to prevent them
     // inadvertently getting served pages from the static page cache.
@@ -72,15 +73,6 @@ function boost_init() {
     // We only serve cached pages for GET requests by anonymous visitors.
     // Also pages with 'nocache' parameter in request will never be cached
     else if ($_SERVER['REQUEST_METHOD'] == 'GET' && !isset($_GET['nocache'])) {
-      // TODO: rename fname, $GLOBALS['_boost_path'] to more intuitive and non-misleading names like query_string_part_of_filename ...
-
-      // We use $_REQUEST['q'] because drupal_init_path() had already changed $_GET['q']
-      $GLOBALS['_boost_path'] = $_REQUEST['q'];
-      if (empty($GLOBALS['_boost_path'])) {
-        // special handling for Drupal's front page
-        $GLOBALS['_boost_path'] = 'index';
-      }
-
       // Make the proper filename for our query
       // $_GET here is okay to use - $_GET['q'] is not involved here - see != 'q' below
       $fname = '';
@@ -293,7 +285,6 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
  */
 function boost_block($op = 'list', $delta = 0, $edit = array()) {
   global $user;
-  $GLOBALS['_boost_path'] = (empty($_REQUEST['q'])) ? 'index' : $_REQUEST['q'];  
 
   switch ($op) {
     case 'list':
