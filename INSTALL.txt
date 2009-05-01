@@ -1,4 +1,4 @@
-// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.5 2009/04/22 06:49:26 mikeytown2 Exp $
+// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.6 2009/05/01 21:31:17 mikeytown2 Exp $
 
 REQUIREMENTS
 ------------
@@ -52,10 +52,11 @@ INSTALLATION
      versus boosted2.txt using HTTP_HOST. There exist valid use cases for
      both, especially in more advanced, multi-site Drupal installations.)
 
-  7. Set $base_url variable in /sites/default/settings.php so cron runs
-     error free. If using the module drush < 2.0 you need to set the
-     $base_url variable in sites/default/settings.php in order to run cron
-     happily via drush. Guide for editing settings.php
+  7. Set $base_url variable in /sites/default/settings.php ( 125 line or so )
+     so cron runs error free and clears the cache properly when invoked like
+     'php5 /path/to/cron.php' or 'drush cron'.
+
+     Guide for editing settings.php
      http://drupal.org/node/367081#comment-1504894
 
   8. (See README.txt for information on submitting bug reports.)
