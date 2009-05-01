@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.11 2009/04/06 20:59:50 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.12 2009/05/01 21:51:38 mikeytown2 Exp $
 
 /**
  * @file
@@ -163,9 +163,13 @@ function boost_admin_site_offline_submit($form, &$form_state) {
 }
 
 function boost_admin_modules_submit($form, &$form_state) {
-  boost_cache_clear_all();
+  if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) {
+    boost_cache_clear_all();
+  }
 }
 
 function boost_admin_themes_submit($form, &$form_state) {
-  boost_cache_clear_all();
+  if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) {
+    boost_cache_clear_all();
+  }
 }
