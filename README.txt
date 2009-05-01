@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.2.2.1.2.5.2.4 2008/10/25 16:13:46 arto Exp $
+// $Id: README.txt,v 1.2.2.1.2.5.2.5 2009/05/01 23:13:31 mikeytown2 Exp $
 
 DESCRIPTION
 -----------
@@ -67,46 +67,32 @@ served as per the following simple rules:
   1. First, we check that the HTTP request method being used is GET.
      POST requests are not cacheable, and are passed through to Drupal.
 
-  2. Next, we make sure that the URL doesn't contain a query string (i.e.
-     the part after the `?' character, such as `?q=cats+and+dogs'). A query
-     string implies dynamic data, and any request that contains one will
-     be passed through to Drupal. (This also allows one to easily obtain the
-     current, non-cached version of a page by simply adding a bogus query
-     string to a URL path -- very useful for testing purposes.)
-
-  3. Since only anonymous visitors can benefit from the static page cache at
+  2. Since only anonymous visitors can benefit from the static page cache at
      present, we check that the page request doesn't include a cookie that
      is set when a user logs in to the Drupal site. If the cookie is
      present, we simply let Drupal handle the page request dynamically.
 
-  4. Now, for the important bit: we check whether we actually have a cached
+  3. Now, for the important bit: we check whether we actually have a cached
      HTML file for the request URL path available in the file system cache.
      If we do, we direct the web server to serve that file directly and to
      terminate the request immediately after; in this case, Drupal (and
      indeed PHP) is never invoked, meaning the page request will be served
      by the web server itself at full speed.
 
-  5. If, however, we couldn't locate a cached version of the page, we just
+  4. If, however, we couldn't locate a cached version of the page, we just
      pass the request on to Drupal, which will serve it dynamically in the
      normal manner.
 
 IMPORTANT NOTES
 ---------------
-* Drupal URL aliases get written out to disk as relative symbolic links
-  pointing to the file representing the internal Drupal URL path. For this
-  to work correctly with Apache, ensure your .htaccess file contains the
-  following line (as it will by default if you've installed the file shipped
-  with Boost):
-    Options +FollowSymLinks
 * To check whether you got a static or dynamic version of a page, look at
   the very end of the page's HTML source. You have the static version if the
   last line looks like this:
     <!-- Page cached by Boost @ 2008-11-24 15:06:31 -->
 * If your Drupal URL paths contain non-ASCII characters, you may have to
   tweak your locate settings on the server in order to ensure the URL paths
-  get correctly translated into directory paths on the file system.
-  Non-ASCII URL paths have currently not been tested at all and feedback on
-  them would be appreciated.
+  get correctly translated into directory paths on the file system. You can also
+  turn off the ASCII filter under Cache -> Advanced on the performance page.
 
 LIMITATIONS
 -----------
@@ -126,11 +112,7 @@ LIMITATIONS
   server has not been specifically tested by the author, it may, in fact,
   work, since they claim to support .htaccess files and to have mod_rewrite
   compatibility. Feedback on this would be appreciated.)
-* At the moment, Windows users are S.O.L. due to the use of symlinks and
-  Unix-specific shell commands. The author has no personal interest in
-  supporting Windows but will accept well-documented, non-detrimental
-  patches to that effect (see http://drupal.org/node/174380).
-
+* At the moment, Windows is untested. It *should* work, but it's untested ATM.
 
 BUG REPORTS
 -----------
@@ -142,6 +124,7 @@ Post feature requests and bug reports to the issue tracking system at:
 CREDITS
 -------
 Developed and maintained by Arto Bendiken <http://bendiken.net/>
+Drupal 6.x maintained by Mike Carper <http://www.316solutions.net>
 Ported to Drupal 6.x by Ben Lavender <http://bhuga.net/>
 Ported to Drupal 5.x by Alexander I. Grafov <http://drupal.ru/>
 Miscellaneous contributions by: Jacob Peddicord, Justin Miller, Barry

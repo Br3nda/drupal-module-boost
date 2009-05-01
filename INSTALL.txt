@@ -1,4 +1,4 @@
-// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.6 2009/05/01 21:31:17 mikeytown2 Exp $
+// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.7 2009/05/01 23:13:31 mikeytown2 Exp $
 
 REQUIREMENTS
 ------------
@@ -30,22 +30,26 @@ INSTALLATION
 
   4. Go to [Administer >> Site configuration >> Performance], specify the
      cache directory (must be writable by the web server) and enable static
-     caching.
+     caching. Keeping the default directory is highly recommended.
 
   5. Log out from Drupal (or use another browser) to browse around your site
      as the anonymous user. Ensure that static files are indeed being
      generated into the Boost cache directory you specified above.
 
   6. IMPORTANT: after backing up the original .htaccess file in your Drupal
-     installation directory, replace it with the template file from
-     sites/all/modules/boost/htaccess/boosted1.txt, customizing the
-     mod_rewrite rules to your particular setup if needed. (If you fail to
-     do this, static page caching will NOT work!)
+     installation directory, add the rules found in boosted1.txt
+     right below
+       # RewriteBase /
+     and above
+       # Rewrite URLs of the form 'x' to the form 'index.php?q=x'.
+     boosted1.txt is found in the sites/all/modules/boost/htaccess/ directory.
+     The default.txt file shows you the exact placement of where the rules go,
+     incase your not shure. If you fail to do this step, static page caching
+     will NOT work!
 
-     Note that there is in the same directory also another .htaccess
-     template called boosted2.txt. Should you have any trouble getting
-     static pages served using the boosted1.txt configuration, do try this
-     other file before posting a support issue on drupal.org.
+     Should you have any trouble getting static pages served using the
+     boosted1.txt configuration, try the boosted2.txt file before posting a
+     support issue on drupal.org.
 
      (For the technically inclined, the difference between the two supplied
      .htaccess templates is due to boosted1.txt relying on SERVER_NAME

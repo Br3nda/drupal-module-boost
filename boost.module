@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.32 2009/05/01 22:06:34 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.33 2009/05/01 23:13:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -22,6 +22,8 @@ define('BOOST_PRE_PROCESS_FUNCTION', variable_get('boost_pre_process_function', 
 define('BOOST_POST_UPDATE_COMMAND',  variable_get('boost_post_update_command', ''));
 define('BOOST_CRON_LIMIT',           variable_get('boost_cron_limit', 100));
 define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE));
+define('BOOST_GZIP',                 variable_get('boost_gzip', TRUE));
+define('BOOST_GZIP_FILE_PATH',       str_replace(BOOST_ROOT_CACHE_PATH . '/', BOOST_ROOT_CACHE_PATH . '/gz/', BOOST_FILE_PATH));
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -462,6 +464,9 @@ function boost_cache_expire_all($callback = 'boost_file_is_expired') {
   if (file_exists(BOOST_FILE_PATH)) {
     _boost_rmdir_rf(BOOST_FILE_PATH, $callback);
   }
+  if (file_exists(BOOST_GZIP_FILE_PATH)) {
+    _boost_rmdir_rf(BOOST_GZIP_FILE_PATH, $callback);
+  }
   return TRUE;
 }
 
@@ -474,6 +479,10 @@ function boost_cache_expire($path, $wildcard = FALSE) {
 
   if (($filename = boost_file_path($path)) && file_exists($filename)) {
     @unlink($filename);
+    $gz_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename). '.gz';
+    if (file_exists($gz_filename)) {
+      @unlink($gz_filename);
+    }
   }
 
   return TRUE;
@@ -522,6 +531,15 @@ function boost_cache_set($path, $data = '') {
     if (!file_exists($filename) || boost_file_is_expired($filename)) {
       if (file_put_contents($filename, $data) === FALSE) {
         watchdog('boost', 'Unable to write file: %file', array('%file' => $filename), array(), WATCHDOG_WARNING);
+      }
+    }
+    if (BOOST_GZIP) {
+      $gz_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename). '.gz';
+      _boost_mkdir_p(dirname($gz_filename));
+      if (!file_exists($gz_filename) || boost_file_is_expired($gz_filename)) {
+        if (file_put_contents($gz_filename, gzencode($data,9)) === FALSE) {
+          watchdog('boost', 'Unable to write file: %file', array('%file' => $gz_filename), array(), WATCHDOG_WARNING);
+        }
       }
     }
   }

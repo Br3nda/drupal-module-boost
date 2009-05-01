@@ -3,7 +3,7 @@
 #
 
 # Protect files and directories from prying eyes.
-<FilesMatch "\.(engine|inc|info|install|module|profile|po|sh|.*sql|theme|tpl(\.php)?|xtmpl)$|^(code-style\.pl|Entries.*|Repository|Root|Tag|Template)$">
+<FilesMatch "\.(engine|inc|info|install|module|profile|test|po|sh|.*sql|theme|tpl(\.php)?|xtmpl|svn-base)$|^(code-style\.pl|Entries.*|Repository|Root|Tag|Template|all-wcprops|entries|format)$">
   Order allow,deny
 </FilesMatch>
 
@@ -18,6 +18,7 @@ ErrorDocument 404 /index.php
 
 # Force simple error message for requests for non-existent favicon.ico.
 <Files favicon.ico>
+  # There is no end quote below, for compatibility with Apache 1.3.
   ErrorDocument 404 "The requested file favicon.ico was not found.
 </Files>
 
@@ -99,6 +100,12 @@ DirectoryIndex index.php
   # uncomment the following line:
   # RewriteBase /
 
+  ###
+  #BOOST START
+  ### INSERT BOOST RULES HERE ###
+  #BOOST END
+  ###
+
   # Rewrite URLs of the form 'x' to the form 'index.php?q=x'.
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
@@ -106,4 +113,4 @@ DirectoryIndex index.php
   RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
 </IfModule>
 
-# $Id: default.txt,v 1.1.2.1.2.5.2.1 2008/10/25 02:26:10 arto Exp $
+# $Id: default.txt,v 1.1.2.1.2.5.2.2 2009/05/01 23:13:31 mikeytown2 Exp $

@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.13 2009/05/01 22:06:34 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.14 2009/05/01 23:13:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -38,6 +38,12 @@ function boost_admin_settings($form = array()) {
     '#required'      => TRUE,
     '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named %default-path under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.', array('%default-path' => boost_cache_directory(NULL, FALSE))),
     '#weight'        => -5,
+  );
+  $form['boost_gzip'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Gzip cached pages'),
+    '#default_value' => BOOST_GZIP,
+    '#description'   => t('This reduces bandwith used and allows for faster page loads. The full effects of this setting do no take place until the cache has been cleared and .htaccess has the correct set of rules in place.'),
   );
 
   // Cacheability settings
