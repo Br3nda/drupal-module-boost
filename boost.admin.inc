@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.12 2009/05/01 21:51:38 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.13 2009/05/01 22:06:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -112,6 +112,12 @@ function boost_admin_settings($form = array()) {
     '#maxlength'     => 255,
     '#description'   => t('If you are synchronizing the generated static cache files to an external server through some means such as SFTP or rsync, you can enter a shell command to be executed following a successful cron-triggered cache update. Note that this is an advanced setting that should normally be left blank.'),
   );*/
+  $form['advanced']['boost_only_ascii_path'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Only allow ASCII characters in path'),
+    '#default_value' => BOOST_ONLY_ASCII_PATH,
+    '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
+  );
 
   return $form;
 }

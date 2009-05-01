@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.31 2009/05/01 21:51:38 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.32 2009/05/01 22:06:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -21,6 +21,7 @@ define('BOOST_FETCH_METHOD',         variable_get('boost_fetch_method', 'php'));
 define('BOOST_PRE_PROCESS_FUNCTION', variable_get('boost_pre_process_function', ''));
 define('BOOST_POST_UPDATE_COMMAND',  variable_get('boost_post_update_command', ''));
 define('BOOST_CRON_LIMIT',           variable_get('boost_cron_limit', 100));
+define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE));
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -561,8 +562,12 @@ function boost_file_path($path) {
     return FALSE;
   }
 
-  // Convert any other undesirable characters in the path to underscores:
-  $path = preg_replace('@[^/a-z0-9_\-&=,\.:]@i', '_', $path);
+  // Don't cache path if it can't be served by apache.
+  if (BOOST_ONLY_ASCII_PATH) {
+    if (preg_match('@[^/a-z0-9_\-&=,\.:]@i', $path)) {
+      return FALSE;
+    }
+  }
 
   return implode('/', array(BOOST_FILE_PATH, $path . BOOST_FILE_EXTENSION));
 }
