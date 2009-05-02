@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.33 2009/05/01 23:13:31 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.34 2009/05/02 20:36:39 mikeytown2 Exp $
 
 /**
  * @file
@@ -529,6 +529,9 @@ function boost_cache_set($path, $data = '') {
   if (($filename = boost_file_path($path))) {
     _boost_mkdir_p(dirname($filename));
     if (!file_exists($filename) || boost_file_is_expired($filename)) {
+      if (is_link($filename)) {
+        @unlink($filename); //if file is a symlink, del before trying to write.
+      }
       if (file_put_contents($filename, $data) === FALSE) {
         watchdog('boost', 'Unable to write file: %file', array('%file' => $filename), array(), WATCHDOG_WARNING);
       }
@@ -537,6 +540,9 @@ function boost_cache_set($path, $data = '') {
       $gz_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename). '.gz';
       _boost_mkdir_p(dirname($gz_filename));
       if (!file_exists($gz_filename) || boost_file_is_expired($gz_filename)) {
+        if (is_link($gz_filename)) {
+          @unlink($gz_filename); //if file is a symlink, del before trying to write.
+        }
         if (file_put_contents($gz_filename, gzencode($data,9)) === FALSE) {
           watchdog('boost', 'Unable to write file: %file', array('%file' => $gz_filename), array(), WATCHDOG_WARNING);
         }
@@ -666,7 +672,7 @@ function _boost_rmdir_rf($dirname, $callback = NULL) {
           $empty = FALSE;
         }
       }
-      else if (is_file($file)) {
+      else if (is_file($file) || is_link($file)) {
         if (function_exists($callback)) {
           if (!$callback($file)) {
             $empty = FALSE;
@@ -676,7 +682,7 @@ function _boost_rmdir_rf($dirname, $callback = NULL) {
         @unlink($file);
       }
       else {
-        $empty = FALSE; // it's probably a symbolic link
+        $empty = FALSE; // it's something else, don't del to be safe.
       }
     }
   }
