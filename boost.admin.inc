@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.14 2009/05/01 23:13:31 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.15 2009/05/26 19:35:09 mikeytown2 Exp $
 
 /**
  * @file
@@ -124,6 +124,12 @@ function boost_admin_settings($form = array()) {
     '#default_value' => BOOST_ONLY_ASCII_PATH,
     '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
   );
+  $form['advanced']['boost_clear_cache_offline'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Clear Boosts cache when site goes offline'),
+    '#default_value' => BOOST_CLEAR_CACHE_OFFLINE,
+    '#description'   => t('Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off.'),
+  );
 
   return $form;
 }
@@ -168,8 +174,10 @@ function boost_admin_clear_cache_submit($form, &$form_state) {
 
 function boost_admin_site_offline_submit($form, &$form_state) {
   if (!empty($form_state['values']['site_offline'])) {
-    if (boost_cache_clear_all()) {
-      drupal_set_message(t('Static page cache cleared.'));
+    if (BOOST_CLEAR_CACHE_OFFLINE) {
+      if (boost_cache_clear_all()) {
+        drupal_set_message(t('Static page cache cleared.'));
+      }
     }
   }
 }
