@@ -26,12 +26,12 @@
 
   #GZIP
   RewriteCond %{HTTP:Accept-encoding} gzip
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}.html.gz -f
+  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}.html.gz -f
   RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}.html.gz [L]
 
   #NORMAL
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}.html -f
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}.html -f
   RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}.html [L]
   # BOOST END
 
-# $Id: boosted2.txt,v 1.1.2.5 2009/05/30 20:55:56 mikeytown2 Exp $
+# $Id: boosted2.txt,v 1.1.2.6 2009/05/30 21:05:43 mikeytown2 Exp $
