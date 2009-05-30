@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.15 2009/05/26 19:35:09 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.16 2009/05/30 18:34:06 mikeytown2 Exp $
 
 /**
  * @file
@@ -140,6 +140,7 @@ function boost_admin_settings_validate($form, &$form_state) {
 
   if (!empty($boost)) { // the cache is enabled
     // Ensure the cache directory exists or can be created:
+    _boost_mkdir_p($boost_file_path);
     file_check_directory($boost_file_path, FILE_CREATE_DIRECTORY, 'boost_file_path');
   }
 
