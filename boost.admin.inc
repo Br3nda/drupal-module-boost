@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.16 2009/05/30 18:34:06 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.17 2009/05/30 18:54:38 mikeytown2 Exp $
 
 /**
  * @file
@@ -164,6 +164,9 @@ function boost_admin_settings_submit($form, &$form_state) {
     if (boost_cache_clear_all()) {
       drupal_set_message(t('Static page cache cleared.'));
     }
+  }
+  else if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) {
+    boost_cache_clear_all();
   }
 }
 
