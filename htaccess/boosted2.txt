@@ -9,63 +9,29 @@
     AddCharset utf-8 .html
   </IfModule>
   <FilesMatch "\.(html.gz)$">
-
     AddEncoding x-gzip .gz
     ForceType text/html
   </FilesMatch>
-  # Serve file IF it exist on server
+  #serve file IF it exist on server
   RewriteCond %{REQUEST_FILENAME} \.\w{2,4}$
   RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule .* - [L]
 
-  # Skip boost IF not get request OR uri has wrong dir OR cookie is set
+  #skip boost IF not get request OR uri has wrong dir OR cookie is set OR cache dir doesn't exist
   RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
   RewriteCond %{REQUEST_URI} ^(/admin|/cache|/misc|/modules|/sites|/system|/themes|/user/login) [OR]
-  RewriteCond %{HTTP_COOKIE} DRUPAL_UID
-  RewriteRule .* - [S=11]
+  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST} !-d
+  RewriteRule .* - [S=2]
 
   #GZIP
-  # Skip this section IF browser doesn't accept gzipped content
-  RewriteCond %{HTTP:Accept-encoding} !gzip
-  RewriteRule .* - [S=5]
-  # Skip next 3 rules IF uri contains a query string
-  RewriteCond %{QUERY_STRING} !^$
-  RewriteRule .* - [S=3]
-
-  # root
-  RewriteCond %{REQUEST_URI} ^/$
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}index.html.gz -f
-  RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}index.html.gz [L]
-  # subdir root
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI} -d
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}/index.html.gz -f
-  RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}/index.html.gz [L]
-  # non root
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}.html.gz -f
-  RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}.html.gz [L]
-  # url variables
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}.html.gz -f
+  RewriteCond %{HTTP:Accept-encoding} gzip
+  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}.html.gz -f
   RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}.html.gz [L]
 
   #NORMAL
-  # Skip next 3 rules IF uri contains a query string
-  RewriteCond %{QUERY_STRING} !^$
-  RewriteRule .* - [S=3]
-
-  # root
-  RewriteCond %{REQUEST_URI} ^/$
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}/index.html -f
-  RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}index.html [L]
-  # subdir root
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI} -d
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}/index.html -f
-  RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}/index.html [L]
-  # non root
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}.html -f
-  RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}.html [L]
-  # url variables
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}.html -f
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}.html -f
   RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}.html [L]
   # BOOST END
 
-# $Id: boosted2.txt,v 1.1.2.4 2009/05/26 19:57:30 mikeytown2 Exp $
+# $Id: boosted2.txt,v 1.1.2.5 2009/05/30 20:55:56 mikeytown2 Exp $
