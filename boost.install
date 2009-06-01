@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.6 2009/05/31 17:51:01 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.7 2009/06/01 09:57:48 mikeytown2 Exp $
 
 /**
  * @file
@@ -55,6 +55,7 @@ function boost_requirements($phase) {
   $t = get_t();
   switch ($phase) {
     case 'runtime':
+      $cache_directory = variable_get('boost_file_path', boost_cache_directory(NULL, FALSE))
       if ($cache_directory != boost_cache_directory(NULL, FALSE)) {
         $requirements['boost'] = array(
           'title' => $t('Boost'),
@@ -63,7 +64,7 @@ function boost_requirements($phase) {
           'value' => $t('Cache file path'),
         );
       }
-      else if ($cache_directory = variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)) && (!is_dir($cache_directory) || !is_writable($cache_directory))) {
+      else if ((!is_dir($cache_directory) || !is_writable($cache_directory))) {
         $requirements['boost'] = array(
           'title' => $t('Boost'),
           'description' => $t('!cache_dir: does not exist, or is not writable', array('!cache_dir' => $cache_directory)),
