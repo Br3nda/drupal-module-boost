@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.8 2009/06/01 17:47:03 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.9 2009/06/02 20:02:37 mikeytown2 Exp $
 
 /**
  * @file
@@ -56,27 +56,37 @@ function boost_requirements($phase) {
   switch ($phase) {
     case 'runtime':
       $cache_directory = variable_get('boost_file_path', boost_cache_directory(NULL, FALSE));
+      $htaccess = file_get_contents('.htaccess');
+
       if ($cache_directory != boost_cache_directory(NULL, FALSE)) {
         $requirements['boost'] = array(
-          'title' => $t('Boost'),
-          'description' => $t('!url: is not set to the default(!default). ', array('!url' => l('Cache file path', 'admin/settings/performance'), '!default' => boost_cache_directory(NULL, FALSE))),
-          'severity' => REQUIREMENT_WARNING,
-          'value' => $t('Cache file path'),
+          'title'       => $t('Boost'),
+          'description' => $t('!url: is not set to the default(!default). ', array('!url' => l('Cache file path', 'admin/settings/performance'), '!default'    => boost_cache_directory(NULL, FALSE))),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('Cache file path'),
         );
       }
-      else if ((!is_dir($cache_directory) || !is_writable($cache_directory))) {
+      else if (!is_dir($cache_directory) || !is_writable($cache_directory)) {
         $requirements['boost'] = array(
-          'title' => $t('Boost'),
+          'title'       => $t('Boost'),
           'description' => $t('!cache_dir: does not exist, or is not writable', array('!cache_dir' => $cache_directory)),
-          'severity' => REQUIREMENT_ERROR,
-          'value' => $t('Cache file path'),
+          'severity'    => REQUIREMENT_ERROR,
+          'value'       => $t('Cache file path'),
+        );
+      }
+      else if ($htaccess && count(explode("%{REQUEST_URI}_%{QUERY_STRING}.html",$htaccess)) < 5) {
+        $requirements['boost'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('.htaccess file does not contain the boost specific rewrite rules.', array()),
+          'severity'    => REQUIREMENT_ERROR,
+          'value'       => $t('.htaccess file'),
         );
       }
       else {
         $requirements['boost'] = array(
-          'title' => $t('Boost'),
-          'severity' => REQUIREMENT_OK,
-          'value' => $t(''),
+          'title'       => $t('Boost'),
+          'severity'    => REQUIREMENT_OK,
+          'value'       => t(''),
         );
       }
     break;
