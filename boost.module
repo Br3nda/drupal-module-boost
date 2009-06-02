@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.42 2009/06/02 20:04:38 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.43 2009/06/02 20:08:47 mikeytown2 Exp $
 
 /**
  * @file
@@ -12,7 +12,8 @@
 define('BOOST_PATH',                 dirname(__FILE__));
 define('BOOST_ENABLED',              variable_get('boost', CACHE_DISABLED));
 define('BOOST_ROOT_CACHE_PATH',      'cache');
-define('BOOST_FILE_PATH',            variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
+define('BOOST_MULTISITE_SINGLE_DB',  variable_get('boost_multisite_single_db', FALSE));
+define('BOOST_FILE_PATH',            BOOST_MULTISITE_SINGLE_DB ? boost_cache_directory(NULL, FALSE) : variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
 define('BOOST_FILE_EXTENSION',       variable_get('boost_file_extension', '.html'));
 define('BOOST_MAX_PATH_DEPTH',       10);
 define('BOOST_CACHEABILITY_OPTION',  variable_get('boost_cacheability_option', 0));
