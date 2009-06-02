@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.41 2009/06/02 19:58:52 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.42 2009/06/02 20:04:38 mikeytown2 Exp $
 
 /**
  * @file
@@ -464,19 +464,29 @@ function boost_is_cached($path) {
  * Deletes all static files currently in the cache.
  */
 function boost_cache_clear_all() {
-  return boost_cache_expire_all(NULL);
+  clearstatcache();
+  if (file_exists(BOOST_FILE_PATH)) {
+    _boost_rmdir_rf(BOOST_FILE_PATH, TRUE);
+  }
+  if (file_exists(BOOST_GZIP_FILE_PATH)) {
+    _boost_rmdir_rf(BOOST_GZIP_FILE_PATH, TRUE);
+  }
+  //recreate dirs
+  _boost_mkdir_p(BOOST_FILE_PATH);
+  _boost_mkdir_p(BOOST_GZIP_FILE_PATH);
+  watchdog('boost', 'Flushed ALL files from static page cache.', array(), WATCHDOG_NOTICE);
 }
 
 /**
  * Deletes all expired static files currently in the cache.
  */
-function boost_cache_expire_all($callback = 'boost_file_is_expired') {
+function boost_cache_expire_all() {
   clearstatcache();
   if (file_exists(BOOST_FILE_PATH)) {
-    _boost_rmdir_rf(BOOST_FILE_PATH, $callback);
+    _boost_rmdir_rf(BOOST_FILE_PATH, FALSE);
   }
   if (file_exists(BOOST_GZIP_FILE_PATH)) {
-    _boost_rmdir_rf(BOOST_GZIP_FILE_PATH, $callback);
+    _boost_rmdir_rf(BOOST_GZIP_FILE_PATH, FALSE);
   }
   //recreate dirs
   _boost_mkdir_p(BOOST_FILE_PATH);
@@ -672,9 +682,6 @@ function boost_file_get_ttl($filename) {
  * settings.
  */
 function boost_file_is_expired($filename) {
-  if (is_link($filename)) {
-    return FALSE; // FIXME
-  }
   return boost_file_get_age($filename) > variable_get('cache_lifetime', 600);
 }
 
@@ -742,26 +749,24 @@ function _boost_mkdir_p($pathname, $mode = 0775, $recursive = TRUE) {
  *
  * @param $dirname
  *   the top-level directory that will be recursively removed
- * @param $callback
- *   optional predicate function for determining if a file should be removed
+ * @param $flush
+ *   optional nuke it all if true, otherwise kill only expired files
  */
-function _boost_rmdir_rf($dirname, $callback = NULL) {
+function _boost_rmdir_rf($dirname, $flush = TRUE) {
   $empty = TRUE; // Start with an optimistic mindset
 
   $files = glob($dirname . '/*', GLOB_NOSORT);
   if ($files) {
     foreach ($files as $file) {
       if (is_dir($file)) {
-        if (!_boost_rmdir_rf($file, $callback)) {
+        if (!_boost_rmdir_rf($file, $flush)) {
           $empty = FALSE;
         }
       }
       else if (is_file($file) || is_link($file)) {
-        if (function_exists($callback)) {
-          if (!$callback($file)) {
-            $empty = FALSE;
-            continue;
-          }
+        if (!$flush && !boost_file_is_expired($file)) {
+          $empty = FALSE;
+          continue;
         }
         @unlink($file);
       }
