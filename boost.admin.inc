@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.17 2009/05/30 18:54:38 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.18 2009/06/02 20:00:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -131,6 +131,22 @@ function boost_admin_settings($form = array()) {
     '#description'   => t('Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off.'),
   );
 
+  // Apache .htaccess settings generation
+  $htaccess = boost_admin_generate_htaccess();
+  $form['htaccess'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Apache .htaccess settings generation'),
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+  );
+  $form['htaccess']['generated'] = array(
+    '#type'          => 'textarea',
+    '#title'         => t('Generated Rules'),
+    '#default_value' => $htaccess,
+    '#rows'          => count(explode("\n", $htaccess)),
+    '#description'   => '',
+  );
+
   return $form;
 }
 
@@ -196,4 +212,57 @@ function boost_admin_themes_submit($form, &$form_state) {
   if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) {
     boost_cache_clear_all();
   }
+}
+
+/**
+ * Generate htaccess code.
+ * 
+ * http://www.askapache.com/htaccess/mod_rewrite-variables-cheatsheet.html
+ * @param $server_name
+ *   %{SERVER_NAME} [OR] %{HTTP_HOST} [OR] www.example.com
+ * @param $document_root
+ *   %{DOCUMENT_ROOT} [OR] getcwd() [OR] path to webroot from ~/
+ * @param $cache_dir
+ *   cache
+ * @param $gzip_dir
+ *   gz
+ */
+function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz') {
+Global $base_path;
+$drupal_subdir = rtrim($base_path, '/');
+
+  $string = <<<ETO
+  ### BOOST START ###
+  <FilesMatch "\.(html.gz|html)$">
+    <IfModule mod_headers.c>
+      Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
+      Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
+    </IfModule>
+  </FilesMatch>
+  <IfModule mod_mime.c>
+    AddCharset utf-8 .html
+  </IfModule>
+  <FilesMatch "\.(html.gz)$">
+    AddEncoding x-gzip .gz
+    ForceType text/html
+  </FilesMatch>
+
+  # Skip boost IF not get request OR uri has wrong dir OR cookie is set
+  RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
+  RewriteCond %{REQUEST_URI} ^$drupal_subdir(/admin|/$cache_dir|/misc|/modules|/sites|/system|/themes|/user/login) [OR]
+  RewriteCond %{HTTP_COOKIE} DRUPAL_UID
+  RewriteRule .* - [S=2]
+
+  # GZIP
+  RewriteCond %{HTTP:Accept-encoding} gzip
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}.html.gz -f
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}.html.gz [L]
+
+  # NORMAL
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}.html -f
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}.html [L]
+  ### BOOST END ###
+ETO;
+
+return $string;
 }
