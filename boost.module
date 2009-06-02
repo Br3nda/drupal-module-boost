@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.40 2009/06/01 08:32:55 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.41 2009/06/02 19:58:52 mikeytown2 Exp $
 
 /**
  * @file
@@ -206,14 +206,14 @@ function boost_comment($comment, $op) {
     case 'update':
       // Expire the relevant node page from the static page cache to prevent serving stale content:
       if (!empty($comment['nid'])) {
-        boost_cache_expire('node/' . $comment['nid'], TRUE);
+        boost_cache_expire_derivative('node/' . $comment['nid'], TRUE);
       }
       break;
     case 'publish':
     case 'unpublish':
     case 'delete':
       if (!empty($comment->nid)) {
-        boost_cache_expire('node/' . $comment->nid, TRUE);
+        boost_cache_expire_derivative('node/' . $comment->nid, TRUE);
       }
       break;
   }
@@ -231,7 +231,7 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
     case 'delete':
       // Expire all relevant node pages from the static page cache to prevent serving stale content:
       if (!empty($node->nid)) {
-        boost_cache_expire('node/' . $node->nid, TRUE);
+        boost_cache_expire_derivative('node/' . $node->nid, TRUE);
       }
       break;
   }
@@ -274,7 +274,7 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
     case 'delete':
       // Expire the relevant user page from the static page cache to prevent serving stale content:
       if (!empty($account->uid)) {
-        boost_cache_expire('user/' . $account->uid);
+        boost_cache_expire_derivative('user/' . $account->uid);
       }
       // TODO: recursively delete user-specific cache directory.
       break;
@@ -486,20 +486,45 @@ function boost_cache_expire_all($callback = 'boost_file_is_expired') {
 }
 
 /**
+ * Finds all possible paths given the root path.
+ */
+function boost_cache_expire_derivative($path, $wildcard = FALSE) {
+  #path alias
+  $path_alias = url($path, array('absolute' => FALSE));
+
+  #path redirects
+  if (module_exists('path_redirect')){
+    $path_redirects = boost_path_redirect_load(array('redirect' => $path));
+  }
+  
+  #flush caches
+  boost_cache_expire($path_alias, $wildcard);
+  foreach($path_redirects as $path_redirect) {
+    boost_cache_expire($path_redirect['path'], $wildcard );
+  }
+  boost_cache_expire($path, $wildcard);
+
+}
+
+
+/**
  * Expires the static file cache for a given page, or multiple pages
  * matching a wildcard.
  */
 function boost_cache_expire($path, $wildcard = FALSE) {
-  // TODO: handle wildcard.
+  $filenames = array();
+  $filenames = glob(boost_file_path($path, FALSE, FALSE) . (($wildcard) ? '*' : '') . BOOST_FILE_EXTENSION, GLOB_NOSORT);
+  if (empty($filenames)) {
+    return FALSE;
+  }
 
-  if (($filename = boost_file_path($path)) && file_exists($filename)) {
+  foreach($filenames as $filename) {
     @unlink($filename);
     $gz_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename). '.gz';
     if (file_exists($gz_filename)) {
       @unlink($gz_filename);
     }
   }
-
   return TRUE;
 }
 
@@ -586,11 +611,25 @@ function boost_cache_directory($host = NULL, $absolute = TRUE) {
 
 /**
  * Returns the static file path for a Drupal page.
+ *
+ * $path
+ *   path to convert to boost's file naming convention
+ * $query
+ *   add query to path
+ * $extension
+ *   add extension to end of filename
  */
-function boost_file_path($path) {
-  // special handling for Drupal's front page no more needed - already done on the input
-
-  if ($GLOBALS['_boost_query']) {
+function boost_file_path($path, $query = TRUE, $extension = TRUE) {
+  //handling of url variables
+  if ($GLOBALS['_boost_query'] != '_') {
+    if ($query) {
+      $path .= $GLOBALS['_boost_query'];
+    }
+    else {
+      return FALSE;
+    }
+  }
+  else {
     $path .= $GLOBALS['_boost_query'];
   }
 
@@ -608,7 +647,7 @@ function boost_file_path($path) {
     }
   }
 
-  return implode('/', array(BOOST_FILE_PATH, $path . BOOST_FILE_EXTENSION));
+  return implode('/', array(BOOST_FILE_PATH, $path . (($extension) ? BOOST_FILE_EXTENSION : '')));
 }
 
 /**
@@ -651,6 +690,36 @@ function boost_set_cookie($user, $expires = NULL) {
   }
   else {
     setcookie(BOOST_COOKIE, FALSE, $expires, ini_get('session.cookie_path'), ini_get('session.cookie_domain'), ini_get('session.cookie_secure') == '1');
+  }
+}
+
+/**
+* Retrieve a specific URL redirect from the database.
+* http://drupal.org/node/451790
+*/
+function boost_path_redirect_load($where = array(), $args = array(), $sort = array()) {
+  $redirects = array();
+  if (is_numeric($where)) {
+    $where = array('rid' => $where);
+  }
+
+  foreach ($where as $key => $value) {
+    if (is_string($key)) {
+      $args[] = $value;
+      $where[$key] = $key .' = '. (is_numeric($value) ? '%d' : "'%s'");
+    }
+  }
+
+  if ($where && $args) {
+    $sql = "SELECT * FROM {path_redirect} WHERE ". implode(' AND ', $where);
+    if ($sort) {
+      $sql .= ' ORDER BY '. implode(' ,', $sort);
+    }
+    $result = db_query($sql, $args);
+    while($redirect = db_fetch_array($result)) {
+      $redirects[] = $redirect;
+    }
+    return $redirects;
   }
 }
 
