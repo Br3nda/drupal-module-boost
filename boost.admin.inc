@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.18 2009/06/02 20:00:44 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.19 2009/06/02 20:05:46 mikeytown2 Exp $
 
 /**
  * @file
@@ -39,6 +39,9 @@ function boost_admin_settings($form = array()) {
     '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named %default-path under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.', array('%default-path' => boost_cache_directory(NULL, FALSE))),
     '#weight'        => -5,
   );
+  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 7*86400, 14*86400, 21*86400, 28*86400), 'format_interval');
+  $period[0] = t('none');
+  $form['cache_lifetime']['#options'] = $period;
   $form['boost_gzip'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Gzip cached pages'),
