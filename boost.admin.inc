@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.20 2009/06/02 20:08:47 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.21 2009/06/04 08:36:02 mikeytown2 Exp $
 
 /**
  * @file
@@ -132,6 +132,12 @@ function boost_admin_settings($form = array()) {
     '#title'         => t('Clear Boosts cache when site goes offline'),
     '#default_value' => BOOST_CLEAR_CACHE_OFFLINE,
     '#description'   => t('Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off.'),
+  );
+  $form['advanced']['boost_halt_on_errors'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Do not cache if error on page'),
+    '#default_value' => BOOST_HALT_ON_ERRORS,
+    '#description'   => t('Boost will not cache the page if there are PHP errors or drupal messages. Disable this if you want to cache pages even if it might contain errors.'),
   );
   $form['advanced']['boost_multisite_single_db'] = array(
     '#type'          => 'checkbox',
