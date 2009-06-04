@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.46 2009/06/04 09:07:51 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.47 2009/06/04 11:44:07 mikeytown2 Exp $
 
 /**
  * @file
@@ -26,8 +26,7 @@ define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE)
 define('BOOST_GZIP',                 variable_get('boost_gzip', TRUE));
 define('BOOST_GZIP_FILE_PATH',       str_replace(BOOST_ROOT_CACHE_PATH . '/', BOOST_ROOT_CACHE_PATH . '/gz/', BOOST_FILE_PATH));
 define('BOOST_CLEAR_CACHE_OFFLINE',  variable_get('boost_clear_cache_offline', TRUE));
-define('BOOST_HALT_ON_ERRORS',       variable_get('boost_halt_on_errors', TRUE));
-
+define('BOOST_HALT_ON_ERRORS',       variable_get('boost_halt_on_errors', FALSE));
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -328,10 +327,10 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
               $ttl = boost_file_get_ttl(boost_file_path($GLOBALS['_boost_path']));
               $output = t('There are <strong>php errors</strong> or <strong>drupal messages</strong> on this page, preventing boost from caching.');
               if ($error){
-                $output .= t(' ERROR: <pre>%error</pre>. %link', array('%error' => print_r($error, TRUE), '%link' => l(t('Lookup Error'), 'http://php.net/errorfunc.constants')));
+                $output .= t(' ERROR: <pre>%error</pre> !link <br> !performance', array('%error' => print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'),'!performance' => l(t('Turn Off Error Checking'),'admin/settings/performance')));
               }
               if ($drupal_msg != 0) {
-                $output .= t(' MESSAGES: %msg', array('%msg' => $drupal_msg));
+                $output .= t(' MESSAGES: %msg <br> !performance', array('%msg' => $drupal_msg, '!performance' => l(t('Turn Off Error Checking'),'admin/settings/performance')));
               }
             }
 
@@ -380,11 +379,13 @@ function _boost_ob_handler($buffer) {
       //case E_USER_DEPRECATED: //Ignore user-generated notice message
       //  break;
       default: //Do not cache page on all other errors
+        watchdog('boost', 'There are <strong>php errors</strong> on this page, preventing boost from caching. ERROR: <pre>%error</pre> !link <br> !performance', array('%error' => print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'),'!performance' => l(t('Turn Off Error Checking'),'admin/settings/performance')), WATCHDOG_WARNING);
         return $buffer;
       }
     }
   }
   if (BOOST_HALT_ON_ERRORS && $GLOBALS['_boost_message_count'] != 0) {
+    watchdog('boost', 'There are <strong>drupal messages</strong> on this page, preventing boost from caching. MESSAGES: %msg <br> !performance', array('%msg' => $GLOBALS['_boost_message_count'], '!performance' => l(t('Turn Off Error Checking'),'admin/settings/performance')), WATCHDOG_WARNING);
     return $buffer;
   }
 
