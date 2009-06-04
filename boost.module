@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.44 2009/06/04 08:36:02 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.45 2009/06/04 08:42:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -532,8 +532,10 @@ function boost_cache_expire_derivative($path, $wildcard = FALSE) {
   
   #flush caches
   boost_cache_expire($path_alias, $wildcard);
-  foreach($path_redirects as $path_redirect) {
-    boost_cache_expire($path_redirect['path'], $wildcard );
+  if (isset($path_redirects)) {
+    foreach($path_redirects as $path_redirect) {
+      boost_cache_expire($path_redirect['path'], $wildcard );
+    }
   }
   boost_cache_expire($path, $wildcard);
 
