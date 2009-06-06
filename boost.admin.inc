@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.21 2009/06/04 08:36:02 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.22 2009/06/06 07:50:23 mikeytown2 Exp $
 
 /**
  * @file
@@ -158,8 +158,8 @@ function boost_admin_settings($form = array()) {
     '#type'          => 'textarea',
     '#title'         => t('Generated Rules'),
     '#default_value' => $htaccess,
-    '#rows'          => count(explode("\n", $htaccess)),
-    '#description'   => '',
+    '#rows'          => count(explode("\n", $htaccess))+1,
+    '#description'   => 'Copy this into your .htaccess file.',
   );
 
   return $form;
@@ -264,7 +264,7 @@ $drupal_subdir = rtrim($base_path, '/');
 
   # Skip boost IF not get request OR uri has wrong dir OR cookie is set
   RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
-  RewriteCond %{REQUEST_URI} ^$drupal_subdir(/admin|/$cache_dir|/misc|/modules|/sites|/system|/themes|/user/login) [OR]
+  RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|cache|misc|modules|sites|system|themes))|(/(feed|comment/reply|user|user/(login|password|register))$) [OR]
   RewriteCond %{HTTP_COOKIE} DRUPAL_UID
   RewriteRule .* - [S=2]
 

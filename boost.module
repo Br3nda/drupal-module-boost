@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.47 2009/06/04 11:44:07 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.48 2009/06/06 07:50:23 mikeytown2 Exp $
 
 /**
  * @file
@@ -66,7 +66,7 @@ function boost_help($path, $arg) {
 function boost_init() {
   global $user, $base_path;
   //set variables
-  $GLOBALS['_boost_path'] = ($base_path != '/') ? ltrim($base_path, '/') . $_REQUEST['q'] : $_REQUEST['q'];
+  $GLOBALS['_boost_path'] = $_REQUEST['q'];
   // Make the proper filename for our query
   $GLOBALS['_boost_query'] = '_';
   foreach ($_GET as $key => $val) {
@@ -453,16 +453,17 @@ function boost_is_cacheable($path) {
   $normal_path = drupal_get_normal_path($path); // normalize path
 
   // Never cache the basic user login/registration pages or any administration pages
-  if ($normal_path == 'user' || preg_match('!^user/(login|register|password)!', $normal_path) || preg_match('!^admin!', $normal_path))
-    return FALSE;
-
-  // At present, RSS feeds are not cacheable due to content type restrictions
-  if (preg_match('!/feed$!', $normal_path) || preg_match('!\.xml$!', $normal_path))
-    return FALSE;
-
+  // RSS feeds are not cacheable due to content type restrictions
   // Don't cache comment reply pages
-  if (preg_match('!^comment/reply!', $normal_path))
+  if (   $normal_path == 'user'
+      || preg_match('!^user/(login|register|password)!', $normal_path)
+      || preg_match('!^admin!', $normal_path)
+      || preg_match('!/feed$!', $normal_path)
+      || preg_match('!\.xml$!', $normal_path)
+      || preg_match('!comment/reply$!', $normal_path)
+    ) {
     return FALSE;
+  }
 
   // Match the user's cacheability settings against the path
   if (BOOST_CACHEABILITY_OPTION == 2) {
@@ -645,13 +646,17 @@ function boost_cache_directory($host = NULL, $absolute = TRUE) {
   global $base_url;
   if ($base_url == "http://") {
     watchdog('boost', 'base_url is not set in your settings.php file. Please read #7 in boosts INSTALL.txt file.', array(), WATCHDOG_NOTICE);
-    $base_url = $base_url . str_replace(BOOST_ROOT_CACHE_PATH . '/', '', variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
+    if (!BOOST_MULTISITE_SINGLE_DB) {
+      $base_url = $base_url . str_replace(BOOST_ROOT_CACHE_PATH . '/', '', variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
+    }
   }
   $parts = parse_url($base_url);
   $host = !empty($host) ? $host : $parts['host'];
+  $parts['path'] = isset($parts['path']) ? $parts['path'] : '/';
+  $subdir = implode('/', array_filter(explode('/', (!empty($base_path)) ? $base_path : $parts['path'])));
 
   // FIXME: correctly handle Drupal subdirectory installations.
-  return implode('/', !$absolute ? array(BOOST_ROOT_CACHE_PATH, $host) : array(getcwd(), BOOST_ROOT_CACHE_PATH, $host));
+  return implode('/', !$absolute ? array_filter(array('cache', $host, $subdir)) : array_filter(array(getcwd(), 'cache', $host, $subdir)));
 }
 
 /**

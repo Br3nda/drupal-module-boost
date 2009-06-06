@@ -19,7 +19,7 @@
 
   #skip boost IF not get request OR uri has wrong dir OR cookie is set OR cache dir doesn't exist
   RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
-  RewriteCond %{REQUEST_URI} ^(/admin|/cache|/misc|/modules|/sites|/system|/themes|/user/login) [OR]
+  RewriteCond %{REQUEST_URI} (^/(admin|cache|misc|modules|sites|system|themes))|(/(feed|comment/reply|user|user/(login|password|register))$) [OR]
   RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]
   RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME} !-d
   RewriteRule .* - [S=2]
@@ -34,4 +34,4 @@
   RewriteRule .* cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}.html [L]
   # BOOST END
 
-# $Id: boosted1.txt,v 1.1.2.5 2009/05/30 20:55:56 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.6 2009/06/06 07:50:23 mikeytown2 Exp $
