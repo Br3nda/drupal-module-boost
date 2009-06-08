@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.48 2009/06/06 07:50:23 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.49 2009/06/08 05:09:12 mikeytown2 Exp $
 
 /**
  * @file
@@ -27,6 +27,8 @@ define('BOOST_GZIP',                 variable_get('boost_gzip', TRUE));
 define('BOOST_GZIP_FILE_PATH',       str_replace(BOOST_ROOT_CACHE_PATH . '/', BOOST_ROOT_CACHE_PATH . '/gz/', BOOST_FILE_PATH));
 define('BOOST_CLEAR_CACHE_OFFLINE',  variable_get('boost_clear_cache_offline', TRUE));
 define('BOOST_HALT_ON_ERRORS',       variable_get('boost_halt_on_errors', FALSE));
+define('BOOST_ROOT_FILE',            variable_get('boost_root_file', '.boost'));
+define('BOOST_FLUSH_DIR',            variable_get('boost_flush_dir', TRUE));
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -486,19 +488,10 @@ function boost_is_cached($path) {
 }
 
 /**
- * Deletes all static files currently in the cache.
+ * Deletes all files currently in the cache.
  */
 function boost_cache_clear_all() {
-  clearstatcache();
-  if (file_exists(BOOST_FILE_PATH)) {
-    _boost_rmdir_rf(BOOST_FILE_PATH, TRUE);
-  }
-  if (file_exists(BOOST_GZIP_FILE_PATH)) {
-    _boost_rmdir_rf(BOOST_GZIP_FILE_PATH, TRUE);
-  }
-  //recreate dirs
-  _boost_mkdir_p(BOOST_FILE_PATH);
-  _boost_mkdir_p(BOOST_GZIP_FILE_PATH);
+  boost_cache_delete(TRUE);
   watchdog('boost', 'Flushed ALL files from static page cache.', array(), WATCHDOG_NOTICE);
 }
 
@@ -506,18 +499,37 @@ function boost_cache_clear_all() {
  * Deletes all expired static files currently in the cache.
  */
 function boost_cache_expire_all() {
+  boost_cache_delete(FALSE);
+  return TRUE;
+}
+
+/**
+ * Deletes files in the cache.
+ */
+function boost_cache_delete($flush = FALSE) {
   clearstatcache();
-  if (file_exists(BOOST_FILE_PATH)) {
-    _boost_rmdir_rf(BOOST_FILE_PATH, FALSE);
-  }
-  if (file_exists(BOOST_GZIP_FILE_PATH)) {
-    _boost_rmdir_rf(BOOST_GZIP_FILE_PATH, FALSE);
-  }
+
   //recreate dirs
   _boost_mkdir_p(BOOST_FILE_PATH);
   _boost_mkdir_p(BOOST_GZIP_FILE_PATH);
+  //add in .boost root id file
+  file_put_contents(BOOST_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
+  file_put_contents(BOOST_GZIP_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_GZIP_FILE_PATH);
 
-  return TRUE;
+  //Flush Cache
+  if (file_exists(BOOST_FILE_PATH)) {
+    _boost_rmdir_rf(BOOST_FILE_PATH, $flush, TRUE);
+  }
+  if (file_exists(BOOST_GZIP_FILE_PATH)) {
+    _boost_rmdir_rf(BOOST_GZIP_FILE_PATH, $flush, TRUE);
+  }
+
+  //recreate dirs
+  _boost_mkdir_p(BOOST_FILE_PATH);
+  _boost_mkdir_p(BOOST_GZIP_FILE_PATH);
+  //add in .boost root id file
+  file_put_contents(BOOST_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
+  file_put_contents(BOOST_GZIP_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_GZIP_FILE_PATH);
 }
 
 /**
@@ -791,35 +803,44 @@ function _boost_mkdir_p($pathname, $mode = 0775, $recursive = TRUE) {
  *   the top-level directory that will be recursively removed
  * @param $flush
  *   optional nuke it all if true, otherwise kill only expired files
+ * @param $first
+ *   id first call to this function
  */
-function _boost_rmdir_rf($dirname, $flush = TRUE) {
+function _boost_rmdir_rf($dirname, $flush = TRUE, $first = TRUE) {
   $empty = TRUE; // Start with an optimistic mindset
 
-  $files = glob($dirname . '/*', GLOB_NOSORT);
-  if ($files) {
-    foreach ($files as $file) {
-      if (is_dir($file)) {
-        if (!_boost_rmdir_rf($file, $flush)) {
-          $empty = FALSE;
+  if ($first || (!$first && !file_exists($dirname . '/' . BOOST_ROOT_FILE))) {
+    $files = glob($dirname . '/*', GLOB_NOSORT);
+    if ($files) {
+      foreach ($files as $file) {
+        if (is_dir($file)) {
+          if (!_boost_rmdir_rf($file, $flush, FALSE)) {
+            $empty = FALSE;
+          }
         }
-      }
-      else if (is_file($file) || is_link($file)) {
-        if (!$flush && !boost_file_is_expired($file)) {
-          $empty = FALSE;
-          continue;
+        else if (is_file($file) || is_link($file)) {
+          if (!$flush && !boost_file_is_expired($file)) {
+            $empty = FALSE;
+            continue;
+          }
+          @unlink($file);
         }
-        @unlink($file);
-      }
-      else {
-        $empty = FALSE; // it's something else, don't del to be safe.
+        else {
+          $empty = FALSE; // it's something else, don't del to be safe.
+        }
       }
     }
+  }
+
+  //do not delete the root dir
+  if (file_exists($dirname . '/' . BOOST_ROOT_FILE)) {
+    return($empty);
   }
 
   // The reason for this elaborate safeguard is that Drupal will log even
   // warnings that should have been suppressed with the @ sign. Otherwise,
   // we'd just rely on the FALSE return value from rmdir().
-  return ($empty && @rmdir($dirname));
+  return ($empty && BOOST_FLUSH_DIR && @rmdir($dirname));
 }
 
 //////////////////////////////////////////////////////////////////////////////
