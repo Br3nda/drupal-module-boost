@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.24 2009/06/09 08:00:22 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.25 2009/06/09 08:44:57 mikeytown2 Exp $
 
 /**
  * @file
@@ -146,20 +146,36 @@ function boost_admin_settings($form = array()) {
   );
 
   // Apache .htaccess settings generation
-  $htaccess = boost_admin_generate_htaccess();
+  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'), 'cache', 'gz', variable_get('boost_file_extension', '.html'));
   $form['htaccess'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Apache .htaccess settings generation'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
+    '#description'   => t('!link', array('!link' => l(t('Explanation of .htaccess variables'), 'http://www.askapache.com/htaccess/mod_rewrite-variables-cheatsheet.html'))),
   );
-  $form['htaccess']['generated'] = array(
+  $form['htaccess']['boost_server_name_http_host'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Servers URL or Name'),
+    '#default_value' => variable_get('boost_server_name_http_host', '%{SERVER_NAME}'),
+    '#options'       => array('%{SERVER_NAME}' => '%{SERVER_NAME}', '%{HTTP_HOST}' => '%{HTTP_HOST}', $_SERVER['SERVER_NAME'] => $_SERVER['SERVER_NAME'], $_SERVER['HTTP_HOST'] => $_SERVER['HTTP_HOST'],),
+    '#description'   => t('Best to leave these as %{}, only try the last option(s) if boost is still not working.'),
+  );
+  $form['htaccess']['boost_document_root'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Document Root'),
+    '#default_value' => variable_get('boost_document_root', '%{DOCUMENT_ROOT}'),
+    '#options'       => array('%{DOCUMENT_ROOT}' => '%{DOCUMENT_ROOT}', getcwd() => getcwd()),
+    '#description'   => t('Default value %{DOCUMENT_ROOT} is highly recommened.'),
+  );
+  $form['htaccess']['boost_generated'] = array(
     '#type'          => 'textarea',
     '#title'         => t('Generated Rules'),
     '#default_value' => $htaccess,
     '#rows'          => count(explode("\n", $htaccess))+1,
-    '#description'   => 'Copy this into your .htaccess file.',
+    '#description'   => t("Copy this into your .htaccess file below <pre><tt>  # RewriteBase / </tt></pre> and above <pre><tt>  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'</tt></pre>"),
   );
+
 
   return $form;
 }
@@ -240,23 +256,27 @@ function boost_admin_themes_submit($form, &$form_state) {
  *   cache
  * @param $gzip_dir
  *   gz
+ * @param $html
+ *   html document file extention
  */
-function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz') {
+function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz', $html = '.html') {
 Global $base_path;
 $drupal_subdir = rtrim($base_path, '/');
+$document_root = str_replace("\\", '/', $document_root);
+$document_root = str_replace($drupal_subdir, '', $document_root );
 
   $string = <<<ETO
   ### BOOST START ###
-  <FilesMatch "\.(html.gz|html)$">
+  <FilesMatch "($html.gz|$html)$">
     <IfModule mod_headers.c>
       Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
       Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
     </IfModule>
   </FilesMatch>
   <IfModule mod_mime.c>
-    AddCharset utf-8 .html
+    AddCharset utf-8 $html
   </IfModule>
-  <FilesMatch "\.(html.gz)$">
+  <FilesMatch "($html.gz)$">
     AddEncoding x-gzip .gz
     ForceType text/html
   </FilesMatch>
@@ -269,12 +289,12 @@ $drupal_subdir = rtrim($base_path, '/');
 
   # GZIP
   RewriteCond %{HTTP:Accept-encoding} gzip
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}.html.gz -f
-  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}.html.gz [L]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html.gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html.gz [L]
 
   # NORMAL
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}.html -f
-  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}.html [L]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html [L]
   ### BOOST END ###
 ETO;
 
