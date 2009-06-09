@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.23 2009/06/08 05:09:12 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.24 2009/06/09 08:00:22 mikeytown2 Exp $
 
 /**
  * @file
@@ -99,13 +99,6 @@ function boost_admin_settings($form = array()) {
     '#required'      => TRUE,
     '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.html\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
   );
-  /*$form['advanced']['boost_fetch_method'] = array( // not needed for now
-    '#type'          => 'select',
-    '#title'         => t('Page fetch method'),
-    '#default_value' => BOOST_FETCH_METHOD,
-    '#options'       => array('php' => t('PHP fopen() wrapper'), 'wget' => t('Wget shell command'), 'curl' => t('curl shell command')),
-    '#description'   => t('The method used to retrieve the contents of the Drupal pages to be cached. The default should work in most cases.'),
-  );*/
   $form['advanced']['boost_pre_process_function'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Pre-process function'),
