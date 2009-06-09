@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.25 2009/06/09 08:44:57 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.26 2009/06/09 11:29:00 mikeytown2 Exp $
 
 /**
  * @file
@@ -12,12 +12,13 @@
 /**
  * Performs alterations to the system settings form before it is rendered.
  *
- * @see hook_form_alter() in boost.module.
+ * @see hook_form_alter()
+ *   in boost.module
  */
 function boost_admin_settings($form = array()) {
   // Take over the relevant existing settings
   $form['#title'] = t('Static page cache');
-  $form['cache'] = array('#type' => 'hidden','#value' => CACHE_DISABLED);
+  $form['cache'] = array('#type' => 'hidden', '#value' => CACHE_DISABLED);
   unset($form['page_compression']); // we don't support this
 
   // Inject Boost-specific settings
@@ -107,13 +108,13 @@ function boost_admin_settings($form = array()) {
     '#description'   => t('The name of a PHP function used to pre-process the contents of each page before writing them out to static files. The function is called with the contents of the page passed as a string argument, and its return value is used as the data written out to the disk.'),
   );
   // TODO:
-  /*$form['advanced']['boost_post_update_command'] = array( // not needed for now
+  /* $form['advanced']['boost_post_update_command'] = array( // not needed for now
     '#type'          => 'textfield',
     '#title'         => t('Post-update shell command'),
     '#default_value' => BOOST_POST_UPDATE_COMMAND,
     '#maxlength'     => 255,
     '#description'   => t('If you are synchronizing the generated static cache files to an external server through some means such as SFTP or rsync, you can enter a shell command to be executed following a successful cron-triggered cache update. Note that this is an advanced setting that should normally be left blank.'),
-  );*/
+  ); */
   $form['advanced']['boost_only_ascii_path'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Only allow ASCII characters in path'),
@@ -158,7 +159,7 @@ function boost_admin_settings($form = array()) {
     '#type'          => 'radios',
     '#title'         => t('Servers URL or Name'),
     '#default_value' => variable_get('boost_server_name_http_host', '%{SERVER_NAME}'),
-    '#options'       => array('%{SERVER_NAME}' => '%{SERVER_NAME}', '%{HTTP_HOST}' => '%{HTTP_HOST}', $_SERVER['SERVER_NAME'] => $_SERVER['SERVER_NAME'], $_SERVER['HTTP_HOST'] => $_SERVER['HTTP_HOST'],),
+    '#options'       => array('%{SERVER_NAME}' => '%{SERVER_NAME}', '%{HTTP_HOST}' => '%{HTTP_HOST}', $_SERVER['SERVER_NAME'] => $_SERVER['SERVER_NAME'], $_SERVER['HTTP_HOST'] => $_SERVER['HTTP_HOST'], ),
     '#description'   => t('Best to leave these as %{}, only try the last option(s) if boost is still not working.'),
   );
   $form['htaccess']['boost_document_root'] = array(
@@ -246,7 +247,7 @@ function boost_admin_themes_submit($form, &$form_state) {
 
 /**
  * Generate htaccess code.
- * 
+ *
  * http://www.askapache.com/htaccess/mod_rewrite-variables-cheatsheet.html
  * @param $server_name
  *   %{SERVER_NAME} [OR] %{HTTP_HOST} [OR] www.example.com

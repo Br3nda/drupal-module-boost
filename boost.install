@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.10 2009/06/08 05:09:12 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.11 2009/06/09 11:29:00 mikeytown2 Exp $
 
 /**
  * @file
@@ -75,7 +75,7 @@ function boost_requirements($phase) {
           'value'       => $t('Cache path'),
         );
       }
-      else if ($htaccess && count(explode("%{REQUEST_URI}_%{QUERY_STRING}.html",$htaccess)) < 5) {
+      else if ($htaccess && count(explode("%{REQUEST_URI}_%{QUERY_STRING}.html", $htaccess)) < 5) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
           'description' => $t('.htaccess file does not contain the boost specific rewrite rules.', array()),
@@ -86,7 +86,7 @@ function boost_requirements($phase) {
       else if (!$root_file || !is_writable($cache_directory)) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('Directory %dir credentials - Permissions: %fp. Owner %fo. Group %fg.<br> Your credentials - Group ID: %gid. User ID: %uid. Current script owner: %user.', array('%dir' => getcwd() . '/' . $cache_directory, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user(), '%fp' => substr(sprintf('%o', fileperms($cache_directory)), -4), '%fo' => fileowner($cache_directory), '%fg' => filegroup($cache_directory) )),
+          'description' => $t('Directory %dir credentials - Permissions: %fp. Owner %fo. Group %fg.<br /> Your credentials - Group ID: %gid. User ID: %uid. Current script owner: %user.', array('%dir' => getcwd() . '/' . $cache_directory, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user(), '%fp' => substr(sprintf('%o', fileperms($cache_directory)), -4), '%fo' => fileowner($cache_directory), '%fg' => filegroup($cache_directory) )),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('Can not write to filesystem'),
         );
