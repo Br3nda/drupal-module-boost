@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.27 2009/06/10 01:45:58 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.28 2009/06/10 02:54:15 mikeytown2 Exp $
 
 /**
  * @file
@@ -125,6 +125,12 @@ function boost_admin_settings($form = array()) {
     '#maxlength'     => 255,
     '#description'   => t('If you are synchronizing the generated static cache files to an external server through some means such as SFTP or rsync, you can enter a shell command to be executed following a successful cron-triggered cache update. Note that this is an advanced setting that should normally be left blank.'),
   ); */
+   $form['advanced']['boost_cache_xml'] = array(
+     '#type'          => 'checkbox',
+     '#title'         => t('Cache .xml & /feed'),
+     '#default_value' => BOOST_CACHE_XML,
+     '#description'   => t('Boost will cache .xml and /feed urls as xml data.'),
+   );
   $form['advanced']['boost_only_ascii_path'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Only allow ASCII characters in path'),
@@ -261,13 +267,13 @@ function boost_admin_themes_submit($form, &$form_state) {
  * @param $document_root
  *   %{DOCUMENT_ROOT} [OR] getcwd() [OR] path to webroot from ~/
  * @param $cache_dir
- *   cache
+ *   cache dir
  * @param $gzip_dir
- *   gz
+ *   gz dir
  * @param $html
  *   html document file extention
  */
-function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz', $html = '.html') {
+function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz', $html = '.html', $xml = '.xml') {
 Global $base_path;
 $drupal_subdir = rtrim($base_path, '/');
 $document_root = str_replace("\\", '/', $document_root);
@@ -283,26 +289,35 @@ $document_root = str_replace($drupal_subdir, '', $document_root );
   </FilesMatch>
   <IfModule mod_mime.c>
     AddCharset utf-8 $html
+    AddCharset utf-8 $xml
   </IfModule>
   <FilesMatch "($html.gz)$">
     AddEncoding x-gzip .gz
     ForceType text/html
   </FilesMatch>
+  <FilesMatch "($xml.gz)$">
+    AddEncoding x-gzip .gz
+    ForceType text/xml
+  </FilesMatch>
 
   # Skip boost IF not get request OR uri has wrong dir OR cookie is set
   RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
-  RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|cache|misc|modules|sites|system|themes))|(/(feed|comment/reply|user|user/(login|password|register))$) [OR]
+  RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|cache|misc|modules|sites|system|themes))|(/(comment/reply|user|user/(login|password|register))$) [OR]
   RewriteCond %{HTTP_COOKIE} DRUPAL_UID
-  RewriteRule .* - [S=2]
+  RewriteRule .* - [S=4]
 
   # GZIP
   RewriteCond %{HTTP:Accept-encoding} gzip
   RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html.gz -s
   RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html.gz [L]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml.gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml.gz [L,T=text/xml]
 
   # NORMAL
   RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html -s
   RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html [L]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml [L,T=text/xml]
   ### BOOST END ###
 ETO;
 
