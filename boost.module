@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.51 2009/06/09 11:29:00 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.52 2009/06/10 01:45:58 mikeytown2 Exp $
 
 /**
  * @file
@@ -23,7 +23,7 @@ define('BOOST_PRE_PROCESS_FUNCTION', variable_get('boost_pre_process_function', 
 define('BOOST_POST_UPDATE_COMMAND',  variable_get('boost_post_update_command', ''));
 define('BOOST_CRON_LIMIT',           variable_get('boost_cron_limit', 100));
 define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE));
-define('BOOST_GZIP',                 variable_get('boost_gzip', TRUE));
+define('BOOST_GZIP',                 variable_get('page_compression', TRUE));
 define('BOOST_GZIP_FILE_PATH',       str_replace(BOOST_ROOT_CACHE_PATH . '/', BOOST_ROOT_CACHE_PATH . '/gz/', BOOST_FILE_PATH));
 define('BOOST_CLEAR_CACHE_OFFLINE',  variable_get('boost_clear_cache_offline', TRUE));
 define('BOOST_HALT_ON_ERRORS',       variable_get('boost_halt_on_errors', FALSE));
@@ -82,7 +82,6 @@ function boost_init() {
       || variable_get('site_offline', 0)
       || $_SERVER['REQUEST_METHOD'] != 'GET'
       || $_SERVER['SERVER_SOFTWARE'] === 'PHP CLI'
-      || variable_get('cache', CACHE_DISABLED)
       || !BOOST_ENABLED
       || isset($_GET['nocache'])
       || !boost_is_cacheable($GLOBALS['_boost_path'])
@@ -97,6 +96,9 @@ function boost_init() {
   }
   // We only generate cached pages for anonymous visitors.
   else {
+    if (BOOST_ENABLED != CACHE_AGGRESSIVE) {
+      $GLOBALS['conf']['cache'] = CACHE_DISABLED;
+    }
     ob_start('_boost_ob_handler');
   }
 }
@@ -148,6 +150,7 @@ function boost_form_alter(&$form, $form_state, $form_id) {
     case 'system_performance_settings':
       module_load_include('inc', 'boost', 'boost.admin');
       $form['page_cache'] = boost_admin_settings($form['page_cache']);
+      $form['page_cache']['#description'] = t('Enabling the page cache will offer a significant performance boost. Drupal can store and send compressed cached pages requested by <em>anonymous</em> users. By caching the first request to the page, Drupal does not have to construct the page each time it is viewed. The page must first be visited by an anonymous user in order for the cache to work on subsequent requests for that page. Boost & Core caching do not work for logged in users.');
       $form['#validate'][] = 'boost_admin_settings_validate';
       $form['#submit'][] = 'boost_admin_settings_submit';
       $form['clear_cache']['clear']['#submit'][0] = 'boost_admin_clear_cache_submit';
@@ -672,8 +675,7 @@ function boost_cache_directory($host = NULL, $absolute = TRUE) {
   $parts['path'] = isset($parts['path']) ? $parts['path'] : '/';
   $subdir = implode('/', array_filter(explode('/', (!empty($base_path)) ? $base_path : $parts['path'])));
 
-  // FIXME: correctly handle Drupal subdirectory installations.
-  return implode('/', !$absolute ? array_filter(array('cache', $host, $subdir)) : array_filter(array(getcwd(), 'cache', $host, $subdir)));
+  return implode('/', !$absolute ? array_filter(array(BOOST_ROOT_CACHE_PATH, $host, $subdir)) : array_filter(array(getcwd(), BOOST_ROOT_CACHE_PATH, $host, $subdir)));
 }
 
 /**
