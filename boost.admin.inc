@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.28 2009/06/10 02:54:15 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.29 2009/06/13 10:14:16 mikeytown2 Exp $
 
 /**
  * @file
@@ -38,6 +38,16 @@ function boost_admin_settings($form = array()) {
     '#description'   => t('Static page caching is a mechanism that stores dynamically generated web pages as HTML files in a special cache directory located under the Drupal installation directory. By caching a web page in this manner, the web server can serve it out in the fastest possible manner, without invoking PHP or Drupal at all. While this does provide a significant performance and scalability boost, you should note that it could have negative usability side-effects unless your site is targeted at an audience consisting mostly of "anonymous" visitors.'),
     '#weight'        => -10,
   );
+  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800), 'format_interval');
+  $period[0] = '<' . t('none') . '>';
+  $form['boost_cache_lifetime'] = array(
+    '#type' => 'select',
+    '#title' => t('Boost - Default minimum cache lifetime'),
+    '#default_value' => BOOST_CACHE_LIFETIME,
+    '#options' => $period,
+    '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    '#weight'        => -9,
+  );
   $form['cache'] = array(
     '#type'           => 'radios',
     '#title'          => t('Core - Database page cache'),
@@ -46,9 +56,7 @@ function boost_admin_settings($form = array()) {
     '#description'    => t("If boost can not or will not cache the page, then the database will try to cache it. If boost can cache the page then it will not appear in the database cache. This is the standard Drupal cache.") . $description,
     '#weight'         => -5,
   );
-  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 7*86400, 14*86400, 21*86400, 28*86400), 'format_interval');
-  $period[0] = '<' . t('none') . '>';
-  $form['cache_lifetime']['#title'] = t('Default minimum cache lifetime');
+  $form['cache_lifetime']['#title'] = t('Core - Default minimum cache lifetime');
   $form['cache_lifetime']['#options'] = $period;
 
   // Cacheability settings
@@ -274,14 +282,17 @@ function boost_admin_themes_submit($form, &$form_state) {
  *   html document file extention
  */
 function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz', $html = '.html', $xml = '.xml') {
-Global $base_path;
-$drupal_subdir = rtrim($base_path, '/');
-$document_root = str_replace("\\", '/', $document_root);
-$document_root = str_replace($drupal_subdir, '', $document_root );
+  Global $base_path;
+  $drupal_subdir = rtrim($base_path, '/');
+  $document_root = str_replace("\\", '/', $document_root);
+  $document_root = str_replace($drupal_subdir, '', $document_root );
+  $html = '\\' . $html;
+  $xml = '\\' . $xml;
+  $gz = '\\.gz';
 
   $string = <<<ETO
   ### BOOST START ###
-  <FilesMatch "($html.gz|$html)$">
+  <FilesMatch "($html$gz|$html)$">
     <IfModule mod_headers.c>
       Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
       Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
@@ -291,12 +302,11 @@ $document_root = str_replace($drupal_subdir, '', $document_root );
     AddCharset utf-8 $html
     AddCharset utf-8 $xml
   </IfModule>
-  <FilesMatch "($html.gz)$">
-    AddEncoding x-gzip .gz
+  AddEncoding x-gzip $gz
+  <FilesMatch "$html$gz$">
     ForceType text/html
   </FilesMatch>
-  <FilesMatch "($xml.gz)$">
-    AddEncoding x-gzip .gz
+  <FilesMatch "$xml$gz$">
     ForceType text/xml
   </FilesMatch>
 
@@ -308,14 +318,14 @@ $document_root = str_replace($drupal_subdir, '', $document_root );
 
   # GZIP
   RewriteCond %{HTTP:Accept-encoding} gzip
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html.gz -s
-  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html.gz [L]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml.gz -s
-  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml.gz [L,T=text/xml]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html$gz [L,T=text/html]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml$gz [L,T=text/xml]
 
   # NORMAL
   RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html -s
-  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html [L]
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html [L,T=text/html]
   RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml -s
   RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml [L,T=text/xml]
   ### BOOST END ###
