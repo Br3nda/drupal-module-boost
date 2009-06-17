@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.30 2009/06/17 17:57:37 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.31 2009/06/17 18:10:43 mikeytown2 Exp $
 
 /**
  * @file
@@ -127,6 +127,12 @@ function boost_admin_settings($form = array()) {
     '#maxlength'     => 255,
     '#description'   => t('The name of a PHP function used to pre-process the contents of each page before writing them out to static files. The function is called with the contents of the page passed as a string argument, and its return value is used as the data written out to the disk.'),
   );
+    $form['boost']['advanced']['boost_cache_query'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Cache pages that contain URL Variables'),
+      '#default_value' => BOOST_CACHE_QUERY,
+      '#description'   => t('Boost will cache pages that end with ?page=1 among others.'),
+    );
    $form['boost']['advanced']['boost_cache_xml'] = array(
      '#type'          => 'checkbox',
      '#title'         => t('Cache .xml & /feed'),
