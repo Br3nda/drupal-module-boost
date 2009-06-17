@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.29 2009/06/13 10:14:16 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.30 2009/06/17 17:57:37 mikeytown2 Exp $
 
 /**
  * @file
@@ -16,48 +16,50 @@
  *   in boost.module
  */
 function boost_admin_settings($form = array()) {
-  // Take over the relevant existing settings
-  $description = '<p>'. t("The normal cache mode is suitable for most sites and does not cause any side effects. The aggressive cache mode causes Drupal to skip the loading (boot) and unloading (exit) of enabled modules when serving a cached page. This results in an additional performance boost but can cause unwanted side effects.") .'</p>';
+  // Clear old settings
+  unset($form['cache']);
+  unset($form['cache_lifetime']);
 
+  // Set text
+  $description_core = '<p>'. t("The normal cache mode is suitable for most sites and does not cause any side effects. The aggressive cache mode causes Drupal to skip the loading (boot) and unloading (exit) of enabled modules when serving a cached page. This results in an additional performance boost but can cause unwanted side effects.") .'</p>';
   $problem_modules = array_diff(array_unique(array_merge(module_implements('boot'), module_implements('exit'))), array(0 => 'boost'));
   sort($problem_modules);
-
   if (count($problem_modules) > 0) {
     $description .= '<p>'. t('<strong class="error">The following enabled modules are incompatible with aggressive mode caching and will probably not function properly: %modules</strong>', array('%modules' => implode(', ', $problem_modules))) .'.</p>';
   }
   else {
     $description .= '<p>'. t('<strong class="ok">Currently, all enabled modules are compatible with the aggressive caching policy.</strong> Please note, if you use aggressive caching and enable new modules, you will need to check this page again to ensure compatibility.') .'</p>';
   }
+  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800), 'format_interval');
+  $period[0] = '<' . t('none') . '>';
 
-  // Inject Boost-specific settings
+  // Take over the relevant existing settings
+  $form['page_compression']['#title'] = t('Gzip page compression (Boost & Core)');
+
   $form['boost'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Boost File Cache'),
+  );
+  // Inject Boost-specific settings
+  $form['boost']['boost_enabled'] = array(
     '#type'          => 'radios',
     '#title'         => t('Boost - Static page cache'),
     '#default_value' => variable_get('boost', CACHE_DISABLED),
     '#options'       => array(CACHE_DISABLED => t('Disabled'), CACHE_NORMAL => t('Enabled'), CACHE_AGGRESSIVE => t('(Not Recommended) Set Boost & Core (if enabled) cache for each page')),
     '#description'   => t('Static page caching is a mechanism that stores dynamically generated web pages as HTML files in a special cache directory located under the Drupal installation directory. By caching a web page in this manner, the web server can serve it out in the fastest possible manner, without invoking PHP or Drupal at all. While this does provide a significant performance and scalability boost, you should note that it could have negative usability side-effects unless your site is targeted at an audience consisting mostly of "anonymous" visitors.'),
-    '#weight'        => -10,
   );
-  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800), 'format_interval');
-  $period[0] = '<' . t('none') . '>';
-  $form['boost_cache_lifetime'] = array(
+  $form['boost']['boost_cache_lifetime'] = array(
     '#type' => 'select',
     '#title' => t('Boost - Default minimum cache lifetime'),
     '#default_value' => BOOST_CACHE_LIFETIME,
     '#options' => $period,
     '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
-    '#weight'        => -9,
   );
-  $form['cache'] = array(
-    '#type'           => 'radios',
-    '#title'          => t('Core - Database page cache'),
-    '#default_value'  => variable_get('cache', CACHE_DISABLED),
-    '#options'        =>  array(CACHE_DISABLED => t('Disabled'), CACHE_NORMAL => t('Normal (recommended for production sites, no side effects)'), CACHE_AGGRESSIVE => t('Aggressive (experts only, possible side effects)')),
-    '#description'    => t("If boost can not or will not cache the page, then the database will try to cache it. If boost can cache the page then it will not appear in the database cache. This is the standard Drupal cache.") . $description,
-    '#weight'         => -5,
+  $form['boost']['boost_clear'] = array(
+    '#type' => 'submit',
+    '#value' => t('Clear Boost cached data: !count pages', array('!count' => boost_count_db())),
+    '#submit' => array('boost_clear_cache_submit'),
   );
-  $form['cache_lifetime']['#title'] = t('Core - Default minimum cache lifetime');
-  $form['cache_lifetime']['#options'] = $period;
 
   // Cacheability settings
   // TODO: update to use Drupal 6.x core code.
@@ -67,19 +69,19 @@ function boost_admin_settings($form = array()) {
     $options[] = t('Cache pages for which the following PHP code returns <code>TRUE</code> (PHP-mode, experts only).');
     $description .= t('If the PHP-mode is chosen, enter PHP code between %php. Note that executing incorrect PHP-code can severely break your Drupal site.', array('%php' => '<?php ?>'));
   }
-  $form['cacheability'] = array(
+  $form['boost']['cacheability'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Boost cacheability settings'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
   );
-  $form['cacheability']['boost_cacheability_option'] = array(
+  $form['boost']['cacheability']['boost_cacheability_option'] = array(
     '#type'          => 'radios',
     '#title'         => t('Statically cache specific pages'),
     '#options'       => $options,
     '#default_value' => BOOST_CACHEABILITY_OPTION,
   );
-  $form['cacheability']['boost_cacheability_pages'] = array(
+  $form['boost']['cacheability']['boost_cacheability_pages'] = array(
     '#type'          => 'textarea',
     '#title'         => t('Pages'),
     '#default_value' => BOOST_CACHEABILITY_PAGES,
@@ -87,13 +89,13 @@ function boost_admin_settings($form = array()) {
   );
 
   // Advanced settings
-  $form['advanced'] = array(
+  $form['boost']['advanced'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Boost advanced settings'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
   );
-  $form['advanced']['boost_file_path'] = array(
+  $form['boost']['advanced']['boost_file_path'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Cache file path'),
     '#default_value' => BOOST_FILE_PATH,
@@ -102,14 +104,14 @@ function boost_admin_settings($form = array()) {
     '#required'      => TRUE,
     '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named %default-path under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.', array('%default-path' => boost_cache_directory(NULL, FALSE))),
   );
-  $form['advanced']['boost_expire_cron'] = array(
+  $form['boost']['advanced']['boost_expire_cron'] = array(
     '#type'          => 'radios',
     '#title'         => t('Purge expired cache files on cron runs'),
     '#default_value' => (int)variable_get('boost_expire_cron', TRUE),
     '#options'       => array(0 => t('Disabled'), 1 => t('Enabled')),
     '#description'   => t('Whether to perform a purge of all expired content from the static page cache on cron runs. How often your cron runs works together with the minimum cache lifetime setting, further above, to determine the <strong>effective</strong> minimum lifetime for items in the static page cache. If you don\'t enable this setting, you will need to put in place some other custom mechanism for purging expired files, or else they will never be removed (unless manually cleared from the administrative interface).'),
   );
-  $form['advanced']['boost_file_extension'] = array(
+  $form['boost']['advanced']['boost_file_extension'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Cache file extension'),
     '#default_value' => BOOST_FILE_EXTENSION,
@@ -118,82 +120,79 @@ function boost_admin_settings($form = array()) {
     '#required'      => TRUE,
     '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.html\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
   );
-  $form['advanced']['boost_pre_process_function'] = array(
+  $form['boost']['advanced']['boost_pre_process_function'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Pre-process function'),
     '#default_value' => BOOST_PRE_PROCESS_FUNCTION,
     '#maxlength'     => 255,
     '#description'   => t('The name of a PHP function used to pre-process the contents of each page before writing them out to static files. The function is called with the contents of the page passed as a string argument, and its return value is used as the data written out to the disk.'),
   );
-  // TODO:
-  /* $form['advanced']['boost_post_update_command'] = array( // not needed for now
-    '#type'          => 'textfield',
-    '#title'         => t('Post-update shell command'),
-    '#default_value' => BOOST_POST_UPDATE_COMMAND,
-    '#maxlength'     => 255,
-    '#description'   => t('If you are synchronizing the generated static cache files to an external server through some means such as SFTP or rsync, you can enter a shell command to be executed following a successful cron-triggered cache update. Note that this is an advanced setting that should normally be left blank.'),
-  ); */
-   $form['advanced']['boost_cache_xml'] = array(
+   $form['boost']['advanced']['boost_cache_xml'] = array(
      '#type'          => 'checkbox',
      '#title'         => t('Cache .xml & /feed'),
      '#default_value' => BOOST_CACHE_XML,
      '#description'   => t('Boost will cache .xml and /feed urls as xml data.'),
    );
-  $form['advanced']['boost_only_ascii_path'] = array(
+  $form['boost']['advanced']['boost_only_ascii_path'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Only allow ASCII characters in path'),
     '#default_value' => BOOST_ONLY_ASCII_PATH,
     '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
   );
-  $form['advanced']['boost_clear_cache_offline'] = array(
+  $form['boost']['advanced']['boost_clear_cache_offline'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Clear Boosts cache when site goes offline'),
     '#default_value' => BOOST_CLEAR_CACHE_OFFLINE,
     '#description'   => t('Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off.'),
   );
-  $form['advanced']['boost_flush_dir'] = array(
+  $form['boost']['advanced']['boost_flush_dir'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Flush directories from cache if they are empty'),
     '#default_value' => BOOST_FLUSH_DIR,
     '#description'   => t('Disable this if you have to set settings for each dir/subdir, due to the way your server opperates (permissions, etc...).'),
   );
-  $form['advanced']['boost_halt_on_errors'] = array(
+  $form['boost']['advanced']['boost_halt_on_errors'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Do not cache if error on page'),
     '#default_value' => BOOST_HALT_ON_ERRORS,
     '#description'   => t('Boost will not cache the page if there are PHP errors or drupal messages. Disable this if you want to cache pages even if it might contain errors.'),
   );
-  $form['advanced']['boost_multisite_single_db'] = array(
+  $form['boost']['advanced']['boost_multisite_single_db'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Do not store the cache file path in the database'),
     '#default_value' => BOOST_MULTISITE_SINGLE_DB,
     '#description'   => t('If Drupal is running on a multi-site with a single/shared database, then enabling this will allow for correct multi-site caching.'),
   );
+  $form['boost']['advanced']['boost_reset'] = array(
+    '#type' => 'submit',
+    '#value' => t('Reset boost database'),
+    '#submit' => array('boost_reset_database_submit'),
+  );
 
   // Apache .htaccess settings generation
   $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'), 'cache', 'gz', variable_get('boost_file_extension', '.html'));
-  $form['htaccess'] = array(
+  $form['boost']['htaccess'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Boost Apache .htaccess settings generation'),
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
     '#description'   => t('!link', array('!link' => l(t('Explanation of .htaccess variables'), 'http://www.askapache.com/htaccess/mod_rewrite-variables-cheatsheet.html'))),
   );
-  $form['htaccess']['boost_server_name_http_host'] = array(
+  $form['boost']['htaccess']['boost_server_name_http_host'] = array(
     '#type'          => 'radios',
     '#title'         => t('Servers URL or Name'),
     '#default_value' => variable_get('boost_server_name_http_host', '%{SERVER_NAME}'),
     '#options'       => array('%{SERVER_NAME}' => '%{SERVER_NAME}', '%{HTTP_HOST}' => '%{HTTP_HOST}', $_SERVER['SERVER_NAME'] => $_SERVER['SERVER_NAME'], $_SERVER['HTTP_HOST'] => $_SERVER['HTTP_HOST'], ),
     '#description'   => t('Best to leave these as %{}, only try the last option(s) if boost is still not working.'),
   );
-  $form['htaccess']['boost_document_root'] = array(
+  $form['boost']['htaccess']['boost_document_root'] = array(
     '#type'          => 'radios',
     '#title'         => t('Document Root'),
     '#default_value' => variable_get('boost_document_root', '%{DOCUMENT_ROOT}'),
     '#options'       => array('%{DOCUMENT_ROOT}' => '%{DOCUMENT_ROOT}', getcwd() => getcwd()),
     '#description'   => t('Default value %{DOCUMENT_ROOT} is highly recommened.'),
   );
-  $form['htaccess']['boost_generated'] = array(
+  $form['boost']['htaccess']['boost_generated'] = array(
     '#type'          => 'textarea',
     '#title'         => t('Generated Rules'),
     '#default_value' => $htaccess,
@@ -201,15 +200,38 @@ function boost_admin_settings($form = array()) {
     '#description'   => t("Copy this into your .htaccess file below <pre><tt>  # RewriteBase / </tt></pre> and above <pre><tt>  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'</tt></pre>"),
   );
 
+  $form['core'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Core Database Cache'),
+  );
+  $form['core']['cache'] = array(
+    '#type'           => 'radios',
+    '#title'          => t('Core - Database page cache'),
+    '#default_value'  => variable_get('cache', CACHE_DISABLED),
+    '#options'        =>  array(CACHE_DISABLED => t('Disabled'), CACHE_NORMAL => t('Normal (recommended for production sites, no side effects)'), CACHE_AGGRESSIVE => t('Aggressive (experts only, possible side effects)')),
+    '#description'    => t("If boost can not or will not cache the page, then the database will try to cache it. If boost can cache the page then it will not appear in the database cache. This is the standard Drupal cache.") . $description_core,
+  );
+  $form['core']['cache_lifetime'] = array(
+    '#type' => 'select',
+    '#title' => t('Core - Default minimum cache lifetime'),
+    '#default_value' => variable_get('cache_lifetime', 0),
+    '#options' => $period,
+    '#description' => t('On high-traffic sites, it may be necessary to enforce a minimum cache lifetime. The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied and recreated, and is applied to both page and block caches. A larger minimum cache lifetime offers better performance, but users will not see new content for a longer period of time.')
+  );
+  $form['core']['boost_core_clear'] = array(
+    '#type' => 'submit',
+    '#value' => t('Clear core page cached data: !count pages', array('!count' => boost_count_core_db())),
+    '#submit' => array('boost_clear_core_page_cache_submit'),
+  );
 
   return $form;
 }
 
 function boost_admin_settings_validate($form, &$form_state) {
-  $form_state['values']['boost_previously'] = variable_get('boost', '');
+  $form_state['values']['boost_previously'] = variable_get('boost_enabled', '');
   extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
 
-  if (!empty($boost)) { // the cache is enabled
+  if (!empty($boost_enabled)) { // the cache is enabled
     // Ensure the cache directory exists or can be created:
     _boost_mkdir_p($boost_file_path);
     file_check_directory($boost_file_path, FILE_CREATE_DIRECTORY, 'boost_file_path');
@@ -228,7 +250,7 @@ function boost_admin_settings_submit($form, &$form_state) {
   variable_del('boost_previously');
   extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
 
-  if (empty($boost) && !empty($boost_previously)) { // the cache was previously enabled
+  if (empty($boost_enabled) && !empty($boost_previously)) { // the cache was previously enabled
     if (boost_cache_clear_all()) {
       drupal_set_message(t('Static page cache cleared.'));
     }
@@ -332,4 +354,48 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
 ETO;
 
 return $string;
+}
+
+/**
+ * Counts the number of pages in the static cache.
+ */
+function boost_count_db($all = FALSE) {
+  if ($all) {
+    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache}"));
+  }
+  else {
+    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE expire <> 0"));
+  }
+}
+
+/**
+ * Counts the number of pages in the core cache.
+ */
+function boost_count_core_db($all = FALSE) {
+  return db_result(db_query("SELECT COUNT(*) FROM {cache_page}"));
+}
+
+/**
+ * Flushes boost page cache
+ */
+function boost_clear_cache_submit () {
+  boost_cache_clear_all();
+  drupal_set_message(t('Boost page cache cleared.'));
+}
+
+/**
+ * Flushes core page cache
+ */
+function boost_clear_core_page_cache_submit () {
+  cache_clear_all('*', 'cache_page', TRUE);
+  drupal_set_message(t('Core page cache cleared.'));
+}
+
+/**
+ * Resets boost database & cache
+ */
+function boost_reset_database_submit () {
+   db_query("DELETE FROM {boost_cache}");
+  boost_cache_clear_all();
+  drupal_set_message(t('Boost page cache & database cleared.'));
 }

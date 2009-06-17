@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.55 2009/06/13 10:14:16 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.56 2009/06/17 17:57:37 mikeytown2 Exp $
 
 /**
  * @file
@@ -10,7 +10,7 @@
 // Module settings
 
 define('BOOST_PATH',                 dirname(__FILE__));
-define('BOOST_ENABLED',              variable_get('boost', CACHE_DISABLED));
+define('BOOST_ENABLED',              variable_get('boost_enabled', CACHE_DISABLED));
 define('BOOST_ROOT_CACHE_PATH',      'cache');
 define('BOOST_MULTISITE_SINGLE_DB',  variable_get('boost_multisite_single_db', FALSE));
 define('BOOST_FILE_PATH',            BOOST_MULTISITE_SINGLE_DB ? boost_cache_directory(NULL, FALSE) : variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
@@ -154,6 +154,7 @@ function boost_form_alter(&$form, $form_state, $form_id) {
     case 'system_performance_settings':
       module_load_include('inc', 'boost', 'boost.admin');
       $form['page_cache'] = boost_admin_settings($form['page_cache']);
+      $form['page_cache']['#title'] = t('Anonymous page caching');
       $form['page_cache']['#description'] = t('Enabling the page cache will offer a significant performance boost. Drupal can store and send compressed cached pages requested by <em>anonymous</em> users. By caching the first request to the page, Drupal does not have to construct the page each time it is viewed. The page must first be visited by an anonymous user in order for the cache to work on subsequent requests for that page. Boost & Core caching do not work for logged in users.');
       $form['#validate'][] = 'boost_admin_settings_validate';
       $form['#submit'][] = 'boost_admin_settings_submit';
@@ -192,7 +193,7 @@ function boost_form_alter(&$form, $form_state, $form_id) {
 function boost_cron() {
   if (!BOOST_ENABLED) return;
 
-  if (variable_get('boost_expire_cron', TRUE) && boost_cache_expire_all()) {
+  if (variable_get('boost_expire_cron', TRUE) && boost_cache_db_expire()) {
     watchdog('boost', 'Expired stale files from static page cache.', array(), WATCHDOG_NOTICE);
   }
 }
@@ -319,7 +320,7 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
             $output = t('This page is being served <strong>live</strong> to anonymous visitors, as it is not currently in the static page cache.');
 
             if (boost_is_cached($GLOBALS['_boost_path'])) {
-              $ttl = boost_file_get_ttl(boost_file_path($GLOBALS['_boost_path']));
+              $ttl = boost_db_get_ttl(boost_file_path($GLOBALS['_boost_path']));
               $output = t('This page is being served to anonymous visitors from the static page cache.') . ' ';
               $output .= t($ttl < 0 ?
                 '<strong>The cached copy expired %interval ago.</strong>' :
@@ -333,7 +334,7 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
             $drupal_msg = max(count(drupal_get_messages(NULL, FALSE)), $GLOBALS['_boost_message_count']);
 
             if (BOOST_HALT_ON_ERRORS && ($error || $drupal_msg != 0)) {
-              $ttl = boost_file_get_ttl(boost_file_path($GLOBALS['_boost_path']));
+              $ttl = boost_db_get_ttl(boost_file_path($GLOBALS['_boost_path']));
               $output = t('There are <strong>php errors</strong> or <strong>drupal messages</strong> on this page, preventing boost from caching.');
               if ($error) {
                 $output .= t(' ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')));
@@ -506,16 +507,25 @@ function boost_is_cached($path) {
  * Deletes all files currently in the cache.
  */
 function boost_cache_clear_all() {
+  boost_cache_clear_all_db();
   boost_cache_delete(TRUE);
   watchdog('boost', 'Flushed ALL files from static page cache.', array(), WATCHDOG_NOTICE);
 }
 
 /**
  * Deletes all expired static files currently in the cache.
+ * OLD FUNCTION
  */
 function boost_cache_expire_all() {
   boost_cache_delete(FALSE);
   return TRUE;
+}
+
+/**
+ * Resets all entries in database.
+ */
+function boost_cache_clear_all_db() {
+  db_query("UPDATE {boost_cache} SET expire = %d", 0);
 }
 
 /**
@@ -606,6 +616,21 @@ function boost_cache_kill($filename) {
   }
 }
 
+ /**
+ * Flushes all expired pages from database
+ */
+function boost_cache_db_expire() {
+  $result = db_query('SELECT filename FROM {boost_cache} WHERE expire BETWEEN 1 AND %d', BOOST_TIME);
+  while ($boost = db_fetch_array($result)) {
+    boost_put_db($boost['filename'], 0);
+    boost_cache_kill($boost['filename']);
+  }
+  if (BOOST_FLUSH_DIR) {
+    //TO-DO: del empty dirs.
+  }
+  return TRUE;
+}
+
 /**
  * Returns the cached contents of the specified page, if available.
  */
@@ -649,9 +674,60 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
     if (BOOST_GZIP) {
       boost_cache_write(str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename) . '.gz', gzencode($data, 9));
     }
+    boost_db_prep($filename);
+  }
+  return TRUE;
+}
+
+/**
+ * Figure out what is going in the database & put it in
+ */
+function boost_db_prep($filename) {
+  $router_item = _boost_get_menu_router();
+  $expire = BOOST_CACHE_LIFETIME + BOOST_TIME;
+  $lifetime = -1;
+  $push = -1;
+
+  $boost_settings_db = boost_get_settings_db($router_item);
+  $boost_db = boost_get_db($filename);
+  //get data from actual entry first, if this page has been cached before.
+  if ($boost_db) {
+    $expire = $boost_db['lifetime'] + BOOST_TIME;
+    $lifetime = $boost_db['lifetime'];
+    $push = $boost_db['push'];
+  }
+  //get data from settings table, if this page has not been put into the cache.
+  elseif ($boost_settings_db) {
+    $expire = $boost_settings_db['lifetime'] + BOOST_TIME;
+    $lifetime = $boost_settings_db['lifetime'];
+    $push = $boost_settings_db['push'];
   }
 
-  return TRUE;
+  boost_put_db($filename, $expire, $lifetime, $push, $router_item);
+}
+
+/**
+ * Puts boost info into database.
+ */
+function boost_put_db($filename, $expire, $lifetime, $push, $router_item) {
+  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s' WHERE filename = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $filename);
+  if (!db_affected_rows()) {
+    @db_query("INSERT INTO {boost_cache} (filename, expire, lifetime, push, page_callback, page_arguments) VALUES ('%s', %d, %d, %d, '%s', '%s')", $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments']);
+  }
+}
+
+/**
+ * Gets boost info from database.
+ */
+function boost_get_db($filename) {
+  return db_fetch_array(db_query_range("SELECT expire, lifetime, push FROM {boost_cache} WHERE filename = '%s'", $filename, 0, 1));
+}
+
+/**
+ * Gets boost settings from database.
+ */
+function boost_get_settings_db($router_item) {
+  return db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s'", $router_item['page_callback'], $router_item['page_arguments'], 0, 1));
 }
 
 /**
@@ -662,7 +738,7 @@ function boost_cache_write($filename, $data = '') {
   if (!_boost_mkdir_p(dirname($filename))) {
     watchdog('boost', 'Unable to create directory: %dir<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%dir' => dirname($filename), '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
   }
-  if (!file_exists($filename) || boost_file_is_expired($filename)) {
+  if (!file_exists($filename) || boost_db_is_expired($filename)) {
     $tempfile = $filename . getmypid();
     if (@file_put_contents($tempfile, $data) === FALSE) {
       watchdog('boost', 'Unable to write temp file: %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%file' => $tempfile, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
@@ -748,6 +824,10 @@ function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION
 function boost_file_get_age($filename) {
   return BOOST_TIME - filemtime($filename);
 }
+function boost_db_get_age($filename) {
+  $boost_db = boost_get_db($filename);
+  return $boost_db['expire'] != 0 ? BOOST_TIME -  $boost_db['expire'] : FALSE;
+}
 
 /**
  * Returns the remaining time-to-live for a cached file, measured in
@@ -755,6 +835,10 @@ function boost_file_get_age($filename) {
  */
 function boost_file_get_ttl($filename) {
   return BOOST_CACHE_LIFETIME - boost_file_get_age($filename);
+}
+function boost_db_get_ttl($filename) {
+  $boost_db = boost_get_db($filename);
+  return $boost_db['lifetime'] != -1 ? $boost_db['lifetime'] : BOOST_CACHE_LIFETIME - boost_db_get_age($filename);
 }
 
 /**
@@ -764,6 +848,9 @@ function boost_file_get_ttl($filename) {
  */
 function boost_file_is_expired($filename) {
   return boost_file_get_age($filename) > BOOST_CACHE_LIFETIME;
+}
+function boost_db_is_expired($filename) {
+  return boost_db_get_age($filename) > BOOST_CACHE_LIFETIME;
 }
 
 /**
@@ -815,6 +902,38 @@ function boost_path_redirect_load($where = array(), $args = array(), $sort = arr
 // Boost API internals
 
 /**
+ * Get's page_callback & page_arguments from menu_router table
+ */
+function _boost_get_menu_router() {
+  $original_map = arg(NULL, $_GET['q']);
+  $parts = array_slice($original_map, 0, MENU_MAX_PARTS);
+  list($ancestors, $placeholders) = menu_get_ancestors($parts);
+  $router_item = db_fetch_array(db_query_range('SELECT page_callback, page_arguments FROM {menu_router} WHERE path IN ('. implode (',', $placeholders) .') ORDER BY fit DESC', $ancestors, 0, 1));
+  $router_item['page_arguments'] = unserialize($router_item['page_arguments']);
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $node = node_load(arg(1));
+    $router_item['page_arguments'] = $node->type;
+  }
+  elseif (arg(0) == 'taxonomy' && is_numeric(arg(2))) {
+    $term = taxonomy_get_term(arg(2));
+    $vocab = taxonomy_vocabulary_load($term->vid);
+    $router_item['page_arguments'] = $vocab->name;
+  }
+  elseif (is_array($router_item['page_arguments'])) {
+    foreach ($router_item['page_arguments'] as $string) {
+      if (is_string($string)) {
+        $router_item['page_arguments'] = $string;
+        break ;
+      }
+    }
+  }
+  if (empty($router_item['page_arguments'])) {
+    $router_item['page_arguments'] = '';
+  }
+  return $router_item;
+}
+
+/**
  * Recursive version of mkdir(), compatible with PHP4.
  */
 function _boost_mkdir_p($pathname, $mode = 0775, $recursive = TRUE) {
@@ -848,7 +967,7 @@ function _boost_rmdir_rf($dirname, $flush = TRUE, $first = TRUE) {
           }
         }
         else if (is_file($file) || is_link($file)) {
-          if (!$flush && !boost_file_is_expired($file)) {
+          if (!$flush && !boost_db_is_expired($file)) {
             $empty = FALSE;
             continue;
           }
