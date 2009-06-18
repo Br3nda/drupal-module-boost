@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.31 2009/06/17 18:10:43 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.32 2009/06/18 08:44:07 mikeytown2 Exp $
 
 /**
  * @file
@@ -44,7 +44,7 @@ function boost_admin_settings($form = array()) {
   $form['boost']['boost_enabled'] = array(
     '#type'          => 'radios',
     '#title'         => t('Boost - Static page cache'),
-    '#default_value' => variable_get('boost', CACHE_DISABLED),
+    '#default_value' => variable_get('boost_enabled', CACHE_DISABLED),
     '#options'       => array(CACHE_DISABLED => t('Disabled'), CACHE_NORMAL => t('Enabled'), CACHE_AGGRESSIVE => t('(Not Recommended) Set Boost & Core (if enabled) cache for each page')),
     '#description'   => t('Static page caching is a mechanism that stores dynamically generated web pages as HTML files in a special cache directory located under the Drupal installation directory. By caching a web page in this manner, the web server can serve it out in the fastest possible manner, without invoking PHP or Drupal at all. While this does provide a significant performance and scalability boost, you should note that it could have negative usability side-effects unless your site is targeted at an audience consisting mostly of "anonymous" visitors.'),
   );
