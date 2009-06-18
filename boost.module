@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.59 2009/06/18 10:00:24 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.60 2009/06/18 10:05:13 mikeytown2 Exp $
 
 /**
  * @file
@@ -768,6 +768,7 @@ function boost_cache_write($filename, $data = '') {
       return FALSE;
     }
     else {
+      @chmod($tempfile, 0664);
       // put the temp file in its final location
       if (@rename($tempfile, $filename) === FALSE) {
         watchdog('boost', 'Unable to rename file: %temp  to  %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%temp' => $tempfile, '%file' => $filename, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
