@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.13 2009/06/17 17:57:37 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.14 2009/06/18 22:45:32 mikeytown2 Exp $
 
 /**
  * @file
@@ -214,4 +214,13 @@ function boost_schema() {
 function boost_update_6100() {
   // Create tables.
   return drupal_install_schema('boost');
+}
+
+/**
+ * Update 6101 - Copy old variable to new one.
+ */
+function boost_update_6101() {
+  // Copy variable
+  variable_set('boost_enabled', variable_get('boost', variable_get('boost_enabled', CACHE_DISABLED)));
+  variable_del('boost');
 }
