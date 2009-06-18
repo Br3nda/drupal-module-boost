@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.58 2009/06/17 18:29:33 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.59 2009/06/18 10:00:24 mikeytown2 Exp $
 
 /**
  * @file
@@ -933,15 +933,21 @@ function _boost_get_menu_router() {
   list($ancestors, $placeholders) = menu_get_ancestors($parts);
   $router_item = db_fetch_array(db_query_range('SELECT page_callback, page_arguments FROM {menu_router} WHERE path IN ('. implode (',', $placeholders) .') ORDER BY fit DESC', $ancestors, 0, 1));
   $router_item['page_arguments'] = unserialize($router_item['page_arguments']);
+  //handle nodes
   if (arg(0) == 'node' && is_numeric(arg(1))) {
     $node = node_load(arg(1));
     $router_item['page_arguments'] = $node->type;
+    $router_item['page_callback'] = 'node';
+
   }
+  //handle taxonomy
   elseif (arg(0) == 'taxonomy' && is_numeric(arg(2))) {
     $term = taxonomy_get_term(arg(2));
     $vocab = taxonomy_vocabulary_load($term->vid);
     $router_item['page_arguments'] = $vocab->name;
+    $router_item['page_callback'] = 'taxonomy';
   }
+  //try to handle everything else
   elseif (is_array($router_item['page_arguments'])) {
     foreach ($router_item['page_arguments'] as $string) {
       if (is_string($string)) {
@@ -950,6 +956,7 @@ function _boost_get_menu_router() {
       }
     }
   }
+  //set empty if page_arguments is an empty object.
   if (empty($router_item['page_arguments'])) {
     $router_item['page_arguments'] = '';
   }
