@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.32 2009/06/18 08:44:07 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.33 2009/06/20 20:35:15 mikeytown2 Exp $
 
 /**
  * @file
@@ -22,13 +22,13 @@ function boost_admin_settings($form = array()) {
 
   // Set text
   $description_core = '<p>'. t("The normal cache mode is suitable for most sites and does not cause any side effects. The aggressive cache mode causes Drupal to skip the loading (boot) and unloading (exit) of enabled modules when serving a cached page. This results in an additional performance boost but can cause unwanted side effects.") .'</p>';
-  $problem_modules = array_diff(array_unique(array_merge(module_implements('boot'), module_implements('exit'))), array(0 => 'boost'));
+  $problem_modules = array_unique(array_merge(module_implements('boot'), module_implements('exit')));
   sort($problem_modules);
   if (count($problem_modules) > 0) {
-    $description .= '<p>'. t('<strong class="error">The following enabled modules are incompatible with aggressive mode caching and will probably not function properly: %modules</strong>', array('%modules' => implode(', ', $problem_modules))) .'.</p>';
+    $description_core .= '<p>'. t('<strong class="error">The following enabled modules are incompatible with aggressive mode caching and will probably not function properly: %modules</strong>', array('%modules' => implode(', ', $problem_modules))) .'.</p>';
   }
   else {
-    $description .= '<p>'. t('<strong class="ok">Currently, all enabled modules are compatible with the aggressive caching policy.</strong> Please note, if you use aggressive caching and enable new modules, you will need to check this page again to ensure compatibility.') .'</p>';
+    $description_core .= '<p>'. t('<strong class="ok">Currently, all enabled modules are compatible with the aggressive caching policy.</strong> Please note, if you use aggressive caching and enable new modules, you will need to check this page again to ensure compatibility.') .'</p>';
   }
   $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800), 'format_interval');
   $period[0] = '<' . t('none') . '>';
@@ -57,8 +57,13 @@ function boost_admin_settings($form = array()) {
   );
   $form['boost']['boost_clear'] = array(
     '#type' => 'submit',
-    '#value' => t('Clear Boost cached data: !count pages', array('!count' => boost_count_db())),
+    '#value' => t('Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(TRUE))),
     '#submit' => array('boost_clear_cache_submit'),
+  );
+  $form['boost']['boost_clear_expired'] = array(
+    '#type' => 'submit',
+    '#value' => t('Clear Boost expired data: !count pages', array('!count' => boost_count_db(FALSE))),
+    '#submit' => array('boost_clear_expired_cache_submit'),
   );
 
   // Cacheability settings
@@ -139,6 +144,18 @@ function boost_admin_settings($form = array()) {
      '#default_value' => BOOST_CACHE_XML,
      '#description'   => t('Boost will cache .xml and /feed urls as xml data.'),
    );
+   $form['boost']['advanced']['boost_cache_css'] = array(
+     '#type'          => 'checkbox',
+     '#title'         => t('Cache .css'),
+     '#default_value' => BOOST_CACHE_CSS,
+     '#description'   => t('Boost will cache CSS files.'),
+   );
+   $form['boost']['advanced']['boost_cache_js'] = array(
+     '#type'          => 'checkbox',
+     '#title'         => t('Cache .js'),
+     '#default_value' => BOOST_CACHE_JS,
+     '#description'   => t('Boost will cache javascript files.'),
+   );
   $form['boost']['advanced']['boost_only_ascii_path'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Only allow ASCII characters in path'),
@@ -168,6 +185,19 @@ function boost_admin_settings($form = array()) {
     '#title'         => t('Do not store the cache file path in the database'),
     '#default_value' => BOOST_MULTISITE_SINGLE_DB,
     '#description'   => t('If Drupal is running on a multi-site with a single/shared database, then enabling this will allow for correct multi-site caching.'),
+  );
+  $form['boost']['advanced']['boost_permissions'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Use 0777 & 0666 permissions.'),
+    '#default_value' => BOOST_PERMISSIONS,
+    '#description'   => t('Sometimes because of funky servers you need it to use very loose file permissions.'),
+  );
+  $form['boost']['advanced']['boost_ignore_flush'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Ignore cache flushing'),
+    '#default_value' => BOOST_IGNORE_FLUSH,
+    '#options'       => array(0 => t('Disabled'), 1 => t('Only Ignore Complete Fushes'), 2 => t('Ignore All Delete Commands (Not Recommended)')),
+    '#description'   => t('Enable to put your site into a static state. Recommend turning on CSS & JS caching.'),
   );
   $form['boost']['advanced']['boost_reset'] = array(
     '#type' => 'submit',
@@ -257,11 +287,12 @@ function boost_admin_settings_submit($form, &$form_state) {
   extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
 
   if (empty($boost_enabled) && !empty($boost_previously)) { // the cache was previously enabled
+    variable_set('boost_ignore_flush', 0);
     if (boost_cache_clear_all()) {
       drupal_set_message(t('Static page cache cleared.'));
     }
   }
-  else if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) {
+  else if ((variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) && BOOST_IGNORE_FLUSH == 0) {
     boost_cache_clear_all();
   }
 }
@@ -283,13 +314,13 @@ function boost_admin_site_offline_submit($form, &$form_state) {
 }
 
 function boost_admin_modules_submit($form, &$form_state) {
-  if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) {
+  if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE && BOOST_IGNORE_FLUSH == 0) {
     boost_cache_clear_all();
   }
 }
 
 function boost_admin_themes_submit($form, &$form_state) {
-  if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) {
+  if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE && BOOST_IGNORE_FLUSH == 0) {
     boost_cache_clear_all();
   }
 }
@@ -316,6 +347,8 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   $document_root = str_replace($drupal_subdir, '', $document_root );
   $html = '\\' . $html;
   $xml = '\\' . $xml;
+  $css = '\\.css';
+  $js = '\\.js';
   $gz = '\\.gz';
 
   $string = <<<ETO
@@ -327,35 +360,51 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     </IfModule>
   </FilesMatch>
   <IfModule mod_mime.c>
-    AddCharset utf-8 $html
-    AddCharset utf-8 $xml
+    AddCharset utf-8 .html
+    AddCharset utf-8 .xml
   </IfModule>
-  AddEncoding x-gzip $gz
+  AddEncoding x-gzip .gz
   <FilesMatch "$html$gz$">
     ForceType text/html
   </FilesMatch>
   <FilesMatch "$xml$gz$">
     ForceType text/xml
   </FilesMatch>
+  <FilesMatch "$css$gz$">
+    ForceType text/css
+  </FilesMatch>
+  <FilesMatch "$js$gz$">
+    ForceType text/javascript
+  </FilesMatch>
 
   # Skip boost IF not get request OR uri has wrong dir OR cookie is set
   RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
   RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|cache|misc|modules|sites|system|themes))|(/(comment/reply|user|user/(login|password|register))$) [OR]
   RewriteCond %{HTTP_COOKIE} DRUPAL_UID
-  RewriteRule .* - [S=4]
+  RewriteRule .* - [S=9]
 
   # GZIP
-  RewriteCond %{HTTP:Accept-encoding} gzip
+  RewriteCond %{HTTP:Accept-encoding} !gzip
+  RewriteRule .* - [S=4]
+
   RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html$gz -s
   RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html$gz [L,T=text/html]
   RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml$gz -s
   RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml$gz [L,T=text/xml]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_$css$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_$css$gz [L,QSA,T=text/css]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_$js$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_$js$gz [L,QSA,T=text/javascript]
 
   # NORMAL
   RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html -s
   RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html [L,T=text/html]
   RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml -s
   RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml [L,T=text/xml]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_$css -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_$css [L,QSA,T=text/css]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_$js -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_$js [L,QSA,T=text/javascript]
   ### BOOST END ###
 ETO;
 
@@ -367,10 +416,10 @@ return $string;
  */
 function boost_count_db($all = FALSE) {
   if ($all) {
-    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache}"));
+    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE expire <> 0"));
   }
   else {
-    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE expire <> 0"));
+    return db_result(db_query('SELECT COUNT(*) FROM {boost_cache} WHERE expire BETWEEN 1 AND %d', BOOST_TIME));
   }
 }
 
@@ -387,6 +436,15 @@ function boost_count_core_db($all = FALSE) {
 function boost_clear_cache_submit () {
   boost_cache_clear_all();
   drupal_set_message(t('Boost page cache cleared.'));
+}
+
+
+/**
+ * Flushes all expired pages from database
+ */
+function boost_clear_expired_cache_submit () {
+  boost_cache_db_expire();
+  drupal_set_message(t('Expired stale files from static page cache.'));
 }
 
 /**

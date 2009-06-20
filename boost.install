@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.14 2009/06/18 22:45:32 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.15 2009/06/20 20:35:15 mikeytown2 Exp $
 
 /**
  * @file
@@ -61,6 +61,7 @@ function boost_requirements($phase) {
     case 'runtime':
       $cache_directory = variable_get('boost_file_path', boost_cache_directory(NULL, FALSE));
       $htaccess = file_get_contents('.htaccess');
+      _boost_mkdir_p($cache_directory);
       $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
 
       if ($cache_directory != boost_cache_directory(NULL, FALSE)) {
@@ -220,7 +221,6 @@ function boost_update_6100() {
  * Update 6101 - Copy old variable to new one.
  */
 function boost_update_6101() {
-  // Copy variable
-  variable_set('boost_enabled', variable_get('boost', variable_get('boost_enabled', CACHE_DISABLED)));
-  variable_del('boost');
+  // copy variable
+  return db_query("UPDATE {variable} SET name = boost_enabled WHERE name = boost");
 }

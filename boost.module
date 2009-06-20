@@ -1,9 +1,9 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.60 2009/06/18 10:05:13 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.61 2009/06/20 20:35:15 mikeytown2 Exp $
 
 /**
  * @file
- * Provides static page caching for Drupal.
+ * Provides static file caching for Drupal text output. Pages, Feeds, ect...
  */
 
 //////////////////////////////////////////////////////////////////////////////
@@ -34,6 +34,10 @@ define('BOOST_CACHE_XML',            variable_get('boost_cache_xml', TRUE));
 define('BOOST_CACHE_LIFETIME',       variable_get('boost_cache_lifetime', 3600));
 define('BOOST_TIME',                 time());
 define('BOOST_CACHE_QUERY',          variable_get('boost_cache_query', TRUE));
+define('BOOST_IGNORE_FLUSH',         variable_get('boost_ignore_flush', 0));
+define('BOOST_CACHE_CSS',            variable_get('boost_cache_css', FALSE));
+define('BOOST_CACHE_JS',             variable_get('boost_cache_js', FALSE));
+define('BOOST_PERMISSIONS',          variable_get('boost_permissions', FALSE));
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -106,6 +110,16 @@ function boost_init() {
     }
     ob_start('_boost_ob_handler');
   }
+}
+
+/**
+ * Implementation of hook_preprocess_page().
+ *
+ * Grab references to css/js files.
+ */
+function boost_preprocess_page(&$variables) {
+  $GLOBALS['_boost_styles'] = $variables['styles'];
+  $GLOBALS['_boost_scripts'] = $variables['scripts'];
 }
 
 /**
@@ -203,7 +217,7 @@ function boost_cron() {
  * Implementation of hook_flush_caches(). Deletes all static files.
  */
 function boost_flush_caches() {
-  if (variable_get('cron_semaphore', FALSE)==FALSE && (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE)) {
+  if (variable_get('cron_semaphore', FALSE)==FALSE && (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) && BOOST_IGNORE_FLUSH == 0) {
     boost_cache_clear_all();
   }
   return;
@@ -336,7 +350,6 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
             $drupal_msg = max(count(drupal_get_messages(NULL, FALSE)), $GLOBALS['_boost_message_count']);
 
             if (BOOST_HALT_ON_ERRORS && ($error || $drupal_msg != 0)) {
-              $ttl = boost_db_get_ttl(boost_file_path($GLOBALS['_boost_path']));
               $output = t('There are <strong>php errors</strong> or <strong>drupal messages</strong> on this page, preventing boost from caching.');
               if ($error) {
                 $output .= t(' ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')));
@@ -395,6 +408,9 @@ function theme_boost_cache_status($ttl, $text) {
  * PHP output buffering callback for static page caching.
  *
  * NOTE: objects have already been destructed so $user is not available.
+ *
+ * @param $buffer
+ *   Pages contents
  */
 function _boost_ob_handler($buffer) {
   // Ensure we're in the correct working directory, since some web servers (e.g. Apache) mess this up here.
@@ -429,6 +445,7 @@ function _boost_ob_handler($buffer) {
     switch (_boost_get_content_type()) {
       case 'text/html':
         boost_cache_set($GLOBALS['_boost_path'], $buffer);
+        boost_cache_css_js_files();
         break;
       case 'application/rss';
       case 'text/xml';
@@ -448,6 +465,9 @@ function _boost_ob_handler($buffer) {
  *
  * This should normally return the string 'text/html' unless another module
  * has overridden the content type.
+ *
+ * @param $default
+ *   Return this value if it can't be found
  */
 function _boost_get_content_type($default = NULL) {
   static $regex = '!^Content-Type:\s*([\w\d\/\-]+)!i';
@@ -457,12 +477,23 @@ function _boost_get_content_type($default = NULL) {
 /**
  * Determines the HTTP response code that the current page request will be
  * returning by examining the HTTP headers that have been output so far.
+ *
+ * @param $default
+ *   Look for a 200 status
  */
 function _boost_get_http_status($default = 200) {
   static $regex = '!^HTTP/1.1\s+(\d+)!';
   return (int)_boost_get_http_header($regex, $default);
 }
 
+/**
+ * Get HTTP header
+ *
+ * @param $regex
+ *   Regular expression to get HTTP Header Line
+ * @param $default
+ *   Return this value if it can't be found
+ */
 function _boost_get_http_header($regex, $default = NULL) {
   // The last header is the one that counts:
   $headers = preg_grep($regex, explode("\n", drupal_set_header()));
@@ -484,6 +515,9 @@ function _boost_get_http_header($regex, $default = NULL) {
  * in the mod_rewrite ruleset as they shouldn't be sent out using the
  * text/html content type.
  * TODO: don't cache pages with unacceptable symbols
+ *
+ * @param $path
+ *   Current URL
  */
 function boost_is_cacheable($path) {
   $path = (empty($path)) ? variable_get('site_frontpage', 'node') : $path;
@@ -519,6 +553,9 @@ function boost_is_cacheable($path) {
 
 /**
  * Determines whether a given Drupal page is currently cached or not.
+ *
+ * @param $path
+ *   Current URL
  */
 function boost_is_cached($path) {
   // no more need to check if path is empty cause it is done on the input of this function before calling it
@@ -553,6 +590,9 @@ function boost_cache_clear_all_db() {
 
 /**
  * Deletes files in the cache.
+ *
+ * @param $flush
+ *   If true clear the entire cache directory.
  */
 function boost_cache_delete($flush = FALSE) {
   clearstatcache();
@@ -581,7 +621,12 @@ function boost_cache_delete($flush = FALSE) {
 }
 
 /**
- * Finds all possible paths given the root path.
+ * Finds all possible paths/redirects/aliases given the root path.
+ *
+ * @param $path
+ *   Current URL
+ * @param $wildcard
+ *   If true get all chached files that start with this path.
  */
 function boost_cache_expire_derivative($path, $wildcard = FALSE) {
   global $base_path;
@@ -611,6 +656,13 @@ function boost_cache_expire_derivative($path, $wildcard = FALSE) {
 /**
  * Expires the static file cache for a given page, or multiple pages
  * matching a wildcard.
+ *
+ * @param $path
+ *   Current URL
+ * @param $wildcard
+ *   If true get all chached files that start with this path.
+ *
+ * TODO: Replace glob() with a database opperation.
  */
 function boost_cache_expire($path, $wildcard = FALSE) {
   $tempA = glob(boost_file_path($path, FALSE, NULL) . (($wildcard) ? '*' : '') . BOOST_FILE_EXTENSION, GLOB_NOSORT);
@@ -628,15 +680,20 @@ function boost_cache_expire($path, $wildcard = FALSE) {
 
 /**
  * Deletes cached page from file system
+ *
+ * @param $filename
+ *   Name of cached file; primary key in database
  */
 function boost_cache_kill($filename) {
-  db_query("UPDATE {boost_cache} SET expire = 0 WHERE filename = '%s'", $filename);
-  if (file_exists($filename)) {
-    @unlink($filename);
-  }
-  $gz_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename) . '.gz';
-  if (file_exists($gz_filename)) {
-    @unlink($gz_filename);
+  if (BOOST_IGNORE_FLUSH !=2) {
+    db_query("UPDATE {boost_cache} SET expire = 0 WHERE filename = '%s'", $filename);
+    if (file_exists($filename)) {
+      @unlink($filename);
+    }
+    $gz_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename) . '.gz';
+    if (file_exists($gz_filename)) {
+      @unlink($gz_filename);
+    }
   }
 }
 
@@ -656,6 +713,9 @@ function boost_cache_db_expire() {
 
 /**
  * Returns the cached contents of the specified page, if available.
+ *
+ * @param $path
+ *   Current URL
  */
 function boost_cache_get($path) {
   if (($filename = boost_file_path($path))) {
@@ -669,7 +729,14 @@ function boost_cache_get($path) {
 
 
 /**
- * Replaces the cached contents of the specified page, if stale.
+ * Replaces/Sets the cached contents of the specified page, if stale.
+ *
+ * @param $path
+ *   Current URL
+ * @param $data
+ *   URL's contents
+ * @param $extension
+ *   File extension for this mime type
  */
 function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
   // Append the Boost footer with the relevant timestamps
@@ -704,6 +771,9 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
 
 /**
  * Figure out what is going in the database & put it in
+ *
+ * @param $filename
+ *   Name of cached file; primary key in database
  */
 function boost_db_prep($filename) {
   $router_item = _boost_get_menu_router();
@@ -715,13 +785,13 @@ function boost_db_prep($filename) {
   $boost_db = boost_get_db($filename);
   //get data from actual entry first, if this page has been cached before.
   if ($boost_db) {
-    $expire = $boost_db['lifetime'] + BOOST_TIME;
+    $expire = $boost_db['lifetime'] != -1 ? $boost_db['lifetime'] + BOOST_TIME : $expire;
     $lifetime = $boost_db['lifetime'];
     $push = $boost_db['push'];
   }
   //get data from settings table, if this page has not been put into the cache.
   elseif ($boost_settings_db) {
-    $expire = $boost_settings_db['lifetime'] + BOOST_TIME;
+    $expire = $boost_settings_db['lifetime'] != -1 ? $boost_settings_db['lifetime'] + BOOST_TIME : $expire;
     $lifetime = $boost_settings_db['lifetime'];
     $push = $boost_settings_db['push'];
   }
@@ -731,6 +801,17 @@ function boost_db_prep($filename) {
 
 /**
  * Puts boost info into database.
+ *
+ * @param $filename
+ *   Name of cached file; primary key in database
+ * @param $expire
+ *   Expiration time
+ * @param $lifetime
+ *   Default lifetime
+ * @param $push
+ *   Pre-cache this file
+ * @param $router_item
+ *   Array containing page_callback & page_arguments.
  */
 function boost_put_db($filename, $expire, $lifetime, $push, $router_item) {
   db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s' WHERE filename = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $filename);
@@ -740,14 +821,20 @@ function boost_put_db($filename, $expire, $lifetime, $push, $router_item) {
 }
 
 /**
- * Gets boost info from database.
+ * Gets boost info from cache database.
+ *
+ * @param $filename
+ *   Filename to be looked up in the database
  */
 function boost_get_db($filename) {
   return db_fetch_array(db_query_range("SELECT expire, lifetime, push FROM {boost_cache} WHERE filename = '%s'", $filename, 0, 1));
 }
 
 /**
- * Gets boost settings from database.
+ * Gets boost settings from cache settings database.
+ *
+ * @param $router_item
+ *   Array containing page_callback & page_arguments.
  */
 function boost_get_settings_db($router_item) {
   return db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s'", $router_item['page_callback'], $router_item['page_arguments'], 0, 1));
@@ -756,6 +843,11 @@ function boost_get_settings_db($router_item) {
 /**
  * Writes data to filename in an atomic operation thats compatible with older
  * versions of php (php < 5.2.4 file_put_contents() doesn't lock correctly).
+ *
+ * @param $filename
+ *   Name of file to be written
+ * @param $data
+ *   Contents of file
  */
 function boost_cache_write($filename, $data = '') {
   if (!_boost_mkdir_p(dirname($filename))) {
@@ -768,7 +860,7 @@ function boost_cache_write($filename, $data = '') {
       return FALSE;
     }
     else {
-      @chmod($tempfile, 0664);
+      BOOST_PERMISSIONS ? @chmod($tempfile, 0666) : @chmod($tempfile, 0664);
       // put the temp file in its final location
       if (@rename($tempfile, $filename) === FALSE) {
         watchdog('boost', 'Unable to rename file: %temp  to  %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%temp' => $tempfile, '%file' => $filename, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
@@ -783,6 +875,11 @@ function boost_cache_write($filename, $data = '') {
 
 /**
  * Returns the full directory path to the static file cache directory.
+ *
+ * @param $host
+ *   Host name. Example: example.com
+ * @param $absolute
+ *   Give path from system root if true. If false give path from web root.
  */
 function boost_cache_directory($host = NULL, $absolute = TRUE) {
   global $base_url;
@@ -803,11 +900,11 @@ function boost_cache_directory($host = NULL, $absolute = TRUE) {
 /**
  * Returns the static file path for a Drupal page.
  *
- * $path
+ * @param $path
  *   path to convert to boost's file naming convention
- * $query
+ * @param $query
  *   add query to path
- * $extension
+ * @param $extension
  *   add extension to end of filename
  */
 function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION) {
@@ -844,42 +941,52 @@ function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION
 /**
  * Returns the age of a cached file, measured in seconds since it was last
  * updated.
+ * @param $filename
+ *   Name of cached file
  */
 function boost_file_get_age($filename) {
   return BOOST_TIME - filemtime($filename);
 }
 function boost_db_get_age($filename) {
   $boost_db = boost_get_db($filename);
-  return $boost_db['expire'] != 0 ? BOOST_TIME -  $boost_db['expire'] : FALSE;
+  return $boost_db['expire'] != 0 ? $boost_db['expire'] : FALSE;
 }
 
 /**
  * Returns the remaining time-to-live for a cached file, measured in
  * seconds.
+ * @param $filename
+ *   Name of cached file
  */
 function boost_file_get_ttl($filename) {
   return BOOST_CACHE_LIFETIME - boost_file_get_age($filename);
 }
 function boost_db_get_ttl($filename) {
   $boost_db = boost_get_db($filename);
-  return $boost_db['lifetime'] != -1 ? $boost_db['lifetime'] : BOOST_CACHE_LIFETIME - boost_db_get_age($filename);
+  return boost_db_get_age($filename) - BOOST_TIME;
 }
 
 /**
  * Determines whether a cached file has expired, i.e. whether its age
  * exceeds the maximum cache lifetime as defined by Drupal's system
  * settings.
+ * @param $filename
+ *   Name of cached file
  */
 function boost_file_is_expired($filename) {
   return boost_file_get_age($filename) > BOOST_CACHE_LIFETIME;
 }
 function boost_db_is_expired($filename) {
-  return boost_db_get_age($filename) > BOOST_CACHE_LIFETIME;
+  return boost_db_get_age($filename) < BOOST_TIME;
 }
 
 /**
  * Sets a special cookie preventing authenticated users getting served pages
  * from the static page cache.
+ * @param $user
+ *   User Object
+ * @param $expires
+ *   Expiration time
  */
 function boost_set_cookie($user, $expires = NULL) {
   if (!$expires) {
@@ -895,6 +1002,9 @@ function boost_set_cookie($user, $expires = NULL) {
 /**
  * Retrieve a specific URL redirect from the database.
  * http://drupal.org/node/451790
+ *
+ * @param $where
+ *   Array containing 'redirect' => $path
  */
 function boost_path_redirect_load($where = array(), $args = array(), $sort = array()) {
   $redirects = array();
@@ -922,11 +1032,142 @@ function boost_path_redirect_load($where = array(), $args = array(), $sort = arr
   }
 }
 
+/**
+ * See if css and or js files should be cached.
+ */
+function boost_cache_css_js_files() {
+  if (BOOST_CACHE_CSS) {
+    _boost_copy_css_files($GLOBALS['_boost_styles']);
+  }
+  if (BOOST_CACHE_JS) {
+    _boost_copy_js_files($GLOBALS['_boost_scripts']);
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Boost API internals
+/**
+ * Extract css filenames from html and copy them & their children.
+ *
+ * @param $css
+ *   String containing all html css.
+ */
+function _boost_copy_css_files($css) {
+  //extract css file name
+  $start = 'href="' . base_path();
+  $css_files=explode($start, $css);
+  array_shift($css_files);
+  for ($i = 0; $i < count($css_files); $i++) {
+    $css_files[$i]=array_shift(explode('.css', $css_files[$i]));
+  }
+
+  //copy files
+  foreach ($css_files as $css_file) {
+    if (file_exists($css_file . '.css')) {
+      $src = $css_file . '.css';
+      $dest = BOOST_FILE_PATH . '/' . $css_file . '.css_.css';
+      _boost_copy_file($src, $dest);
+    }
+    if (file_exists($css_file . '.css.gz')) {
+      $src = $css_file . '.css.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css_.css.gz';
+      _boost_copy_file($src, $dest);
+    }
+    elseif (BOOST_GZIP && file_exists($css_file . '.css')) {
+      $src = $css_file . '.css';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css_.css.gz';
+      _boost_gz_copy_file($src, $dest);
+    }
+  }
+}
+
+/**
+ * Extract javascript filenames from html and copy them & their children.
+ *
+ * @param $js
+ *   String containing all html javascript.
+ */
+function _boost_copy_js_files($js) {
+  //extract js file name
+  $start = 'src="'. base_path();
+  $js_files=explode($start, $js);
+  array_shift($js_files);
+  for ($i = 0; $i < count($js_files); $i++) {
+    $temp = array_shift(explode('"', $js_files[$i]));
+    $temp = explode('.', $temp);
+    array_pop($temp);
+    $js_files[$i]=implode('.', $temp);
+  }
+
+  //copy files
+  foreach ($js_files as $js_file) {
+    if (file_exists($js_file . '.js')) {
+      $src = $js_file . '.js';
+      $dest = BOOST_FILE_PATH . '/' . $js_file . '.js_.js';
+      _boost_copy_file($src, $dest);
+    }
+    if (file_exists($js_file . '.js.gz')) {
+      $src = $js_file . '.js.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js_.js.gz';
+      _boost_copy_file($src, $dest);
+    }
+    elseif (BOOST_GZIP && file_exists($js_file . '.js')) {
+      $src = $js_file . '.js';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js_.js.gz';
+      _boost_gz_copy_file($src, $dest);
+    }
+    if (file_exists($js_file . '.jsmin.js')) {
+      $src = $js_file . '.jsmin.js';
+      $dest = BOOST_FILE_PATH . '/' . $js_file . '.jsmin.js_.js';
+      _boost_copy_file($src, $dest);
+    }
+    if (file_exists($js_file . '.jsmin.js.gz')) {
+      $src = $js_file . '.jsmin.js.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js_.js.gz';
+      _boost_copy_file($src, $dest);
+    }
+    elseif (BOOST_GZIP && file_exists($js_file . '.jsmin.js')) {
+      $src = $js_file . '.jsmin.js';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js_.js.gz';
+      _boost_gz_copy_file($src, $dest);
+    }
+  }
+}
+
+/**
+ * Copy a file.
+ *
+ * @param $src
+ *   Source File.
+ * @param $dest
+ *   Destination.
+ */
+function _boost_copy_file($src, $dest) {
+  if (_boost_mkdir_p(dirname($dest))) {
+    @copy($src, $dest);
+    BOOST_PERMISSIONS ? @chmod($dest, 0666) : @chmod($dest, 0664);
+  }
+}
+
+/**
+ * Copy a file and gzip its contents
+ *
+ * @param $src
+ *   Source File.
+ * @param $dest
+ *   Destination.
+ */
+function _boost_gz_copy_file($src, $dest) {
+  if (_boost_mkdir_p(dirname($dest))) {
+    @file_put_contents($dest, gzencode(file_get_contents($src), 9));
+    BOOST_PERMISSIONS ? @chmod($dest, 0666) : @chmod($dest, 0664);
+  }
+}
 
 /**
  * Get's page_callback & page_arguments from menu_router table
+ *
+ * Allows for any content type to have it's own cache expiration.
  */
 function _boost_get_menu_router() {
   $original_map = arg(NULL, $_GET['q']);
@@ -966,12 +1207,25 @@ function _boost_get_menu_router() {
 
 /**
  * Recursive version of mkdir(), compatible with PHP4.
+ *
+ * @param $pathname
+ *   The top-level directory that will be recursively created.
+ * @param $mode
+ *   Set permissions.
+ * @param $recursive
+ *   Opperate in a recursive manner.
  */
 function _boost_mkdir_p($pathname, $mode = 0775, $recursive = TRUE) {
-  if (is_dir($pathname)) return TRUE;
-  if ($recursive && !_boost_mkdir_p(dirname($pathname), $mode)) return FALSE;
-  if ($result = @mkdir($pathname, $mode))
+  $mode = BOOST_PERMISSIONS ? 0777 : $mode;
+  if (is_dir($pathname)) {
+    return TRUE;
+  }
+  if ($recursive && !_boost_mkdir_p(dirname($pathname), $mode)) {
+    return FALSE;
+  }
+  if ($result = @mkdir($pathname, $mode)) {
     @chmod($pathname, $mode);
+  }
   return $result;
 }
 
