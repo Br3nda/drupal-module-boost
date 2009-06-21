@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.15 2009/06/20 20:35:15 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.16 2009/06/21 01:26:11 mikeytown2 Exp $
 
 /**
  * @file
@@ -72,7 +72,7 @@ function boost_requirements($phase) {
           'value'       => $t('Cache path'),
         );
       }
-      else if (!is_dir($cache_directory)) {
+      elseif (!is_dir($cache_directory)) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
           'description' => $t('!cache_dir: does not exist.', array('!cache_dir' => $cache_directory)),
@@ -80,7 +80,7 @@ function boost_requirements($phase) {
           'value'       => $t('Cache path'),
         );
       }
-      else if ($htaccess && count(explode("%{REQUEST_URI}_%{QUERY_STRING}\.html", $htaccess)) < 5) {
+      elseif ($htaccess && count(explode("%{REQUEST_URI}_%{QUERY_STRING}\.html", $htaccess)) < 5) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
           'description' => $t('.htaccess file does not contain the boost specific rewrite rules, or the rewrite rules have changed and they need to be updated.', array()),
@@ -88,12 +88,20 @@ function boost_requirements($phase) {
           'value'       => $t('.htaccess file'),
         );
       }
-      else if (!$root_file || !is_writable($cache_directory)) {
+      elseif (!$root_file || !is_writable($cache_directory)) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
           'description' => $t('Directory %dir credentials - Permissions: %fp. Owner %fo. Group %fg.<br /> Your credentials - Group ID: %gid. User ID: %uid. Current script owner: %user.', array('%dir' => getcwd() . '/' . $cache_directory, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user(), '%fp' => substr(sprintf('%o', fileperms($cache_directory)), -4), '%fo' => fileowner($cache_directory), '%fg' => filegroup($cache_directory) )),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('Can not write to filesystem'),
+        );
+      }
+      elseif ((variable_get('statistics_count_content_views', 0) || variable_get('statistics_enable_access_log', 0)) && !file_exists('boost_stats.php')) {
+        $requirements['boost'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('Copy the boost_stats.php file to your webroot. It should be located in the modules/boost/stats directory.'),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('boost_stats.php missing from root dir'),
         );
       }
       else {
