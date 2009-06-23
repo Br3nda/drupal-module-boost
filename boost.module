@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.62 2009/06/21 01:26:11 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.63 2009/06/23 00:23:55 mikeytown2 Exp $
 
 /**
  * @file
@@ -125,12 +125,16 @@ function boost_preprocess_page(&$variables) {
 /**
  * Implementation of hook_footer().
  *
- * Place boost image into pages footer.
+ * Place boost stat counter image into pages footer.
+ *
+ * NOTE HTML code could be added to the $buffer directly, right before </body>,
+ * inside _boost_ob_handler() function. Would prevent 2x counts on first view.
  */
 function boost_footer() {
-  Global $base_url;
+  Global $base_path, $user;
   $filename = 'boost_stats.php';
-  if (!(   strpos($_SERVER['SCRIPT_FILENAME'], 'index.php') === FALSE
+
+  if (   strpos($_SERVER['SCRIPT_FILENAME'], 'index.php') === FALSE
       || variable_get('site_offline', 0)
       || $_SERVER['REQUEST_METHOD'] != 'GET'
       || $_SERVER['SERVER_SOFTWARE'] === 'PHP CLI'
@@ -139,24 +143,28 @@ function boost_footer() {
       || !boost_is_cacheable($GLOBALS['_boost_path'])
       || !empty($user->uid)
       || !file_exists($filename)
-      )) {
-    if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) == '' && variable_get('statistics_count_content_views', 0)) {
-      $nid = arg(1);
-    }
-    if ((variable_get('statistics_enable_access_log', 0)) && (module_invoke('throttle', 'status') == 0)) {
-      $title = drupal_urlencode(strip_tags(drupal_get_title()));
-      $q = $_GET['q'];
-    }
+      ) {
+    return;
+  }
 
-    if (isset($nid) & !isset($title)) {
-      return '<img src="'. $base_url . '/' . $filename . '?nid=' . $nid . '" />';
-    }
-    elseif (isset($nid) & isset($title)) {
-      return '<img src="'. $base_url . '/' . $filename . '?nid=' . $nid . '&q=' . $q . '&title=' . $title . '" />';
-    }
-    elseif (!isset($nid) & isset($title)) {
-      return '<img src="'. $base_url . '/' . $filename . '?q=' . $q . '&title=' . $title . '" />';
-    }
+  if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) == '' && variable_get('statistics_count_content_views', 0)) {
+    $nid = arg(1);
+  }
+  if ((variable_get('statistics_enable_access_log', 0)) && (module_invoke('throttle', 'status') == 0)) {
+    $title = drupal_urlencode(strip_tags(drupal_get_title()));
+    $q = $_GET['q'];
+  }
+
+  $start = '<div><img src="' . $base_path . $filename;
+  $end = '" alt="" /></div>';
+  if (isset($nid) & !isset($title)) {
+    return $start . '?nid=' . $nid . $end;
+  }
+  elseif (isset($nid) & isset($title)) {
+    return $start . '?nid=' . $nid . '&q=' . $q . '&title=' . $title . $end;
+  }
+  elseif (!isset($nid) & isset($title)) {
+    return $start . '?q=' . $q . '&title=' . $title . $end;
   }
 }
 
