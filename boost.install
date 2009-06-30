@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.17 2009/06/23 08:45:51 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.18 2009/06/30 02:59:08 mikeytown2 Exp $
 
 /**
  * @file
@@ -230,5 +230,13 @@ function boost_update_6100() {
  */
 function boost_update_6101() {
   // copy variable
-  return db_query("UPDATE {variable} SET name = 'boost_enabled' WHERE name = 'boost'");
+  return update_sql("UPDATE {variable} SET name = 'boost_enabled' WHERE name = 'boost'");
+}
+
+/**
+ * Update 6102 - Delete old variable.
+ */
+function boost_update_6102() {
+  // copy variable
+  return update_sql("DELETE {variable} WHERE name = 'boost_permissions' LIMIT 1");
 }

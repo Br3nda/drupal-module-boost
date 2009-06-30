@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.65 2009/06/30 02:40:00 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.66 2009/06/30 02:59:08 mikeytown2 Exp $
 
 /**
  * @file
@@ -37,7 +37,8 @@ define('BOOST_CACHE_QUERY',          variable_get('boost_cache_query', TRUE));
 define('BOOST_IGNORE_FLUSH',         variable_get('boost_ignore_flush', 0));
 define('BOOST_CACHE_CSS',            variable_get('boost_cache_css', FALSE));
 define('BOOST_CACHE_JS',             variable_get('boost_cache_js', FALSE));
-define('BOOST_PERMISSIONS',          variable_get('boost_permissions', FALSE));
+define('BOOST_PERMISSIONS_FILE',     variable_get('boost_permissions_file', ''));
+define('BOOST_PERMISSIONS_DIR',      variable_get('boost_permissions_dir', ''));
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -907,7 +908,9 @@ function boost_cache_write($filename, $data = '') {
       return FALSE;
     }
     else {
-      BOOST_PERMISSIONS ? @chmod($tempfile, 0666) : @chmod($tempfile, 0664);
+      if (is_numeric(BOOST_PERMISSIONS_FILE)) {
+        @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
+      }
       // put the temp file in its final location
       if (@rename($tempfile, $filename) === FALSE) {
         watchdog('boost', 'Unable to rename file: %temp  to  %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%temp' => $tempfile, '%file' => $filename, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
@@ -1207,7 +1210,9 @@ function _boost_copy_js_files($js) {
 function _boost_copy_file($src, $dest) {
   if (_boost_mkdir_p(dirname($dest))) {
     @copy($src, $dest);
-    BOOST_PERMISSIONS ? @chmod($dest, 0666) : @chmod($dest, 0664);
+    if (is_numeric(BOOST_PERMISSIONS_FILE)) {
+      @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
+    }
   }
 }
 
@@ -1222,7 +1227,9 @@ function _boost_copy_file($src, $dest) {
 function _boost_gz_copy_file($src, $dest) {
   if (_boost_mkdir_p(dirname($dest))) {
     @file_put_contents($dest, gzencode(file_get_contents($src), 9));
-    BOOST_PERMISSIONS ? @chmod($dest, 0666) : @chmod($dest, 0664);
+    if (is_numeric(BOOST_PERMISSIONS_FILE)) {
+      @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
+    }
   }
 }
 
@@ -1272,17 +1279,15 @@ function _boost_get_menu_router() {
  *
  * @param $pathname
  *   The top-level directory that will be recursively created.
- * @param $mode
- *   Set permissions.
  * @param $recursive
  *   Opperate in a recursive manner.
  */
-function _boost_mkdir_p($pathname, $mode = 0775, $recursive = TRUE) {
-  $mode = BOOST_PERMISSIONS ? 0777 : $mode;
+function _boost_mkdir_p($pathname, $recursive = TRUE) {
+  $mode = is_numeric(BOOST_PERMISSIONS_DIR) ? octdec(BOOST_PERMISSIONS_DIR) : 0775;
   if (is_dir($pathname)) {
     return TRUE;
   }
-  if ($recursive && !_boost_mkdir_p(dirname($pathname), $mode)) {
+  if ($recursive && !_boost_mkdir_p(dirname($pathname))) {
     return FALSE;
   }
   if ($result = @mkdir($pathname, $mode)) {

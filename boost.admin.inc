@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.33 2009/06/20 20:35:15 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.34 2009/06/30 02:59:08 mikeytown2 Exp $
 
 /**
  * @file
@@ -186,11 +186,17 @@ function boost_admin_settings($form = array()) {
     '#default_value' => BOOST_MULTISITE_SINGLE_DB,
     '#description'   => t('If Drupal is running on a multi-site with a single/shared database, then enabling this will allow for correct multi-site caching.'),
   );
-  $form['boost']['advanced']['boost_permissions'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Use 0777 & 0666 permissions.'),
-    '#default_value' => BOOST_PERMISSIONS,
-    '#description'   => t('Sometimes because of funky servers you need it to use very loose file permissions.'),
+  $form['boost']['advanced']['boost_permissions_file'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
+    '#default_value' => BOOST_PERMISSIONS_FILE,
+    '#description'   => t('Sometimes because of funky servers you need it use a different file mode then the default.'),
+  );
+  $form['boost']['advanced']['boost_permissions_dir'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Directories: Enter in a 4 digit number (octal) that will be used by !link. Example 0775', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
+    '#default_value' => BOOST_PERMISSIONS_DIR,
+    '#description'   => t('Sometimes because of funky servers you need it use a different file mode then the default.'),
   );
   $form['boost']['advanced']['boost_ignore_flush'] = array(
     '#type'          => 'radios',
