@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.66 2009/06/30 02:59:08 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.67 2009/07/01 20:48:14 mikeytown2 Exp $
 
 /**
  * @file
@@ -697,9 +697,7 @@ function boost_cache_expire_derivative($path, $wildcard = FALSE) {
     }
   }
   boost_cache_expire($path, $wildcard);
-
 }
-
 
 /**
  * Expires the static file cache for a given page, or multiple pages
@@ -713,6 +711,12 @@ function boost_cache_expire_derivative($path, $wildcard = FALSE) {
  * TODO: Replace glob() with a database opperation.
  */
 function boost_cache_expire($path, $wildcard = FALSE) {
+  // Sanity check
+  if (boost_file_path($path) === FALSE) {
+    return FALSE;
+  }
+
+  // Get list of related files
   $tempA = glob(boost_file_path($path, FALSE, NULL) . (($wildcard) ? '*' : '') . BOOST_FILE_EXTENSION, GLOB_NOSORT);
   $tempB = glob(boost_file_path($path, FALSE, NULL) . (($wildcard) ? '*' : '') . BOOST_XML_EXTENSION, GLOB_NOSORT);
   $filenames = array_filter($tempA + $tempB);
@@ -720,6 +724,7 @@ function boost_cache_expire($path, $wildcard = FALSE) {
     return FALSE;
   }
 
+  // Flush expired files
   foreach ($filenames as $filename) {
     boost_cache_kill($filename);
   }
@@ -1097,7 +1102,7 @@ function boost_cache_css_js_files($buffer) {
     $temp = explode(' />', array_pop($css));
     $css[] = array_shift($temp);
     $css = implode('',$css);
-    _boost_copy_css_files($css);  
+    _boost_copy_css_files($css);
   }
   if (BOOST_CACHE_JS) {
     $js = explode('<script type="text/javascript" ', $buffer);
