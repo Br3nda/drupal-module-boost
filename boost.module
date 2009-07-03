@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.67 2009/07/01 20:48:14 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.68 2009/07/03 18:32:39 mikeytown2 Exp $
 
 /**
  * @file
@@ -738,7 +738,7 @@ function boost_cache_expire($path, $wildcard = FALSE) {
  *   Name of cached file; primary key in database
  */
 function boost_cache_kill($filename) {
-  if (BOOST_IGNORE_FLUSH !=2) {
+  if (BOOST_IGNORE_FLUSH !=2 && strstr($filename, BOOST_FILE_PATH)) {
     db_query("UPDATE {boost_cache} SET expire = 0 WHERE filename = '%s'", $filename);
     if (file_exists($filename)) {
       @unlink($filename);
