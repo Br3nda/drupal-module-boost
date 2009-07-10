@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.34 2009/06/30 02:59:08 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.35 2009/07/10 00:19:49 mikeytown2 Exp $
 
 /**
  * @file
@@ -30,7 +30,7 @@ function boost_admin_settings($form = array()) {
   else {
     $description_core .= '<p>'. t('<strong class="ok">Currently, all enabled modules are compatible with the aggressive caching policy.</strong> Please note, if you use aggressive caching and enable new modules, you will need to check this page again to ensure compatibility.') .'</p>';
   }
-  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800), 'format_interval');
+  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800, 52*604800), 'format_interval');
   $period[0] = '<' . t('none') . '>';
 
   // Take over the relevant existing settings
@@ -57,12 +57,12 @@ function boost_admin_settings($form = array()) {
   );
   $form['boost']['boost_clear'] = array(
     '#type' => 'submit',
-    '#value' => t('Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(TRUE))),
+    '#value' => t('Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(1))),
     '#submit' => array('boost_clear_cache_submit'),
   );
   $form['boost']['boost_clear_expired'] = array(
     '#type' => 'submit',
-    '#value' => t('Clear Boost expired data: !count pages', array('!count' => boost_count_db(FALSE))),
+    '#value' => t('Clear Boost expired data: !count pages', array('!count' => boost_count_db(0))),
     '#submit' => array('boost_clear_expired_cache_submit'),
   );
 
@@ -202,12 +202,12 @@ function boost_admin_settings($form = array()) {
     '#type'          => 'radios',
     '#title'         => t('Ignore cache flushing'),
     '#default_value' => BOOST_IGNORE_FLUSH,
-    '#options'       => array(0 => t('Disabled'), 1 => t('Only Ignore Complete Fushes'), 2 => t('Ignore All Delete Commands (Not Recommended)')),
-    '#description'   => t('Enable to put your site into a static state. Recommend turning on CSS & JS caching.'),
+    '#options'       => array(0 => t('Disabled'), 1 => t('Only Ignore Complete Flushes'), 2 => t('Ignore Fluses & Expiration'), 3 => t('Ignore All Delete Commands (Not Recommended)')),
+    '#description'   => t('Enable to put your site into a static state. Recommend turning on CSS & JS caching if enabled.'),
   );
   $form['boost']['advanced']['boost_reset'] = array(
     '#type' => 'submit',
-    '#value' => t('Reset boost database'),
+    '#value' => t('Reset boost database: !records records', array('!records' => boost_count_db(2))),
     '#submit' => array('boost_reset_database_submit'),
   );
 
@@ -239,6 +239,7 @@ function boost_admin_settings($form = array()) {
     '#title'         => t('Generated Rules'),
     '#default_value' => $htaccess,
     '#rows'          => count(explode("\n", $htaccess))+1,
+    '#wysiwyg'       => FALSE,
     '#description'   => t("Copy this into your .htaccess file below <pre><tt>  # RewriteBase / </tt></pre> and above <pre><tt>  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'</tt></pre>"),
   );
 
@@ -295,39 +296,50 @@ function boost_admin_settings_submit($form, &$form_state) {
   if (empty($boost_enabled) && !empty($boost_previously)) { // the cache was previously enabled
     variable_set('boost_ignore_flush', 0);
     if (boost_cache_clear_all()) {
-      drupal_set_message(t('Static page cache cleared.'));
+      drupal_set_message(t('Boost: Static page cache cleared.'));
     }
   }
-  else if ((variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE) && BOOST_IGNORE_FLUSH == 0) {
-    boost_cache_clear_all();
+  else if ($boost_ignore_flush == 0 && (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE)) {
+    if (boost_cache_clear_all()) {
+      drupal_set_message(t('Boost: Static page cache cleared.'), 'warning');
+    }
   }
 }
 
 function boost_admin_clear_cache_submit($form, &$form_state) {
-  boost_cache_clear_all();
   drupal_flush_all_caches();
-  drupal_set_message(t('Static page cache and all other caches cleared.'));
+  if (boost_cache_clear_all()) {
+    drupal_set_message(t('Static page cache (boost) and all other caches cleared.'));
+  }
+  else {
+    drupal_set_message(t('Boost: Static page cache NOT cleared. To clear Boosts cache set "Ignore cache flushing:" to \'Disabled\' in the advanced settings.'), 'warning');
+    drupal_set_message(t('All other caches cleared.'));
+  }
 }
 
 function boost_admin_site_offline_submit($form, &$form_state) {
   if (!empty($form_state['values']['site_offline'])) {
     if (BOOST_CLEAR_CACHE_OFFLINE) {
       if (boost_cache_clear_all()) {
-        drupal_set_message(t('Static page cache cleared.'));
+        drupal_set_message(t('Boost: Static page cache cleared.'), 'warning');
       }
     }
   }
 }
 
 function boost_admin_modules_submit($form, &$form_state) {
-  if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE && BOOST_IGNORE_FLUSH == 0) {
-    boost_cache_clear_all();
+  if ((variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE)) {
+    if (boost_cache_clear_all()) {
+      drupal_set_message(t('Boost: Static page cache cleared.'), 'warning');
+    }
   }
 }
 
 function boost_admin_themes_submit($form, &$form_state) {
-  if (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE && BOOST_IGNORE_FLUSH == 0) {
-    boost_cache_clear_all();
+  if ((variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE)) {
+    if (boost_cache_clear_all()) {
+      drupal_set_message(t('Boost: Static page cache cleared.'), 'warning');
+    }
   }
 }
 
@@ -420,12 +432,15 @@ return $string;
 /**
  * Counts the number of pages in the static cache.
  */
-function boost_count_db($all = FALSE) {
-  if ($all) {
+function boost_count_db($all = 0) {
+  if ($all == 0) {
     return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE expire <> 0"));
   }
-  else {
+  elseif ($all == 1) {
     return db_result(db_query('SELECT COUNT(*) FROM {boost_cache} WHERE expire BETWEEN 1 AND %d', BOOST_TIME));
+  }
+  elseif ($all == 2) {
+    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache}"));
   }
 }
 
@@ -440,8 +455,12 @@ function boost_count_core_db($all = FALSE) {
  * Flushes boost page cache
  */
 function boost_clear_cache_submit () {
-  boost_cache_clear_all();
-  drupal_set_message(t('Boost page cache cleared.'));
+  if (boost_cache_clear_all()) {
+    drupal_set_message(t('Boost: Static page cache cleared.'));
+  }
+  else {
+    drupal_set_message(t('Boost: Set "Ignore cache flushing:" to \'Disabled\' in the advanced settings & try again.'), 'warning');
+  }
 }
 
 
@@ -449,8 +468,12 @@ function boost_clear_cache_submit () {
  * Flushes all expired pages from database
  */
 function boost_clear_expired_cache_submit () {
-  boost_cache_db_expire();
-  drupal_set_message(t('Expired stale files from static page cache.'));
+  if (boost_cache_db_expire()) {
+    drupal_set_message(t('Boost: Expired stale files from static page cache.'));
+  }
+  else {
+   drupal_set_message(t('Boost: Set "Ignore cache flushing:" to \'Disabled\' OR \'Only Ignore Complete Flushes\' in the advanced settings & try again.'), 'warning');
+  }
 }
 
 /**
@@ -465,7 +488,11 @@ function boost_clear_core_page_cache_submit () {
  * Resets boost database & cache
  */
 function boost_reset_database_submit () {
-   db_query("DELETE FROM {boost_cache}");
-  boost_cache_clear_all();
-  drupal_set_message(t('Boost page cache & database cleared.'));
+  if (boost_cache_clear_all()) {
+    db_query("DELETE FROM {boost_cache}");
+    drupal_set_message(t('Boost: Static page cache & database cleared.'));
+  }
+  else {
+    drupal_set_message(t('Boost: Set "Ignore cache flushing:" to \'Disabled\' in the advanced settings & try again.'), 'warning');
+  }
 }
