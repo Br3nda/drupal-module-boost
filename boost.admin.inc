@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.35 2009/07/10 00:19:49 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.36 2009/07/10 17:44:19 mikeytown2 Exp $
 
 /**
  * @file
@@ -57,12 +57,12 @@ function boost_admin_settings($form = array()) {
   );
   $form['boost']['boost_clear'] = array(
     '#type' => 'submit',
-    '#value' => t('Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(1))),
+    '#value' => t('Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(0))),
     '#submit' => array('boost_clear_cache_submit'),
   );
   $form['boost']['boost_clear_expired'] = array(
     '#type' => 'submit',
-    '#value' => t('Clear Boost expired data: !count pages', array('!count' => boost_count_db(0))),
+    '#value' => t('Clear Boost expired data: !count pages', array('!count' => boost_count_db(1))),
     '#submit' => array('boost_clear_expired_cache_submit'),
   );
 
