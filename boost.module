@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.70 2009/07/15 07:43:38 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.71 2009/07/15 07:45:49 mikeytown2 Exp $
 
 /**
  * @file
@@ -158,6 +158,28 @@ function boost_exit($destination = NULL) {
 }
 
 /**
+ * Implementation of hook_menu().
+ */
+function boost_menu() {
+  $items['admin/settings/performance/default'] = array(
+    'title' => 'Performance',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/settings/performance/boost'] = array(
+    'title' => 'Boost Settings',
+    'description' => 'Advanced boost configuration.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('boost_admin_boost_performace_page'),
+    'access arguments' => array('administer site configuration'),
+    'weight' => 10,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'boost.admin.inc',
+  );
+  return $items;
+}
+
+/**
  * Implementation of hook_form_alter(). Performs alterations before a form
  * is rendered.
  */
@@ -169,11 +191,10 @@ function boost_form_alter(&$form, $form_state, $form_id) {
     // CACHE_DISABLED), and inject our own settings in its stead.
     case 'system_performance_settings':
       module_load_include('inc', 'boost', 'boost.admin');
-      $form['page_cache'] = boost_admin_settings($form['page_cache']);
+      $form['page_cache'] = boost_admin_performance_page($form['page_cache']);
       $form['page_cache']['#title'] = t('Anonymous page caching');
       $form['page_cache']['#description'] = t('Enabling the page cache will offer a significant performance boost. Drupal can store and send compressed cached pages requested by <em>anonymous</em> users. By caching the first request to the page, Drupal does not have to construct the page each time it is viewed. The page must first be visited by an anonymous user in order for the cache to work on subsequent requests for that page. Boost & Core caching do not work for logged in users.');
-      $form['#validate'][] = 'boost_admin_settings_validate';
-      $form['#submit'][] = 'boost_admin_settings_submit';
+      $form['#submit'][] = 'boost_admin_performance_page_submit';
       $form['clear_cache']['clear']['#submit'][0] = 'boost_admin_clear_cache_submit';
       break;
 
