@@ -23,10 +23,11 @@
     ForceType text/javascript
   </FilesMatch>
 
-  # Skip boost IF not get request OR uri has wrong dir OR cookie is set
+  # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR https request
   RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
   RewriteCond %{REQUEST_URI} (^/(admin|cache|misc|modules|sites|system|themes))|(/(comment/reply|user|user/(login|password|register))$) [OR]
-  RewriteCond %{HTTP_COOKIE} DRUPAL_UID
+  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]
+  RewriteCond %{HTTPS} on
   RewriteRule .* - [S=9]
 
   # GZIP
@@ -53,4 +54,4 @@
   RewriteRule .* cache/%{SERVER_NAME}%{REQUEST_URI}_\.js [L,QSA,T=text/javascript]
   ### BOOST END ###
 
-# $Id: boosted1.txt,v 1.1.2.7 2009/06/20 20:43:49 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.8 2009/07/15 07:40:09 mikeytown2 Exp $
