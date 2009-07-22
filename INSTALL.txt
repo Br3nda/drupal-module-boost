@@ -1,4 +1,4 @@
-// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.8 2009/06/08 05:09:12 mikeytown2 Exp $
+// $Id: INSTALL.txt,v 1.1.2.1.2.3.2.9 2009/07/22 03:01:47 mikeytown2 Exp $
 
 REQUIREMENTS
 ------------
@@ -32,6 +32,23 @@ INSTALLATION
      cache directory (must be writable by the web server) and enable static
      caching. Keeping the default directory is highly recommended.
 
+  4. Go to [Administer >> Site configuration >> Performance >> Boost]
+     Specify the cache directory, which should be something like
+     cache/www.example.com (keeping the default directory is highly recommended)
+     and must be writable by the web server: you may need to create the
+     directory, and set the permissions so it is writeable. If you choose to use
+     gzip, for compression of files cached by Boost, you also specify and may
+     need to create the folder for this; the default is of the format
+     cache/gz/www.example.com
+
+     On the [Administer >> Site configuration >> Performance] Page is the
+     Default minimum cache lifetime setting. As cached pages are created, they
+     are given an expire by date and time, which is the current date and time
+     plus the minimum cache lifetime. These dates and times are checked on each
+     cron run; and if a page is expired, the cache is cleared, and a new cached
+     version will be created the next time the page is created by an anonymous
+     user (including bots).
+
   5. IMPORTANT: after backing up the original .htaccess file in your Drupal
      installation directory, add the rules found in boosted1.txt
      right below
@@ -41,12 +58,15 @@ INSTALLATION
      boosted1.txt is found in the sites/all/modules/boost/htaccess/ directory.
      The default.txt file shows you the exact placement of where the rules go,
      incase your not shure. If you fail to do this step, static page caching
-     will NOT work! Rules from boosted1.txt can also be found on the
-     Performance page.
+     will NOT work! Rules from boosted1.txt can also be found on the Boost
+     Settings page (admin/settings/performance/boost) in the expandable field
+     group called "Boost Apache .htaccess settings generation."
 
      Should you have any trouble getting static pages served using the
      boosted1.txt configuration, try the boosted2.txt file before posting a
-     support issue on drupal.org.
+     support issue on drupal.org; or try the different radio buttons on the
+     admin/settings/performance/boost page under "Boost Apache .htaccess
+     settings generation." field group.
 
      (For the technically inclined, the difference between the two supplied
      .htaccess templates is due to boosted1.txt relying on SERVER_NAME
@@ -55,11 +75,16 @@ INSTALLATION
 
   6. Log out from Drupal (or use another browser) to browse around your site
      as the anonymous user. Ensure that static files are indeed being
-     generated into the Boost cache directory you specified above (#4).
+     generated into the Boost cache directory you specified above (#4); and if
+     you opt to use gzip, likewise check gzipped files are being generated in
+     the directory you specified for this. The performance settings page shows
+     how many pages are being cached by Boost, and (for pages Boost cannot
+     cache) by Drupal core.
 
-  7. Set $base_url variable in /sites/default/settings.php ( 125 line or so )
+  7. Set $base_url variable in /sites/default/settings.php (line 125 or so)
      so cron runs error free and clears the cache properly when invoked like
-     'php5 /path/to/cron.php' or 'drush cron'.
+     'php /path/to/cron.php' or 'drush cron'. This should be something like
+     http://www.example.com
 
      Guide for editing settings.php
      http://drupal.org/node/367081#comment-1504894
