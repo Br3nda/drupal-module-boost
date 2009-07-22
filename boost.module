@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.73 2009/07/22 02:55:18 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.74 2009/07/22 02:59:40 mikeytown2 Exp $
 
 /**
  * @file
@@ -40,6 +40,7 @@ define('BOOST_CACHE_JS',             variable_get('boost_cache_js', FALSE));
 define('BOOST_PERMISSIONS_FILE',     variable_get('boost_permissions_file', ''));
 define('BOOST_PERMISSIONS_DIR',      variable_get('boost_permissions_dir', ''));
 define('BOOST_OVERWRITE_FILE',       variable_get('boost_overwrite_file', FALSE));
+define('BOOST_DISABLE_CLEAN_URL',    variable_get('boost_disable_clean_url', FALSE));
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -96,6 +97,17 @@ function boost_init() {
     }
   }
 
+  if (!empty($user->uid)) {
+    boost_set_cookie($user);
+    if (BOOST_DISABLE_CLEAN_URL) {
+      $GLOBALS['conf']['clean_url'] = 0;
+      db_query('TRUNCATE cache_filter');
+      db_query('TRUNCATE cache_menu');
+      cache_clear_all('*', 'cache_menu');
+      cache_clear_all('*', 'cache_filter');
+    }
+  }
+
   // Make sure the page is/should be cached according to our current configuration
   if (   strpos($_SERVER['SCRIPT_FILENAME'], 'index.php') === FALSE
       || variable_get('site_offline', 0)
@@ -109,13 +121,8 @@ function boost_init() {
     return;
   }
 
-  // For authenticated users, set a special cookie to prevent them
-  // inadvertently getting served pages from the static page cache.
-  if (!empty($user->uid)) {
-    boost_set_cookie($user);
-  }
   // We only generate cached pages for anonymous visitors.
-  else {
+  if (empty($user->uid)) {
     if (BOOST_ENABLED != CACHE_AGGRESSIVE) {
       $GLOBALS['conf']['cache'] = CACHE_DISABLED;
     }
