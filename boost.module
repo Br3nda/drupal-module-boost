@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.75 2009/07/22 03:04:33 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.76 2009/07/22 03:06:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -155,10 +155,13 @@ function boost_exit($destination = NULL) {
       // FIXME: call any remaining exit hooks since we're about to terminate?
 
       $query_parts = parse_url($destination);
-      $query_parts['path'] = ($query_parts['path'] == base_path() ? '' : substr($query_parts['path'], strlen(base_path())));
       // Add a nocache parameter to query. Such pages will never be cached
       $query_parts['query'] .= (empty($query_parts['query']) ? '' : '&') . 'nocache=1';
-      $destination = url($query_parts['path'], $query_parts);
+
+      // Rebuild the URL with the new query string.  Do not use url() since
+      // destination has presumably already been run through url().
+      $destination = boost_glue_url($query_parts);
+
       // Do what drupal_goto() would do if we were to return to it:
       exit(header('Location: ' . $destination));
     }
@@ -1236,7 +1239,7 @@ function boost_cache_css_js_files($buffer) {
  * An alternative to print_r that unlike the original does not use output buffering with
  * the return parameter set to true. Thus, Fatal errors that would be the result of print_r
  * in return-mode within ob handlers can be avoided.
- * http://www.php.net/manual/en/function.print-r.php#75872
+ * http://php.net/print-r#75872
  *
  * Comes with an extra parameter to be able to generate html code. If you need a
  * human readable DHTML-based print_r alternative, see http://krumo.sourceforge.net/
@@ -1284,6 +1287,32 @@ function boost_print_r($var, $return = false, $html = false, $level = 0) {
   else {
     echo $output;
   }
+}
+
+/**
+ * Alt to drupal's url() function.
+ * @see http://drupal.org/node/513860
+ *
+ * http://php.net/parse-url#85963
+ */
+function boost_glue_url($parsed) {
+  if (!is_array($parsed)) {
+    return false;
+  }
+
+  $uri = isset($parsed['scheme']) ? $parsed['scheme'] . ':' . ((strtolower($parsed['scheme']) == 'mailto') ? '' : '//') : '';
+  $uri .= isset($parsed['user']) ? $parsed['user'] . (isset($parsed['pass']) ? ': ' . $parsed['pass'] : '') . '@' : '';
+  $uri .= isset($parsed['host']) ? $parsed['host'] : '';
+  $uri .= isset($parsed['port']) ? ':' . $parsed['port'] : '';
+
+  if (isset($parsed['path'])) {
+    $uri .= (substr($parsed['path'], 0, 1) == '/') ? $parsed['path'] : ((!empty($uri) ? '/' : '' ) . $parsed['path']);
+  }
+
+  $uri .= isset($parsed['query']) ? '?' . $parsed['query'] : '';
+  $uri .= isset($parsed['fragment']) ? '#' . $parsed['fragment'] : '';
+
+  return $uri;
 }
 
 //////////////////////////////////////////////////////////////////////////////
