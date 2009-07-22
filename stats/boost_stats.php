@@ -1,7 +1,7 @@
 <?php
-// $Id: boost_stats.php,v 1.1.2.5 2009/07/22 02:53:44 mikeytown2 Exp $
+// $Id: boost_stats.php,v 1.1.2.6 2009/07/22 03:08:25 mikeytown2 Exp $
 
-if (isset($_GET['js']) && $_GET['js']==0) {
+if (!isset($_GET['js'])) {
   // stats not called via JS, send image out & close connection.
   boost_stats_async_image();
 }
@@ -19,24 +19,31 @@ if (   !isset($_GET['nid'])
 boost_stats_init();
 
 // Set node counter.
-if ($count_views && isset($nid) && is_numeric($nid)) {
+if (boost_stats_variable_get('statistics_count_content_views')) {
   boost_stats_update_node_counter();
 }
 
 // Set access log.
-if ($access_log && isset($title) && isset($q)) {
+if (boost_stats_variable_get('statistics_enable_access_log')) {
   boost_stats_add_access_log();
 }
 
-// Send stats block html.
-if ($stats) {
-  boost_stats_output_stats_block();
+$json = array();
+// Get stats block html.
+if (boost_stats_variable_get('boost_block_show_stats')) {
+  $json = array_merge($json, boost_stats_output_stats_block());
 }
 
+// Send JSON Back
+if (!empty($json)) {
+  echo json_encode($json);
+}
 // end of script, exit.
 exit;
 
-Function boost_stats_async_image() {
+
+
+function boost_stats_async_image() {
   // Script should take under 1mb of memory to work.
   // Prime php for background operations
   ob_end_clean();
@@ -59,19 +66,18 @@ Function boost_stats_async_image() {
   // Do background processing. Time taken below should not effect page load times.
 }
 
-Function boost_stats_init() {
-  Global $nid, $title, $q, $referer, $session_id, $uid, $stats, $count_views, $access_log, $stats_block;
+function boost_stats_init() {
+  Global $nid, $title, $q, $referer, $session_id, $uid, $count_views, $access_log, $variables;
 
   // Connect to DB.
   include_once './includes/bootstrap.inc';
   drupal_bootstrap(DRUPAL_BOOTSTRAP_DATABASE);
 
   // Set variables passed via GET.
-  $nid = isset($_GET['nid']) ? $_GET['nid'] : NULL;
+  $nid = (isset($_GET['nid']) && is_numeric($_GET['nid']))  ? $_GET['nid'] : NULL;
   $title = isset($_GET['title']) ? urldecode($_GET['title']) : NULL;
   $q = isset($_GET['q']) ? $_GET['q'] : NULL;
   $referer = isset($_GET['referer']) ? $_GET['referer'] : NULL;
-  $stats = (isset($_GET['js']) && $_GET['js'] == 2) ? TRUE : NULL;
   $session_id = session_id();
   if (empty($session_id)) {
     if (empty($_COOKIE[session_name()])) {
@@ -84,26 +90,19 @@ Function boost_stats_init() {
   }
   $uid = 0;
 
-  // Node Counter
-  if (isset($nid)) {
-    $count_views = db_fetch_array(db_query_range("SELECT value FROM {variable} WHERE name = '%s'", 'statistics_count_content_views', 0, 1));
-    $count_views = unserialize($count_views['value']);
-  }
-
-  // Access Log
-  if (isset($title) && isset($q)) {
-    $access_log = db_fetch_array(db_query_range("SELECT value FROM {variable} WHERE name = '%s'", 'statistics_enable_access_log', 0, 1));
-    $access_log = unserialize($access_log['value']);
-  }
-
-  // stats block
-  if (isset($stats)) {
-    $stats_block = db_fetch_array(db_query_range("SELECT value FROM {variable} WHERE name = '%s'", 'boost_statistics_html', 0, 1));
-    $stats_block = unserialize($stats_block['value']);
+  // load all boost & statistics variables; 1 transaction instead of mutiple
+  $result = db_query("
+SELECT * FROM {variable}
+WHERE name LIKE 'boost_%'
+OR name LIKE 'statistics_%'
+OR name LIKE 'throttle_%'
+");
+  while ($variable = db_fetch_object($result)) {
+    $variables[$variable->name] = unserialize($variable->value);
   }
 }
 
-Function boost_stats_update_node_counter() {
+function boost_stats_update_node_counter() {
   Global $nid;
 
   // A node has been viewed, so update the node's counters.
@@ -115,13 +114,39 @@ Function boost_stats_update_node_counter() {
   }
 }
 
-Function boost_stats_add_access_log() {
+function boost_stats_add_access_log() {
   Global $title, $q, $referer, $session_id, $uid;
 
   db_query("INSERT INTO {accesslog} (title, path, url, hostname, uid, sid, timer, timestamp) values('%s', '%s', '%s', '%s', %d, '%s', %d, %d)", $title, $q, $referer, ip_address(), $uid, $session_id, timer_read('page'), time());
 }
 
-Function boost_stats_output_stats_block() {
-  Global $stats_block;
-  echo $stats_block;
+function boost_stats_output_stats_block() {
+
+  if (!boost_stats_variable_get('boost_block_cache_stats_block') && !boost_stats_variable_get('throttle_level')) {
+    boost_stats_full_boot();
+    $block = module_invoke('statistics', 'block', 'view', 0);
+    $block = $block['content'];
+  }
+  else {
+    $block = boost_stats_variable_get('boost_statistics_html');
+  }
+
+  return array('#boost-stats' => $block);
+}
+
+function boost_stats_full_boot() {
+  Global $full_boot;
+  if (!isset($full_boot)) {
+    $full_boot = FALSE;
+  }
+  if (!$full_boot) {
+    include_once './includes/bootstrap.inc';
+    drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+  }
+  $full_boot = TRUE;
+}
+
+function boost_stats_variable_get($name) {
+  Global $variables;
+  return isset($variables[$name]) ? $variables[$name] : FALSE;
 }

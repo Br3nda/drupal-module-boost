@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.76 2009/07/22 03:06:27 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.77 2009/07/22 03:08:25 mikeytown2 Exp $
 
 /**
  * @file
@@ -385,16 +385,22 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
       );
     case 'configure':
       if ($delta == 'stats') {
-        $form['items'] = array(
+        $form['boost_block_show_stats'] = array(
         '#type' => 'checkbox',
         '#title' => t('Display Statistics'),
         '#default_value' => variable_get('boost_block_show_stats', FALSE),
+        );
+        $form['boost_block_cache_stats_block'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Cache Statistics Block'),
+        '#default_value' => variable_get('boost_block_cache_stats_block', FALSE),
         );
       return $form;
       }
     case 'save':
       if ($delta == 'stats') {
-        variable_set('boost_block_show_stats', $edit['items']);
+        variable_set('boost_block_show_stats', $edit['boost_block_show_stats']);
+        variable_set('boost_block_cache_stats_block', $edit['boost_block_cache_stats_block']);
       }
     case 'view':
       $block = array();
@@ -455,16 +461,11 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
               $block['subject'] = 'Popular content';
               $block['content'] = '<div id="boost-stats"></div>' . boost_stats_generate($filename);
             }
-            else {
+            elseif (!variable_get('boost_block_show_stats', FALSE)) {
               $block = array();
-              $block['content'] = '<div id="boost-stats" style="display:none;"></div>' . boost_stats_generate($filename);
             }
           }
-          elseif (!variable_get('boost_block_show_stats', FALSE)) {
-            $block = array();
-          }
-
-
+          break;
       }
       return $block;
   }
@@ -501,20 +502,20 @@ function boost_stats_generate($filename) {
 
   // is node & node count enabled.
   if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) == '' && variable_get('statistics_count_content_views', 0)) {
-    $nid = 'nid=' . arg(1);;
+    $nid = arg(1);;
   }
   else {
-    $nid = 'nid=NULL';
+    $nid = 'NULL';
   }
 
   // access log enabled.
   if ((variable_get('statistics_enable_access_log', 0)) && (module_invoke('throttle', 'status') == 0)) {
-    $title = 'title=' . drupal_urlencode(strip_tags(drupal_get_title()));
-    $q = 'q=' . $_GET['q'];
+    $title = drupal_urlencode(strip_tags(drupal_get_title()));
+    $q = $_GET['q'];
   }
   else {
-    $title = 'title=NULL';
-    $q = 'q=NULL';
+    $title = 'NULL';
+    $q = 'NULL';
   }
 
   $page_js = array(
@@ -524,14 +525,20 @@ function boost_stats_generate($filename) {
       'title' => $title,
     ),
   );
-  $site_js = '$("#boost-stats").load(Drupal.settings.basePath + "boost_stats.php?js=2" + "&" + Drupal.settings.boost.nid + "&" + Drupal.settings.boost.q + "&" + Drupal.settings.boost.title + "&referer=" + document.referrer);';
+  $site_js = <<<ETO
+$.getJSON(Drupal.settings.basePath + "$filename", {nocache: "1", js: "1", nid: Drupal.settings.boost.nid, q: Drupal.settings.boost.q, title: Drupal.settings.boost.title, referer: document.referrer}, function(response) {
+  $.each(response, function(id, contents) {
+    $(id).html(contents);
+  });
+});
+ETO;
 
   // page specific variables
   drupal_add_js($page_js, 'setting', 'header');
   // site-wide code
   drupal_add_js($site_js, 'inline', 'footer');
   // no script code
-  $page_ns = '<noscript><div style="display:inline;"><img src="' . $base_path . $filename . '?js=0' . '&amp;'. $nid . '&amp;'. $title . '&amp;'. $q . '" alt="" /></div></noscript>';
+  $page_ns = '<noscript><div style="display:inline;"><img src="' . $base_path . $filename . '?nocache=1' . '&amp;nid='. $nid . '&amp;title='. $title . '&amp;q='. $q . '" alt="" /></div></noscript>';
 
   return $page_ns;
 }
