@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.72 2009/07/15 07:48:30 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.73 2009/07/22 02:55:18 mikeytown2 Exp $
 
 /**
  * @file
@@ -39,6 +39,7 @@ define('BOOST_CACHE_CSS',            variable_get('boost_cache_css', FALSE));
 define('BOOST_CACHE_JS',             variable_get('boost_cache_js', FALSE));
 define('BOOST_PERMISSIONS_FILE',     variable_get('boost_permissions_file', ''));
 define('BOOST_PERMISSIONS_DIR',      variable_get('boost_permissions_dir', ''));
+define('BOOST_OVERWRITE_FILE',       variable_get('boost_overwrite_file', FALSE));
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -920,14 +921,17 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
   db_set_active();
 
   // Create or update the static files as needed
-  if (($filename = boost_file_path($path, TRUE, $extension))) {
+  if (($filename = boost_file_path($path, TRUE, $extension)) && (BOOST_OVERWRITE_FILE || !file_exists($filename) || boost_db_is_expired($filename))) {
     boost_cache_write($filename, $data);
     if (BOOST_GZIP) {
       boost_cache_write(str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename) . '.gz', gzencode($data, 9));
     }
     boost_db_prep($filename);
+    return TRUE;
   }
-  return TRUE;
+  else {
+    return FALSE;
+  }
 }
 
 /**
@@ -1014,26 +1018,23 @@ function boost_cache_write($filename, $data = '') {
   if (!_boost_mkdir_p(dirname($filename))) {
     watchdog('boost', 'Unable to create directory: %dir<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%dir' => dirname($filename), '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
   }
-  if (!file_exists($filename) || boost_db_is_expired($filename)) {
-    $tempfile = $filename . getmypid();
-    if (@file_put_contents($tempfile, $data) === FALSE) {
-      watchdog('boost', 'Unable to write temp file: %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%file' => $tempfile, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
+  $tempfile = $filename . getmypid();
+  if (@file_put_contents($tempfile, $data) === FALSE) {
+    watchdog('boost', 'Unable to write temp file: %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%file' => $tempfile, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
+    return FALSE;
+  }
+  else {
+    if (is_numeric(BOOST_PERMISSIONS_FILE)) {
+      @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
+    }
+    // put the temp file in its final location
+    if (@rename($tempfile, $filename) === FALSE) {
+      //watchdog('boost', 'Unable to rename file: %temp  to  %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%temp' => $tempfile, '%file' => $filename, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
+      @unlink($tempfile);
       return FALSE;
     }
-    else {
-      if (is_numeric(BOOST_PERMISSIONS_FILE)) {
-        @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
-      }
-      // put the temp file in its final location
-      if (@rename($tempfile, $filename) === FALSE) {
-        watchdog('boost', 'Unable to rename file: %temp  to  %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%temp' => $tempfile, '%file' => $filename, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
-        @unlink($tempfile);
-        return FALSE;
-      }
-    }
-    return TRUE;
   }
-  return FALSE;
+  return TRUE;
 }
 
 /**
