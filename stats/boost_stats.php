@@ -1,5 +1,5 @@
 <?php
-// $Id: boost_stats.php,v 1.1.2.7 2009/07/28 01:11:22 mikeytown2 Exp $
+// $Id: boost_stats.php,v 1.1.2.8 2009/07/28 01:15:17 mikeytown2 Exp $
 
 if (!isset($_GET['js'])) {
   // stats not called via JS, send image out & close connection.
@@ -85,19 +85,27 @@ function boost_stats_init() {
   $title = (isset($_GET['title']) && $_GET['title'] != 'NULL') ? urldecode($_GET['title']) : NULL;
   $q = (isset($_GET['q']) && $_GET['q'] != 'NULL') ? $_GET['q'] : NULL;
   $referer = isset($_GET['referer']) ? $_GET['referer'] : NULL;
+
+  // $session_id only goes in the access log; only used for stats, not creds.
   $session_id = session_id();
   if (empty($session_id)) {
     if (empty($_COOKIE[session_name()])) {
-      // This only goes in the access log; only used for stats, not creds.
-      $session_id = md5($_SERVER['HTTP_USER_AGENT'] . ip_address());
+      if (empty($_SERVER['HTTP_USER_AGENT']) {
+        $session_id = md5(ip_address());
+      }
+      else {
+        $session_id = md5($_SERVER['HTTP_USER_AGENT'] . ip_address());
+      }
     }
     else {
       $session_id = $_COOKIE[session_name()];
     }
   }
+
+  // Anonymous users always get a User ID of 0.
   $uid = 0;
 
-  // load all boost & statistics variables; 1 transaction instead of mutiple
+  // load all boost, statistics & throttle variables; 1 transaction instead of mutiple
   $result = db_query("
 SELECT * FROM {variable}
 WHERE name LIKE 'boost_%'
