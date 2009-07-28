@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.40 2009/07/22 02:59:40 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.41 2009/07/28 00:52:14 mikeytown2 Exp $
 
 /**
  * @file
@@ -138,6 +138,8 @@ function boost_admin_clear_cache_submit($form, &$form_state) {
  *  http://drupal.org/node/337756
  */
 function boost_admin_boost_performace_page() {
+  Global $base_path;
+
   // Cacheability settings
   $options = array(t('Cache every page except the listed pages.'), t('Cache only the listed pages.'));
   $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are '%blog' for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
@@ -301,13 +303,39 @@ function boost_admin_boost_performace_page() {
     '#options'       => array('%{SERVER_NAME}' => '%{SERVER_NAME}', '%{HTTP_HOST}' => '%{HTTP_HOST}', $_SERVER['SERVER_NAME'] => $_SERVER['SERVER_NAME'], $_SERVER['HTTP_HOST'] => $_SERVER['HTTP_HOST'], ),
     '#description'   => t('Best to leave these as %{}, only try the last option(s) if boost is still not working.'),
   );
+
+  // Set DOCUMENT_ROOT
+  $drupal_subdir = rtrim($base_path, '/');
+  $document_root = str_replace("\\", '/', getcwd()); // fix windows dir slashes
+  $document_root = str_replace($drupal_subdir, '', $document_root); // remove subdir
+  $options = array('%{DOCUMENT_ROOT}' => '%{DOCUMENT_ROOT}', $document_root => $document_root); // initial options
+  $rejects = array('SCRIPT_FILENAME', 'DOCUMENT_ROOT'); // values to ignore
+  $output = boost_array_find($document_root, $_SERVER, $rejects); //search for values that match getcwd
+  if (!empty($output)) {
+    foreach ($output as $key=>$value) {
+      $temp = '%{ENV:' . $key . '}';
+      $options[$temp] = $temp; // adding values to options
+      if ($value == $document_root) {
+        $best = $temp; // set best since it's a match
+      }
+    }
+  }
+  if ($_SERVER['DOCUMENT_ROOT'] == $document_root) {
+    $best = '%{DOCUMENT_ROOT}';
+  }
+  $description = t("Value of $best is recommened for this server.");
+  if (!isset($best)) {
+    $best = $document_root;
+    $description .= t(' Please open an boost issue on drupal.org, since apache and php are not configured correctly.');
+  }
   $form['htaccess']['boost_document_root'] = array(
     '#type'          => 'radios',
     '#title'         => t('Document Root'),
     '#default_value' => variable_get('boost_document_root', '%{DOCUMENT_ROOT}'),
-    '#options'       => array('%{DOCUMENT_ROOT}' => '%{DOCUMENT_ROOT}', getcwd() => getcwd()),
-    '#description'   => t('Default value %{DOCUMENT_ROOT} is highly recommened.'),
+    '#options'       => $options,
+    '#description'   => $description,
   );
+
   $form['htaccess']['boost_generated'] = array(
     '#type'          => 'textarea',
     '#title'         => t('Generated Rules'),
@@ -399,8 +427,6 @@ function boost_admin_themes_submit($form, &$form_state) {
 function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz', $html = '.html', $xml = '.xml') {
   Global $base_path;
   $drupal_subdir = rtrim($base_path, '/');
-  $document_root = str_replace("\\", '/', $document_root);
-  $document_root = str_replace($drupal_subdir, '', $document_root );
   $html = '\\' . $html;
   $xml = '\\' . $xml;
   $css = '\\.css';
@@ -534,4 +560,32 @@ function boost_reset_database_submit () {
   else {
     drupal_set_message(t('Boost: Set "Ignore cache flushing:" to \'Disabled\' in the <a href="!link">boost advanced settings</a> & try again.', array('!link' => url('admin/settings/performance/boost', array('fragment' => 'edit-boost-ignore-flush-0-wrapper')))), 'warning');
   }
+}
+
+/**
+ * Returns all key/values in array that are equal.
+ *
+ * @param $needle
+ *  What your searching for
+ * @param $haystack
+ *  Array of values
+ * @param $a_not
+ *  Optional array of key names to exclude
+ */
+function boost_array_find($needle, $haystack, $a_not = array()) {
+  $out = array();
+  foreach($haystack as $key=>$value) {
+    if ($value == $needle) {
+      $good = TRUE;
+      foreach($a_not as $not) {
+        if (strpos($key, $not) !== FALSE) {
+          $good = FALSE;
+        }
+      }
+      if ($good) {
+        $out[$key] = $value;
+      }
+    }
+  }
+  return $out;
 }
