@@ -1,5 +1,5 @@
 <?php
-// $Id: boost_stats.php,v 1.1.2.6 2009/07/22 03:08:25 mikeytown2 Exp $
+// $Id: boost_stats.php,v 1.1.2.7 2009/07/28 01:11:22 mikeytown2 Exp $
 
 if (!isset($_GET['js'])) {
   // stats not called via JS, send image out & close connection.
@@ -28,16 +28,23 @@ if (boost_stats_variable_get('statistics_enable_access_log')) {
   boost_stats_add_access_log();
 }
 
-$json = array();
-// Get stats block html.
-if (boost_stats_variable_get('boost_block_show_stats')) {
-  $json = array_merge($json, boost_stats_output_stats_block());
+if (isset($_GET['js'])) {
+  if ($_GET['js'] == 1) {
+    $json = array();
+    // Get stats block html.
+    $json = array_merge($json, boost_stats_output_stats_block());
+
+    // Send JSON Back
+    if (!empty($json)) {
+      echo json_encode($json);
+    }
+  }
+  // Send HTML back
+  elseif ($_GET['js'] == 2) {
+    echo array_pop(boost_stats_output_stats_block());
+  }
 }
 
-// Send JSON Back
-if (!empty($json)) {
-  echo json_encode($json);
-}
 // end of script, exit.
 exit;
 
@@ -74,9 +81,9 @@ function boost_stats_init() {
   drupal_bootstrap(DRUPAL_BOOTSTRAP_DATABASE);
 
   // Set variables passed via GET.
-  $nid = (isset($_GET['nid']) && is_numeric($_GET['nid']))  ? $_GET['nid'] : NULL;
-  $title = isset($_GET['title']) ? urldecode($_GET['title']) : NULL;
-  $q = isset($_GET['q']) ? $_GET['q'] : NULL;
+  $nid = (isset($_GET['nid']) && is_numeric($_GET['nid'])) ? $_GET['nid'] : NULL;
+  $title = (isset($_GET['title']) && $_GET['title'] != 'NULL') ? urldecode($_GET['title']) : NULL;
+  $q = (isset($_GET['q']) && $_GET['q'] != 'NULL') ? $_GET['q'] : NULL;
   $referer = isset($_GET['referer']) ? $_GET['referer'] : NULL;
   $session_id = session_id();
   if (empty($session_id)) {
@@ -121,14 +128,18 @@ function boost_stats_add_access_log() {
 }
 
 function boost_stats_output_stats_block() {
-
-  if (!boost_stats_variable_get('boost_block_cache_stats_block') && !boost_stats_variable_get('throttle_level')) {
-    boost_stats_full_boot();
-    $block = module_invoke('statistics', 'block', 'view', 0);
-    $block = $block['content'];
+  if (boost_stats_variable_get('boost_block_show_stats')) {
+    if (!boost_stats_variable_get('boost_block_cache_stats_block') && !boost_stats_variable_get('throttle_level')) {
+      boost_stats_full_boot();
+      $block = module_invoke('statistics', 'block', 'view', 0);
+      $block = $block['content'];
+    }
+    else {
+      $block = boost_stats_variable_get('boost_statistics_html');
+    }
   }
   else {
-    $block = boost_stats_variable_get('boost_statistics_html');
+    $block = 'NULL';
   }
 
   return array('#boost-stats' => $block);

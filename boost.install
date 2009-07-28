@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.20 2009/07/06 18:24:26 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.21 2009/07/28 01:11:22 mikeytown2 Exp $
 
 /**
  * @file
@@ -94,14 +94,6 @@ function boost_requirements($phase) {
           'description' => $t('Directory %dir credentials - Permissions: %fp. Owner %fo. Group %fg.<br /> Your credentials - Group ID: %gid. User ID: %uid. Current script owner: %user.', array('%dir' => getcwd() . '/' . $cache_directory, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user(), '%fp' => substr(sprintf('%o', fileperms($cache_directory)), -4), '%fo' => fileowner($cache_directory), '%fg' => filegroup($cache_directory) )),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('Can not write to filesystem'),
-        );
-      }
-      elseif ((variable_get('statistics_count_content_views', 0) || variable_get('statistics_enable_access_log', 0)) && !file_exists('boost_stats.php')) {
-        $requirements['boost'] = array(
-          'title'       => $t('Boost'),
-          'description' => $t('Copy the boost_stats.php file to your webroot. It should be located in the modules/boost/stats directory.'),
-          'severity'    => REQUIREMENT_WARNING,
-          'value'       => $t('boost_stats.php missing from root dir'),
         );
       }
       else {
