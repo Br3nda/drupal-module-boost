@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.41 2009/07/28 00:52:14 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.42 2009/07/29 07:21:09 mikeytown2 Exp $
 
 /**
  * @file
@@ -554,7 +554,8 @@ function boost_clear_core_page_cache_submit () {
  */
 function boost_reset_database_submit () {
   if (boost_cache_clear_all()) {
-    db_query("DELETE FROM {boost_cache}");
+    db_query("TRUNCATE {boost_cache}");
+    db_query("TRUNCATE {boost_cache_settings}");
     drupal_set_message(t('Boost: Static page cache & database cleared.'));
   }
   else {

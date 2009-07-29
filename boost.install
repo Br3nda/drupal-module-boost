@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.21 2009/07/28 01:11:22 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.22 2009/07/29 07:21:09 mikeytown2 Exp $
 
 /**
  * @file
@@ -116,7 +116,159 @@ function boost_schema() {
     'description' => t('List of the cached page'),
     'fields' => array(
       'filename' => array(
-        'description' => 'Path of the cached file relative to Drupal root.',
+        'description' => 'Path of the cached file relative to Drupal webroot.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'base_dir' => array(
+        'description' => 'Path of the cache root dir relative to Drupal webroot.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'expire' => array(
+        'description' => t('UNIX timestamp for the expiration date of cached page.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'lifetime' => array(
+        'description' => t('Number of seconds this page should be considered fresh. Used to set the expiration column.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => -1,
+      ),
+      'push' => array(
+        'description' => 'A flag to indicate whether page should be crawled so it is fresh in the cache.',
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => -1,
+      ),
+      'page_callback' => array(
+        'description' => 'The name of the function that renders the page.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'page_arguments' => array(
+        'description' => 'The name of the content type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'page_id' => array(
+        'description' => 'The ID of the page.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'timer' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Time in milliseconds that the page took to be generated.',
+      ),
+      'timer_average' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Average time in milliseconds that the page took to be generated.',
+      ),
+
+    ),
+    'indexes' => array(
+      'expire' => array('expire'),
+      'push' => array('push'),
+      'base_dir' => array('base_dir'),
+      'page_id' => array('page_id'),
+      'timer' => array('timer'),
+      'timer_average' => array('timer_average'),
+      'page_callback' => array('page_callback'),
+      'page_arguments' => array('page_arguments'),
+    ),
+    'primary key' => array('filename'),
+  );
+  $schema['boost_cache_settings'] = array(
+    'description' => t('Boost cache settings'),
+    'fields' => array(
+      'csid' => array(
+        'description' => 'Primary Key: Unique cache settings ID.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'base_dir' => array(
+        'description' => 'Path of the cache root dir relative to Drupal webroot.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'page_callback' => array(
+        'description' => 'The name of the function that renders the page.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'page_arguments' => array(
+        'description' => 'The name of the content type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '0'
+      ),
+      'page_id' => array(
+        'description' => 'The ID of the page.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'lifetime' => array(
+        'description' => t('Number of seconds this page should be considered fresh. Used to set the expiration column.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => -1,
+      ),
+      'push' => array(
+        'description' => 'A flag to indicate whether page should be crawled so it is fresh in the cache.',
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => -1,
+      ),
+    ),
+    'indexes' => array(
+      'page_callback' => array('page_callback'),
+      'page_arguments' => array('page_arguments'),
+      'base_dir' => array('base_dir'),
+      'page_id' => array('page_id'),
+    ),
+    'primary key' => array('csid'),
+  );
+  return $schema;
+}
+
+/**
+ * Update 6100 - Install Boost Database.
+ */
+function boost_update_6100() {
+  // Create tables.
+  $schema['boost_cache'] = array(
+    'description' => t('List of the cached page'),
+    'fields' => array(
+      'filename' => array(
+        'description' => 'Path of the cached file relative to Drupal webroot.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -206,15 +358,11 @@ function boost_schema() {
     ),
     'primary key' => array('csid'),
   );
-  return $schema;
-}
 
-/**
- * Update 6100 - Install Boost Database.
- */
-function boost_update_6100() {
-  // Create tables.
-  return drupal_install_schema('boost');
+  $ret = array();
+  db_create_table($ret, 'boost_cache', $schema['boost_cache']);
+  db_create_table($ret, 'boost_cache_settings', $schema['boost_cache_settings']);
+  return $ret;
 }
 
 /**
@@ -232,4 +380,74 @@ function boost_update_6102() {
   // del variable
   variable_del('boost_permissions');
   return array(array('success' => TRUE, 'query' => 'Old permissions variable deleted.'));
+}
+
+/**
+ * Update 6103 - Add new columns to tables
+ */
+function boost_update_6103() {
+  $ret = array();
+  // Add in base_dir column
+  db_add_field($ret, 'boost_cache', 'base_dir', array(
+        'description' => 'Path of the cache root dir relative to Drupal webroot.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ));
+  db_add_field($ret, 'boost_cache_settings', 'base_dir', array(
+        'description' => 'Path of the cache root dir relative to Drupal webroot.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ));
+  db_add_index($ret, 'boost_cache', 'base_dir', array('base_dir'));
+  db_add_index($ret, 'boost_cache_settings', 'base_dir', array('base_dir'));
+
+  // Add in page_id column
+  db_add_field($ret, 'boost_cache', 'page_id', array(
+        'description' => 'The ID of the page.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ));
+  db_add_field($ret, 'boost_cache_settings', 'page_id', array(
+        'description' => 'The ID of the page.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ));
+  db_add_index($ret, 'boost_cache', 'page_id', array('page_id'));
+  db_add_index($ret, 'boost_cache_settings', 'page_id', array('page_id'));
+
+  // Add in timer column
+  db_add_field($ret, 'boost_cache', 'timer', array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Time in milliseconds that the page took to be generated.',
+      ));
+  db_add_index($ret, 'boost_cache', 'timer', array('timer'));
+
+  // Add in timer_average column
+  db_add_field($ret, 'boost_cache', 'timer_average', array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Average time in milliseconds that the page took to be generated.',
+      ));
+  db_add_index($ret, 'boost_cache', 'timer_average', array('timer_average'));
+
+  // Add indexes
+  db_add_index($ret, 'boost_cache', 'page_callback', array('page_callback'));
+  db_add_index($ret, 'boost_cache', 'page_arguments', array('page_arguments'));
+
+  // Set Defaults
+  db_field_set_default($ret, 'boost_cache_settings', 'page_arguments', '0');
+
+  return $ret;
 }
