@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.81 2009/07/29 07:21:09 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.82 2009/07/31 07:51:17 mikeytown2 Exp $
 
 /**
  * @file
@@ -501,12 +501,19 @@ function boost_block_db_settings_form() {
   $period[-1] = t('default');
   //$info = boost_get_db(boost_file_path($GLOBALS['_boost_path']));
   $router_item = _boost_get_menu_router();
-  $info = boost_get_settings_db($router_item);
-  if (!$info) {
+  $settings = boost_get_settings_db($router_item);
+  $default = 0;
+  foreach ($settings as $key => $value) {
+    if ($value != NULL) {
+      $info = $value;
+      $default = $key;
+      break;
+    }
+  }
+  if (!isset($info)) {
     $info['lifetime'] = -1;
     $info['push'] = -1;
   }
-
   // create form
   $form['boost_db_settings']['lifetime'] = array(
     '#type' => 'select',
@@ -519,19 +526,75 @@ function boost_block_db_settings_form() {
     '#type' => 'hidden',
     '#title' => t('Preemptive Cache'),
     '#default_value' => $info['push'],
-    '#options' => array(-1 => 'default', 0 => 'No', 1 => 'Yes'),
+    '#options' => array(
+      -1 => 'default',
+      0 => 'No',
+      1 => 'Yes',
+    ),
   );
   $form['boost_db_settings']['selection'] = array(
     '#type' => 'select',
     '#title' => t('Scope'),
-    '#default_value' => 0,
-    '#options' => array(0 => 'Page ID: ' . $router_item['page_id'], 1 => 'Content Type: ' . $router_item['page_arguments'], 2 => 'Content Container: ' . $router_item['page_callback']),
+    '#default_value' => $default,
+    '#options' => array(
+      0 => 'Page ID: ' . $router_item['page_id'],
+      1 => 'Content Type: ' . $router_item['page_arguments'],
+      2 => 'Content Container: ' . $router_item['page_callback'],
+    ),
   );
   $form['boost_db_settings']['send'] = array(
     '#type' => 'submit',
     '#value' => t('Set Configuration'),
     '#submit' => array('boost_block_db_settings_form_submit'),
   );
+
+  $form['boost_db_rm_settings']['id'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Page ID'),
+    '#default_value' => $settings[0] != NULL ? FALSE : TRUE,
+    '#disabled' => $settings[0] != NULL ? FALSE : TRUE,
+    '#description' => $period[$settings[0]['lifetime']] . ' - ' . $router_item['page_id'],
+  );
+  $form['boost_db_rm_settings']['id_value'] = array(
+    '#type' => 'hidden',
+    '#title' => t('id_value'),
+    '#default_value' => $settings[0] != NULL ? $settings[0]['csid'] : FALSE,
+    '#disabled' => $settings[0] != NULL ? FALSE : TRUE,
+  );
+  $form['boost_db_rm_settings']['type'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Content Type'),
+    '#default_value' => $settings[1] != NULL ? FALSE : TRUE,
+    '#disabled' => $settings[1] != NULL ? FALSE : TRUE,
+    '#description' => $period[$settings[1]['lifetime']] . ' - ' . $router_item['page_arguments'],
+  );
+  $form['boost_db_rm_settings']['type_value'] = array(
+    '#type' => 'hidden',
+    '#title' => t('type_value'),
+    '#default_value' => $settings[1] != NULL ? $settings[1]['csid'] : FALSE,
+    '#disabled' => $settings[1] != NULL ? FALSE : TRUE,
+  );
+  $form['boost_db_rm_settings']['container'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Content Container'),
+    '#default_value' => $settings[2] != NULL ? FALSE : TRUE,
+    '#disabled' => $settings[2] != NULL ? FALSE : TRUE,
+    '#description' => $period[$settings[2]['lifetime']] . ' - ' . $router_item['page_callback'],
+  );
+  $form['boost_db_rm_settings']['container_value'] = array(
+    '#type' => 'hidden',
+    '#title' => t('container_value'),
+    '#default_value' => $settings[2] != NULL ? $settings[2]['csid'] : FALSE,
+    '#disabled' => $settings[2] != NULL ? FALSE : TRUE,
+  );
+  $form['boost_db_rm_settings']['send'] = array(
+    '#type' => 'submit',
+    '#value' => t('Delete Configuration'),
+    '#submit' => array('boost_block_db_rm_settings_form_submit'),
+    '#description' => t('Check the box to delete it'),
+  );
+
+
   return $form;
 }
 
@@ -541,6 +604,22 @@ function boost_block_db_settings_form() {
 function boost_block_db_settings_form_submit(&$form_state, $form) {
   boost_set_db_page_settings($form['values']['lifetime'], $form['values']['push'], $form['values']['selection']);
 }
+
+/**
+ * Sets page specific settings in the boost cache database.
+ */
+function boost_block_db_rm_settings_form_submit(&$form_state, $form) {
+  if ($form['values']['id']) {
+    boost_remove_settings_db($form['values']['id_value']);
+  }
+  if ($form['values']['type']) {
+    boost_remove_settings_db($form['values']['type_value']);
+  }
+  if ($form['values']['container']) {
+    boost_remove_settings_db($form['values']['container_value']);
+  }
+}
+
 
 /**
  * Generate js/html for boost stat counter.
@@ -1029,7 +1108,13 @@ function boost_db_prep($filename, $lifetime = -1, $push = -1) {
   $timer = timer_read('page');
   $timer_average = $timer;
 
-  $boost_settings_db = boost_get_settings_db($router_item);
+  $settings = boost_get_settings_db($router_item);
+  foreach ($settings as $value) {
+    if ($value != NULL) {
+      $boost_settings_db = $value;
+      break;
+    }
+  }
   //$boost_db = boost_get_db($filename);
   //get data from actual entry first, if this page has been cached before.
   //if ($boost_db) {
@@ -1039,7 +1124,7 @@ function boost_db_prep($filename, $lifetime = -1, $push = -1) {
   //  $timer_average = ($boost_db['timer_average'] + $timer)/2;
   //}
   //get data from settings table, if this page has not been put into the cache.
-  if ($boost_settings_db) {
+  if (isset($boost_settings_db)) {
     $expire = $boost_settings_db['lifetime'] != -1 ? $boost_settings_db['lifetime'] + BOOST_TIME : $expire;
     $lifetime = $boost_settings_db['lifetime'];
     $push = $boost_settings_db['push'];
@@ -1107,6 +1192,24 @@ function boost_put_settings_db($lifetime, $push, $router_item, $scope) {
 }
 
 /**
+ * Removes info from boost database.
+ *
+ * @param $filename
+ *   Name of cached file; primary key in database
+ * @param $expire
+ *   Expiration time
+ * @param $lifetime
+ *   Default lifetime
+ * @param $push
+ *   Pre-cache this file
+ * @param $router_item
+ *   Array containing page_callback, page_arguments & page_id.
+ */
+function boost_remove_settings_db($csid) {
+  db_query("DELETE FROM {boost_cache_settings} WHERE csid = %d", $csid);
+}
+
+/**
  * Sets per page configuration.
  *
  * @param $lifetime
@@ -1154,18 +1257,16 @@ function boost_get_db($filename) {
  *   Array containing page_callback, page_arguments & page_id.
  */
 function boost_get_settings_db($router_item) {
-  // Try a more exact match first
-  $settings = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, $router_item['page_id'], 0, 1));
+  $settings = array();
+  // Get a more exact match first
+  $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, $router_item['page_id'], 0, 1));
 
-  // Try for the content type
-  if (!$settings) {
-    $settings = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, 0, 0, 1));
-  }
+  // Get for the content type
+  $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, 0, 0, 1));
 
-  // Finally go for the content container (node, view, term, ect...)
-  if (!$settings) {
-    $settings = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $router_item['page_callback'], 0, BOOST_FILE_PATH, 0, 0, 1));
-  }
+  // Finally get the content container (node, view, term, ect...)
+  $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $router_item['page_callback'], 0, BOOST_FILE_PATH, 0, 0, 1));
+
   return $settings;
 }
 
