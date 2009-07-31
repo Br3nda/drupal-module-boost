@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.42 2009/07/29 07:21:09 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.43 2009/07/31 07:52:55 mikeytown2 Exp $
 
 /**
  * @file
@@ -285,6 +285,16 @@ function boost_admin_boost_performace_page() {
     '#default_value' => BOOST_IGNORE_FLUSH,
     '#options'       => array(0 => t('Disabled'), 1 => t('Only Ignore Complete Flushes'), 2 => t('Ignore Fluses & Expiration'), 3 => t('Ignore All Delete Commands (Not Recommended)')),
     '#description'   => t('Enable to put your site into a static state. Recommend turning on CSS & JS caching if enabled.'),
+  );
+  $form['advanced']['boost_verbose'] = array(
+    '#type'          => 'select',
+    '#title'         => t('Verbose Setting'),
+    '#default_value' => BOOST_VERBOSE,
+    '#options'       => array(
+      1 => t('1 Show almost no errors'),
+      3 => t('3'),
+      5 => t('5 Show all'),
+    ),
   );
 
   // Apache .htaccess settings generation
