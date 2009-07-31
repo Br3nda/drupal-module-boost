@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.43 2009/07/31 07:52:55 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.44 2009/07/31 09:49:23 mikeytown2 Exp $
 
 /**
  * @file
@@ -207,6 +207,12 @@ function boost_admin_boost_performace_page() {
       '#default_value' => BOOST_CACHE_QUERY,
       '#description'   => t('Boost will cache pages that end with ?page=1 among others.'),
     );
+   $form['advanced']['boost_cache_html'] = array(
+     '#type'          => 'checkbox',
+     '#title'         => t('Cache html documents/pages'),
+     '#default_value' => BOOST_CACHE_HTML,
+     '#description'   => t('Boost will cache most drupal pages.'),
+   );
    $form['advanced']['boost_cache_xml'] = array(
      '#type'          => 'checkbox',
      '#title'         => t('Cache .xml & /feed'),
@@ -224,6 +230,12 @@ function boost_admin_boost_performace_page() {
      '#title'         => t('Cache .js'),
      '#default_value' => BOOST_CACHE_JS,
      '#description'   => t('Boost will cache javascript files.'),
+   );
+   $form['advanced']['boost_cache_json'] = array(
+     '#type'          => 'checkbox',
+     '#title'         => t('Cache ajax/json'),
+     '#default_value' => BOOST_CACHE_JSON,
+     '#description'   => t('Boost will cache ajax/json responces.'),
    );
   $form['advanced']['boost_only_ascii_path'] = array(
     '#type'          => 'checkbox',
@@ -474,11 +486,11 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|cache|misc|modules|sites|system|themes))|(/(comment/reply|user|user/(login|password|register))$) [OR]
   RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]
   RewriteCond %{HTTPS} on
-  RewriteRule .* - [S=9]
+  RewriteRule .* - [S=11]
 
   # GZIP
   RewriteCond %{HTTP:Accept-encoding} !gzip
-  RewriteRule .* - [S=4]
+  RewriteRule .* - [S=5]
 
   RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html$gz -s
   RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html$gz [L,T=text/html]
@@ -486,6 +498,8 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml$gz [L,T=text/xml]
   RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_$css$gz -s
   RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_$css$gz [L,QSA,T=text/css]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$js$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$js$gz [L,T=text/javascript]
   RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_$js$gz -s
   RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_$js$gz [L,QSA,T=text/javascript]
 
@@ -496,6 +510,8 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml [L,T=text/xml]
   RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_$css -s
   RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_$css [L,QSA,T=text/css]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$js -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$js [L,T=text/javascript]
   RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_$js -s
   RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_$js [L,QSA,T=text/javascript]
   ### BOOST END ###

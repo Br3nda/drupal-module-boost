@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.83 2009/07/31 07:52:55 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.84 2009/07/31 09:49:23 mikeytown2 Exp $
 
 /**
  * @file
@@ -31,12 +31,14 @@ define('BOOST_HALT_ON_ERRORS',       variable_get('boost_halt_on_errors', FALSE)
 define('BOOST_ROOT_FILE',            variable_get('boost_root_file', '.boost'));
 define('BOOST_FLUSH_DIR',            variable_get('boost_flush_dir', TRUE));
 define('BOOST_CACHE_XML',            variable_get('boost_cache_xml', TRUE));
+define('BOOST_CACHE_JSON',           variable_get('boost_cache_json', FALSE));
+define('BOOST_CACHE_HTML',           variable_get('boost_cache_html', TRUE));
+define('BOOST_CACHE_CSS',            variable_get('boost_cache_css', FALSE));
+define('BOOST_CACHE_JS',             variable_get('boost_cache_js', FALSE));
 define('BOOST_CACHE_LIFETIME',       variable_get('boost_cache_lifetime', 3600));
 define('BOOST_TIME',                 time());
 define('BOOST_CACHE_QUERY',          variable_get('boost_cache_query', TRUE));
 define('BOOST_IGNORE_FLUSH',         variable_get('boost_ignore_flush', 0));
-define('BOOST_CACHE_CSS',            variable_get('boost_cache_css', FALSE));
-define('BOOST_CACHE_JS',             variable_get('boost_cache_js', FALSE));
 define('BOOST_PERMISSIONS_FILE',     variable_get('boost_permissions_file', ''));
 define('BOOST_PERMISSIONS_DIR',      variable_get('boost_permissions_dir', ''));
 define('BOOST_OVERWRITE_FILE',       variable_get('boost_overwrite_file', FALSE));
@@ -50,7 +52,7 @@ define('BOOST_COOKIE',               variable_get('boost_cookie', 'DRUPAL_UID'))
 // This line is appended to the generated static files; it is very useful
 // for troubleshooting (e.g. determining whether one got the dynamic or
 // static version):
-define('BOOST_BANNER',               variable_get('boost_banner', "<!-- Page cached by Boost @ %cached_at, expires @ %expires_at -->\n"));
+define('BOOST_BANNER',               variable_get('boost_banner', "Page cached by Boost @ %cached_at, expires @ %expires_at"));
 
 // This is needed since the $user object is already destructed in _boost_ob_handler():
 define('BOOST_USER_ID',              @$GLOBALS['user']->uid);
@@ -188,9 +190,11 @@ function boost_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'boost.admin.inc',
   );
-  $items['boost/ajax'] = array(
+  $items['boost_stats.php'] = array(
     'page callback' => 'boost_stats_ajax_callback',
     'type' => MENU_CALLBACK,
+    'access callback' => 1,
+    'file path' => drupal_get_path('module', 'boost'),
     'file' => 'stats/boost_stats.ajax.inc',
   );
   return $items;
@@ -463,7 +467,6 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
               || isset($_GET['nocache'])
               || !boost_is_cacheable($GLOBALS['_boost_path'])
               || !empty($user->uid)
-              || !file_exists($filename)
               || !module_exists('statistics')
               )) {
             $block = array();
@@ -662,7 +665,7 @@ function boost_stats_generate($filename) {
     ),
   );
   $site_js = <<<ETO
-$.getJSON(Drupal.settings.basePath + "$filename", {nocache: "1", js: "1", nid: Drupal.settings.boost.nid, q: Drupal.settings.boost.q, title: Drupal.settings.boost.title, referer: document.referrer}, function(response) {
+$.getJSON(Drupal.settings.basePath + "$filename", {nocache: "1", js: "1", nid: Drupal.settings.boost.nid, qq: Drupal.settings.boost.q, title: Drupal.settings.boost.title, referer: document.referrer}, function(response) {
   $.each(response, function(id, contents) {
     if (contents == 'NULL') {
       $(id).parent().parent().hide();
@@ -749,10 +752,13 @@ function _boost_ob_handler($buffer) {
         boost_cache_set($GLOBALS['_boost_path'], $buffer);
         boost_cache_css_js_files($buffer);
         break;
-      case 'application/rss';
-      case 'text/xml';
-      case 'application/rss+xml';
+      case 'application/rss':
+      case 'text/xml':
+      case 'application/rss+xml':
         boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_XML_EXTENSION);
+        break;
+      case 'text/javascript':
+        boost_cache_set($GLOBALS['_boost_path'], $buffer, '.js');
         break;
     }
   }
@@ -1072,7 +1078,31 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
   $time = BOOST_TIME;
   $cached_at = date('Y-m-d H:i:s', $time);
   $expires_at = date('Y-m-d H:i:s', $time + BOOST_CACHE_LIFETIME);
-  $data = rtrim($data) . "\n" . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER);
+  // Code commenting style baised on what is being cached.
+  switch ($extension) {
+    case '.html':
+      $comment_start = '<!-- ';
+      $comment_end = " -->\n";
+      if (!BOOST_CACHE_HTML) {
+        return FALSE;
+      }
+      break;
+    case '.xml':
+      $comment_start = '<!-- ';
+      $comment_end = " -->\n";
+      if (!BOOST_CACHE_XML) {
+        return FALSE;
+      }
+      break;
+    case '.js':
+      $comment_start = '/* ';
+      $comment_end = " */\n";
+      if (!BOOST_CACHE_JSON) {
+        return FALSE;
+      }
+      break;
+  }
+  $data = rtrim($data) . "\n" . $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
 
   // Invoke hook_boost_preprocess($path, $data)
   foreach (module_implements('boost_preprocess') as $module) {
@@ -1093,7 +1123,7 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
     if (BOOST_GZIP) {
       boost_cache_write(str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename) . '.gz', gzencode($data, 9));
     }
-    boost_db_prep($filename);
+    boost_db_prep($filename, $extension);
     return TRUE;
   }
   else {
@@ -1106,16 +1136,16 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
  *
  * @param $filename
  *   Name of cached file; primary key in database
- * @param $lifetime
- *   Number of seconds page lasts before it is considered stale
- * @param $push
- *   Should this page be crawled right after it is expired.
+ * @param $extension
+ *  Filename extension: Used for content types.
  */
-function boost_db_prep($filename, $lifetime = -1, $push = -1) {
+function boost_db_prep($filename, $extension) {
   $router_item = _boost_get_menu_router();
   $expire = BOOST_CACHE_LIFETIME + BOOST_TIME;
   $timer = timer_read('page');
   $timer_average = $timer;
+  $lifetime = -1;
+  $push = -1;
 
   $settings = boost_get_settings_db($router_item);
   foreach ($settings as $value) {
@@ -1124,14 +1154,14 @@ function boost_db_prep($filename, $lifetime = -1, $push = -1) {
       break;
     }
   }
-  //$boost_db = boost_get_db($filename);
-  //get data from actual entry first, if this page has been cached before.
-  //if ($boost_db) {
+  $boost_db = boost_get_db($filename);
+  //get time data from actual entry, if this page has been cached before.
+  if ($boost_db) {
   //  $expire = $boost_db['lifetime'] != -1 ? $boost_db['lifetime'] + BOOST_TIME : $expire;
   //  $lifetime = $boost_db['lifetime'];
   //  $push = $boost_db['push'];
-  //  $timer_average = ($boost_db['timer_average'] + $timer)/2;
-  //}
+    $timer_average = ($boost_db['timer_average'] + $timer)/2;
+  }
   //get data from settings table, if this page has not been put into the cache.
   if (isset($boost_settings_db)) {
     $expire = $boost_settings_db['lifetime'] != -1 ? $boost_settings_db['lifetime'] + BOOST_TIME : $expire;
@@ -1139,7 +1169,7 @@ function boost_db_prep($filename, $lifetime = -1, $push = -1) {
     $push = $boost_settings_db['push'];
   }
 
-  boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average);
+  boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension);
 }
 
 /**
@@ -1155,11 +1185,17 @@ function boost_db_prep($filename, $lifetime = -1, $push = -1) {
  *   Pre-cache this file
  * @param $router_item
  *   Array containing page_callback, page_arguments & page_id.
+ * @param $timer
+ *   Time it took drupal to build this page.
+ * @param $timer_average
+ *   Average time durpal has spent building this page.
+ * @param $extension
+ *   Filename extension: Used for content types.
  */
-function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average) {
-  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = %d WHERE filename = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $filename);
+function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension) {
+  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = %d, extension = '%s' WHERE filename = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $filename);
   if (!db_affected_rows()) {
-    @db_query("INSERT INTO {boost_cache} (filename, expire, lifetime, push, page_callback, page_arguments, timer, timer_average, base_dir, page_id) VALUES ('%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', %d)", $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id']);
+    @db_query("INSERT INTO {boost_cache} (filename, expire, lifetime, push, page_callback, page_arguments, timer, timer_average, base_dir, page_id, extension) VALUES ('%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', %d, '%s')", $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension);
   }
 }
 

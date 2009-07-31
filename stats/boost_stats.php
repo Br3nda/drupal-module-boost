@@ -1,5 +1,5 @@
 <?php
-// $Id: boost_stats.php,v 1.1.2.8 2009/07/28 01:15:17 mikeytown2 Exp $
+// $Id: boost_stats.php,v 1.1.2.9 2009/07/31 09:49:24 mikeytown2 Exp $
 
 if (!isset($_GET['js'])) {
   // stats not called via JS, send image out & close connection.
@@ -9,7 +9,7 @@ if (!isset($_GET['js'])) {
 // Exit script if nothing was passed to it.
 if (   !isset($_GET['nid'])
     && !isset($_GET['title'])
-    && !isset($_GET['q'])
+    && !isset($_GET['qq'])
     && !isset($_GET['referer'])
     ) {
   exit;
@@ -36,6 +36,7 @@ if (isset($_GET['js'])) {
 
     // Send JSON Back
     if (!empty($json)) {
+      header('Content-Type: text/javascript; charset=utf-8');
       echo json_encode($json);
     }
   }
@@ -83,6 +84,7 @@ function boost_stats_init() {
   // Set variables passed via GET.
   $nid = (isset($_GET['nid']) && is_numeric($_GET['nid'])) ? $_GET['nid'] : NULL;
   $title = (isset($_GET['title']) && $_GET['title'] != 'NULL') ? urldecode($_GET['title']) : NULL;
+  $q = (isset($_GET['qq']) && $_GET['qq'] != 'NULL') ? $_GET['qq'] : NULL;
   $q = (isset($_GET['q']) && $_GET['q'] != 'NULL') ? $_GET['q'] : NULL;
   $referer = isset($_GET['referer']) ? $_GET['referer'] : NULL;
 
@@ -90,7 +92,7 @@ function boost_stats_init() {
   $session_id = session_id();
   if (empty($session_id)) {
     if (empty($_COOKIE[session_name()])) {
-      if (empty($_SERVER['HTTP_USER_AGENT']) {
+      if (empty($_SERVER['HTTP_USER_AGENT'])) {
         $session_id = md5(ip_address());
       }
       else {

@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.22 2009/07/29 07:21:09 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.23 2009/07/31 09:49:23 mikeytown2 Exp $
 
 /**
  * @file
@@ -170,6 +170,13 @@ function boost_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'extension' => array(
+        'description' => 'File Extension/Mime content type of this page.',
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'timer' => array(
         'type' => 'int',
         'unsigned' => TRUE,
@@ -194,6 +201,7 @@ function boost_schema() {
       'timer_average' => array('timer_average'),
       'page_callback' => array('page_callback'),
       'page_arguments' => array('page_arguments'),
+      'mime_type' => array('mime_type'),
     ),
     'primary key' => array('filename'),
   );
@@ -234,6 +242,13 @@ function boost_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'extension' => array(
+        'description' => 'File Extension/Mime content type of this page.',
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'lifetime' => array(
         'description' => t('Number of seconds this page should be considered fresh. Used to set the expiration column.'),
         'type' => 'int',
@@ -253,6 +268,7 @@ function boost_schema() {
       'page_arguments' => array('page_arguments'),
       'base_dir' => array('base_dir'),
       'page_id' => array('page_id'),
+      'mime_type' => array('mime_type'),
     ),
     'primary key' => array('csid'),
   );
@@ -448,6 +464,33 @@ function boost_update_6103() {
 
   // Set Defaults
   db_field_set_default($ret, 'boost_cache_settings', 'page_arguments', '0');
+
+  return $ret;
+}
+
+/**
+ * Update 6104 - Add new column to tables
+ *  Add in mime_type column
+ */
+function boost_update_6104() {
+  $ret = array();
+  // Add in mime_type column
+  db_add_field($ret, 'boost_cache', 'extension', array(
+        'description' => 'File Extension/Mime content type of this page.',
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
+      ));
+  db_add_field($ret, 'boost_cache_settings', 'extension', array(
+        'description' => 'File Extension/Mime content type of this page.',
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
+      ));
+  db_add_index($ret, 'boost_cache', 'extension', array('extension'));
+  db_add_index($ret, 'boost_cache_settings', 'extension', array('extension'));
 
   return $ret;
 }

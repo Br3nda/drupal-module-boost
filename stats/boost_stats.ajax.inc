@@ -12,7 +12,7 @@ function boost_stats_ajax_callback() {
   // Exit if nothing was passed to this.
   if (   !isset($_GET['nid'])
       && !isset($_GET['title'])
-      && !isset($_GET['q'])
+      && !isset($_GET['qq'])
       && !isset($_GET['referer'])
       ) {
     exit;
@@ -21,10 +21,10 @@ function boost_stats_ajax_callback() {
   // Set variables passed via GET.
   $nid = (isset($_GET['nid']) && is_numeric($_GET['nid'])) ? $_GET['nid'] : NULL;
   $title = (isset($_GET['title']) && $_GET['title'] != 'NULL') ? urldecode($_GET['title']) : NULL;
-  $q = (isset($_GET['q']) && $_GET['q'] != 'NULL') ? $_GET['q'] : NULL;
+  $q = (isset($_GET['qq']) && $_GET['qq'] != 'NULL') ? $_GET['qq'] : NULL;
   $referer = isset($_GET['referer']) ? $_GET['referer'] : NULL;
 
-  // This only goes in the access log; only used for stats, not creds.
+  // $session_id only goes in the access log; only used for stats, not creds.
   $session_id = session_id();
   if (empty($session_id)) {
     if (empty($_COOKIE[session_name()])) {
@@ -39,6 +39,8 @@ function boost_stats_ajax_callback() {
       $session_id = $_COOKIE[session_name()];
     }
   }
+
+  // Anonymous users always get a User ID of 0.
   $uid = 0;
 
   // Set node counter.
@@ -60,7 +62,7 @@ function boost_stats_ajax_callback() {
 
       // Send JSON Back
       if (!empty($json)) {
-        echo json_encode($json);
+        echo drupal_json($json);
       }
     }
     // Send HTML back
