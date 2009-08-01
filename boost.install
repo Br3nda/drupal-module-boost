@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.23 2009/07/31 09:49:23 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.24 2009/08/01 02:33:39 mikeytown2 Exp $
 
 /**
  * @file
@@ -13,7 +13,7 @@
  * Implementation of hook_enable().
  */
 function boost_enable() {
-  drupal_set_message(t('Boost successfully installed. Please review the available <a href="@settings">configuration settings</a>.', array('@settings' => url('admin/settings/performance'))));
+  drupal_set_message(t('Boost successfully installed. Please review the available <a href="@config">configuration</a> <a href="@settings">settings</a>.', array('@config' => url('admin/settings/performance'), '@settings' => url('admin/settings/performance/boost'))));
 
   // Forcibly disable Drupal's built-in SQL caching to prevent any conflicts of interest:
   if (variable_get('cache', CACHE_DISABLED) != CACHE_DISABLED) {
@@ -201,7 +201,7 @@ function boost_schema() {
       'timer_average' => array('timer_average'),
       'page_callback' => array('page_callback'),
       'page_arguments' => array('page_arguments'),
-      'mime_type' => array('mime_type'),
+      'extension' => array('extension'),
     ),
     'primary key' => array('filename'),
   );
@@ -268,7 +268,7 @@ function boost_schema() {
       'page_arguments' => array('page_arguments'),
       'base_dir' => array('base_dir'),
       'page_id' => array('page_id'),
-      'mime_type' => array('mime_type'),
+      'extension' => array('extension'),
     ),
     'primary key' => array('csid'),
   );
@@ -386,7 +386,7 @@ function boost_update_6100() {
  */
 function boost_update_6101() {
   // copy variable
-  return update_sql("UPDATE {variable} SET name = 'boost_enabled' WHERE name = 'boost'");
+  return array(update_sql("UPDATE {variable} SET name = 'boost_enabled' WHERE name = 'boost'"));
 }
 
 /**
