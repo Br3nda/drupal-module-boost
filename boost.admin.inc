@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.44 2009/07/31 09:49:23 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.45 2009/08/03 06:07:10 mikeytown2 Exp $
 
 /**
  * @file
@@ -48,13 +48,33 @@ function boost_admin_performance_page($form = array()) {
     '#options'       => array(CACHE_DISABLED => t('Disabled'), CACHE_NORMAL => t('Enabled'), CACHE_AGGRESSIVE => t('(Not Recommended) Set Boost & Core (if enabled) cache for each page')),
     '#description'   => t('Static page caching is a mechanism that stores dynamically generated web pages as HTML files in a special cache directory located under the Drupal installation directory. By caching a web page in this manner, the web server can serve it out in the fastest possible manner, without invoking PHP or Drupal at all. While this does provide a significant performance and scalability boost, you should note that it could have negative usability side-effects unless your site is targeted at an audience consisting mostly of "anonymous" visitors.'),
   );
-  $form['boost']['boost_cache_lifetime'] = array(
+  if (BOOST_CACHE_HTML) {
+    $form['boost']['boost_cache_lifetime'] = array(
+      '#type' => 'select',
+      '#title' => t('Boost - HTML - Default minimum cache lifetime'),
+      '#default_value' => BOOST_CACHE_LIFETIME,
+      '#options' => $period,
+      '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    );
+  }
+  if (BOOST_CACHE_XML) {
+  $form['boost']['boost_cache_xml_lifetime'] = array(
     '#type' => 'select',
-    '#title' => t('Boost - Default minimum cache lifetime'),
-    '#default_value' => BOOST_CACHE_LIFETIME,
+    '#title' => t('Boost - XML - Default minimum cache lifetime'),
+    '#default_value' => BOOST_CACHE_XML_LIFETIME,
     '#options' => $period,
     '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
   );
+  }
+  if (BOOST_CACHE_JSON) {
+  $form['boost']['boost_cache_json_lifetime'] = array(
+    '#type' => 'select',
+    '#title' => t('Boost - JSON - Default minimum cache lifetime'),
+    '#default_value' => BOOST_CACHE_JSON_LIFETIME,
+    '#options' => $period,
+    '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+  );
+  }
   $form['boost']['boost_clear'] = array(
     '#type' => 'submit',
     '#value' => t('Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(0))),
