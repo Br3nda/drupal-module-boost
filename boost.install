@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.24 2009/08/01 02:33:39 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.25 2009/08/03 06:53:30 mikeytown2 Exp $
 
 /**
  * @file
@@ -290,6 +290,13 @@ function boost_update_6100() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'url' => array(
+        'description' => 'URL of cached page',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'expire' => array(
         'description' => t('UNIX timestamp for the expiration date of cached page.'),
         'type' => 'int',
@@ -474,7 +481,7 @@ function boost_update_6103() {
  */
 function boost_update_6104() {
   $ret = array();
-  // Add in mime_type column
+  // Add in extension column
   db_add_field($ret, 'boost_cache', 'extension', array(
         'description' => 'File Extension/Mime content type of this page.',
         'type' => 'varchar',
@@ -492,5 +499,21 @@ function boost_update_6104() {
   db_add_index($ret, 'boost_cache', 'extension', array('extension'));
   db_add_index($ret, 'boost_cache_settings', 'extension', array('extension'));
 
+  return $ret;
+}
+
+/**
+ * Update 6105 - Add new column to boost_cache table
+ *  Add in url column
+ */
+function boost_update_6105() {
+  $ret = array();
+  db_add_field($ret, 'boost_cache', 'url', array(
+        'description' => 'URL of cached page',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ));
   return $ret;
 }

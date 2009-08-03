@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.86 2009/08/03 06:10:51 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.87 2009/08/03 06:53:30 mikeytown2 Exp $
 
 /**
  * @file
@@ -1211,9 +1211,11 @@ function boost_db_prep($filename, $extension, $expire) {
  *   Filename extension: Used for content types.
  */
 function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension) {
-  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = %d, extension = '%s' WHERE filename = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $filename);
+  global $base_root;
+  $url = $base_root . request_uri();
+  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = %d, extension = '%s', url = '%s' WHERE filename = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url, $filename);
   if (!db_affected_rows()) {
-    @db_query("INSERT INTO {boost_cache} (filename, expire, lifetime, push, page_callback, page_arguments, timer, timer_average, base_dir, page_id, extension) VALUES ('%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', %d, '%s')", $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension);
+    @db_query("INSERT INTO {boost_cache} (filename, expire, lifetime, push, page_callback, page_arguments, timer, timer_average, base_dir, page_id, extension, url) VALUES ('%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', %d, '%s', '%s')", $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url);
   }
 }
 
