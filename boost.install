@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.25 2009/08/03 06:53:30 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.26 2009/08/06 08:20:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -190,7 +190,13 @@ function boost_schema() {
         'default' => 0,
         'description' => 'Average time in milliseconds that the page took to be generated.',
       ),
-
+      'url' => array(
+        'description' => 'URL of cached page',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
     ),
     'indexes' => array(
       'expire' => array('expire'),
@@ -271,6 +277,28 @@ function boost_schema() {
       'extension' => array('extension'),
     ),
     'primary key' => array('csid'),
+  );
+  $schema['boost_crawler'] = array(
+    'description' => t('Boost crawler - temp table'),
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary Key: Unique ID.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'url' => array(
+        'description' => 'URL of page',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'url' => array('url'),
+    ),
   );
   return $schema;
 }
@@ -515,5 +543,37 @@ function boost_update_6105() {
         'not null' => TRUE,
         'default' => '',
       ));
+  return $ret;
+}
+
+/**
+ * Update 6106 - Add boost_crawler table to DB
+ */
+function boost_update_6106() {
+  $schema['boost_crawler'] = array(
+    'description' => t('Boost crawler - temp table'),
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary Key: Unique ID.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'url' => array(
+        'description' => 'URL of page',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'url' => array('url'),
+    ),
+  );
+
+  $ret = array();
+  db_create_table($ret, 'boost_crawler', $schema['boost_crawler']);
   return $ret;
 }

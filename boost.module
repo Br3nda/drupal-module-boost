@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.87 2009/08/03 06:53:30 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.88 2009/08/06 08:20:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -47,6 +47,10 @@ define('BOOST_OVERWRITE_FILE',       variable_get('boost_overwrite_file', FALSE)
 define('BOOST_DISABLE_CLEAN_URL',    variable_get('boost_disable_clean_url', FALSE));
 define('BOOST_VERBOSE',              variable_get('boost_verbose', 5));
 define('BOOST_FLUSH_NODE_TERMS',     variable_get('boost_flush_node_terms', TRUE));
+define('BOOST_CRAWL_ON_CRON',        variable_get('boost_crawl_on_cron', FALSE));
+define('BOOST_PUSH_HTML',            variable_get('boost_push_html', FALSE));
+define('BOOST_PUSH_XML',             variable_get('boost_push_xml', FALSE));
+define('BOOST_PUSH_JSON',            variable_get('boost_push_json', FALSE));
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -200,6 +204,12 @@ function boost_menu() {
     'file path' => drupal_get_path('module', 'boost'),
     'file' => 'stats/boost_stats.ajax.inc',
   );
+  $items['boost-crawler'] = array(
+    'page callback' => 'boost_crawler_init',
+    'type' => MENU_CALLBACK,
+    'access callback' => 1,
+    'file path' => drupal_get_path('module', 'boost'),
+  );
   return $items;
 }
 
@@ -274,6 +284,11 @@ function boost_cron() {
   if (module_exists('statistics') && variable_get('boost_block_show_stats', FALSE)) {
     $block = module_invoke('statistics', 'block', 'view', 0);
     variable_set('boost_statistics_html', $block['content']);
+  }
+
+  // Crawl Site
+  if (BOOST_CRAWL_ON_CRON) {
+    boost_crawler_init();
   }
 }
 
@@ -544,7 +559,7 @@ function boost_block_db_settings_form() {
     '#description' => t('Default: %default', array('%default' => format_interval(BOOST_CACHE_LIFETIME))),
   );
   $form['boost_db_settings']['push'] = array(
-    '#type' => 'hidden',
+    '#type' => 'select',
     '#title' => t('Preemptive Cache'),
     '#default_value' => $info['push'],
     '#options' => array(
@@ -1916,4 +1931,213 @@ if (!function_exists('file_put_contents')) {
     }
     return FALSE;
   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Crawler Code
+
+/**
+ * The brains of the crawler.
+ */
+function boost_crawler_init() {
+  // Set PHP INI Variables, try to prevent crawler from stalling.
+  Global $base_url;
+  ini_set('max_execution_time', 600);
+  ini_set('output_buffering', 'off');
+  $self = $base_url . '/' . 'boost-crawler?nocache=1';
+
+  // Only allow self to call this page if not called via cron.
+  if ($_GET['q'] == 'boost-crawler' && $_SERVER['REMOTE_ADDR'] != $_SERVER['SERVER_ADDR']) {
+    drupal_access_denied();
+    exit;
+  }
+
+  if ($_GET['q'] == 'boost-crawler') {
+    // Return html so connection closes
+    boost_async_opp('async');
+
+    // Wait 10 seconds if first run and try again (let cron finish).
+    if (variable_get('cron_semaphore', FALSE) == TRUE) {
+      watchdog('boost', 'Crawler Sleep');
+      sleep(10);
+      boost_async_call_crawler($self);
+      exit;
+    }
+    // Start to do crawler stuff
+    else {
+      if (boost_crawler_init_tables()) {
+        $start = variable_get('boost_crawler_position', 0);
+        $count = db_result(db_query('SELECT COUNT(*) FROM {boost_crawler}'));
+        if ($count <= $start) {
+          // Crawler done;
+          watchdog('boost', 'Crawler Done');
+          return TRUE;
+        }
+
+        //Spin Up Threads
+        $thread_primed = variable_get('boost_crawler_threads_primed', FALSE);
+        $threads = 2; //variable_get('boost_crawler_threads', 4);
+        if (!$thread_primed) {
+          variable_set('boost_crawler_threads_primed', TRUE);
+          //variable_set('boost_crawler_threads_loaded', FALSE);
+          while ($threads > 0) {
+            //watchdog('boost', 'Thread started ' . $threads);
+            $threads--;
+            boost_async_call_crawler($self);
+          }
+          //variable_set('boost_crawler_threads_loaded', TRUE);
+          watchdog('boost', 'All threads started');
+          exit;
+        }
+
+        // Stop button code
+        if (variable_get('boost_crawler_stopped', FALSE)) {
+          watchdog('boost', 'Crawler Stopped');
+          exit;
+        }
+
+        // Wait for all threads to be loaded before continuing.
+        //$loaded = unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_threads_loaded'")));
+        //while (!$loaded) {
+        //  sleep(1);
+        //  $loaded = unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_threads_loaded'")));
+        //}
+
+        $step = variable_get('boost_crawler_step', 25);
+        $start = unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_position'")));
+        variable_set('boost_crawler_position', $start + $step);
+
+        $results = db_query_range("SELECT url FROM {boost_crawler} ORDER BY id ASC", $start, $step);
+        while ($url = db_fetch_array($results)) {
+          drupal_http_request($url['url']);
+          //watchdog('boost', $url['url']);
+          set_time_limit(0);
+        }
+        // Crawler for this round done, call self and exit
+        boost_async_call_crawler($self);
+        exit;
+      }
+      else {
+        // URL's added to table, call self and exit
+        //watchdog('boost', 'Loading URL\'s');
+        boost_async_call_crawler($self);
+        exit;
+      }
+    }
+  }
+  elseif (variable_get('cron_semaphore', FALSE) == TRUE) {
+    // This function called from cron; reset & call self.
+    watchdog('boost', 'Crawler Start');
+    db_query('TRUNCATE {boost_crawler}');
+    variable_set('boost_crawler_position', 0);
+    variable_set('boost_crawler_loaded_count' . BOOST_FILE_EXTENSION, 0);
+    variable_set('boost_crawler_loaded_count' . BOOST_XML_EXTENSION, 0);
+    variable_set('boost_crawler_loaded_count' . '.js', 0);
+    variable_set('boost_crawler_threads_primed', FALSE);
+    variable_set('boost_crawler_stopped', FALSE);
+    boost_async_call_crawler($self);
+    return TRUE;
+  }
+}
+
+/**
+ * Output text & set php in async mode.
+ */
+function boost_async_opp($output) {
+  // Prime php for background operations
+  ob_end_clean();
+  header("Connection: close");
+  ignore_user_abort();
+
+  // Output text
+  ob_start();
+  header("Content-type: text/html");
+  header("Expires: Wed, 11 Nov 1998 11:11:11 GMT");
+  header("Cache-Control: no-cache");
+  header("Cache-Control: must-revalidate");
+  header("Content-Length: " . (strlen($output)-1));
+  header("Connection: close");
+  print($output);
+  ob_end_flush();
+  flush();
+  // wait for 1 second
+  sleep(1);
+
+  // text returned and connection closed.
+  // Do background processing. Time taken after should not effect page load times.
+}
+
+/**
+ * Call a URL with a timeout of 3 seconds.
+ *
+ * @param $self
+ *  URL to restart the loop.
+ */
+function boost_async_call_crawler($self) {
+  $timeout = ini_get('default_socket_timeout');
+  ini_set('default_socket_timeout', 3);
+  @file_get_contents($self);
+  ini_set('default_socket_timeout', $timeout);
+}
+
+/**
+ * Add URL's to the boost_crawler table.
+ *
+ * @param $push_setting
+ *  Default crawler settting for the content type
+ * @param $extension
+ *  File extension, controlls the content type DB lookup
+ */
+function boost_crawler_add_to_table($push_setting, $extension) {
+  // Insert batch of html url's into boost_crawler table
+  $count = 10000;
+  $total = boost_crawler_count($push_setting, $extension);
+  $loaded = variable_get('boost_crawler_loaded_count' . $extension, 0);
+  if ($total > $loaded) {
+    if ($push_setting) {
+      db_query_range("INSERT INTO {boost_crawler} (url) SELECT url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
+    }
+    else {
+      db_query_range("INSERT INTO {boost_crawler} (url) SELECT url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
+    }
+    variable_set('boost_crawler_loaded_count' . $extension, $loaded + $count);
+    return FALSE;
+  }
+  else {
+    return TRUE;
+  }
+}
+
+/**
+ * Count the number of URL's in the boost_cache table.
+ *
+ * @param $push_setting
+ *  Default crawler settting for the content type
+ * @param $extension
+ *  File extension, controlls the content type DB lookup
+ */
+function boost_crawler_count($push_setting, $extension) {
+  if ($push_setting) {
+    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire = 0", $extension));
+  }
+  else {
+    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire = 0", $extension));
+  }
+}
+
+/**
+ * Logic to get boost_crawler table ready.
+ */
+function boost_crawler_init_tables() {
+  if (boost_crawler_add_to_table(BOOST_PUSH_HTML, BOOST_FILE_EXTENSION)) {
+    if (boost_crawler_add_to_table(BOOST_PUSH_XML, BOOST_XML_EXTENSION)) {
+      if (boost_crawler_add_to_table(BOOST_PUSH_JSON, '.js')) {
+        // All URL's added to boost_cralwer table; start hitting URL's
+        return TRUE;
+      }
+      else {return FALSE;}
+    }
+    else {return FALSE;}
+  }
+  else {return FALSE;}
 }

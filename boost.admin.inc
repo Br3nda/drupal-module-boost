@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.46 2009/08/03 06:10:51 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.47 2009/08/06 08:20:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -56,24 +56,42 @@ function boost_admin_performance_page($form = array()) {
       '#options' => $period,
       '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
     );
+    $form['boost']['boost_push_html'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Preemptive Cache HTML'),
+      '#default_value' => BOOST_PUSH_HTML,
+      '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
+    );
   }
   if (BOOST_CACHE_XML) {
-  $form['boost']['boost_cache_xml_lifetime'] = array(
-    '#type' => 'select',
-    '#title' => t('Boost - XML - Default minimum cache lifetime'),
-    '#default_value' => BOOST_CACHE_XML_LIFETIME,
-    '#options' => $period,
-    '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
-  );
+    $form['boost']['boost_cache_xml_lifetime'] = array(
+      '#type' => 'select',
+      '#title' => t('Boost - XML - Default minimum cache lifetime'),
+      '#default_value' => BOOST_CACHE_XML_LIFETIME,
+      '#options' => $period,
+      '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    );
+    $form['boost']['boost_push_xml'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Preemptive Cache XML'),
+      '#default_value' => BOOST_PUSH_XML,
+      '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
+    );
   }
   if (BOOST_CACHE_JSON) {
-  $form['boost']['boost_cache_json_lifetime'] = array(
-    '#type' => 'select',
-    '#title' => t('Boost - JSON - Default minimum cache lifetime'),
-    '#default_value' => BOOST_CACHE_JSON_LIFETIME,
-    '#options' => $period,
-    '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
-  );
+    $form['boost']['boost_cache_json_lifetime'] = array(
+      '#type' => 'select',
+      '#title' => t('Boost - JSON - Default minimum cache lifetime'),
+      '#default_value' => BOOST_CACHE_JSON_LIFETIME,
+      '#options' => $period,
+      '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    );
+    $form['boost']['boost_push_json'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Preemptive Cache AJAX/JSON'),
+      '#default_value' => BOOST_PUSH_JSON,
+      '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
+    );
   }
   $form['boost']['boost_clear'] = array(
     '#type' => 'submit',
@@ -305,6 +323,12 @@ function boost_admin_boost_performace_page() {
     '#default_value' => BOOST_MULTISITE_SINGLE_DB,
     '#description'   => t('If Drupal is running on a multi-site with a single/shared database, then enabling this will allow for correct multi-site caching.'),
   );
+  $form['advanced']['boost_crawl_on_cron'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Preemptive Cache: Crawl URL\'s with the boost block setting to yes'),
+    '#default_value' => BOOST_CRAWL_ON_CRON,
+    '#description'   => t('Touch some select URL\'s so they are cached before anyone accesses them.'),
+  );
   $form['advanced']['boost_permissions_file'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
@@ -333,6 +357,11 @@ function boost_admin_boost_performace_page() {
       3 => t('3'),
       5 => t('5 Show all'),
     ),
+  );
+  $form['advanced']['boost_stop_crawler'] = array(
+    '#type' => 'submit',
+    '#value' => t('Stop Crawler. !count out of !total URL\'s done.', array( '!count' => variable_get('boost_crawler_position', 0), '!total' => boost_crawler_total_count())),
+    '#submit' => array('boost_stop_crawler_submit'),
   );
 
   // Apache .htaccess settings generation
@@ -568,6 +597,10 @@ function boost_count_core_db($all = FALSE) {
   return db_result(db_query("SELECT COUNT(*) FROM {cache_page}"));
 }
 
+function boost_crawler_total_count() {
+  return db_result(db_query("SELECT COUNT(*) FROM {boost_crawler}"));
+}
+
 /**
  * Flushes boost page cache
  */
@@ -613,6 +646,13 @@ function boost_reset_database_submit () {
   else {
     drupal_set_message(t('Boost: Set "Ignore cache flushing:" to \'Disabled\' in the <a href="!link">boost advanced settings</a> & try again.', array('!link' => url('admin/settings/performance/boost', array('fragment' => 'edit-boost-ignore-flush-0-wrapper')))), 'warning');
   }
+}
+
+/**
+ * Stop Crawler
+ */
+function boost_stop_crawler_submit() {
+  variable_set('boost_crawler_stopped', TRUE);
 }
 
 /**
