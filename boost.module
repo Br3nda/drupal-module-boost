@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.90 2009/08/06 14:56:03 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.91 2009/08/11 04:43:45 mikeytown2 Exp $
 
 /**
  * @file
@@ -1818,18 +1818,28 @@ function _boost_get_menu_router() {
     $router_item['page_callback'] = 'taxonomy';
     $router_item['page_id'] = arg(2);
   }
+  // Handle users
+  if (arg(0) == 'user' && is_numeric(arg(1))) {
+    $router_item['page_arguments'] = implode(', ', user_load(array('uid' => arg(1)))->roles);
+    $router_item['page_callback'] = 'user';
+    $router_item['page_id'] = arg(1);
+  }
   // Try to handle everything else
   elseif (is_array($router_item['page_arguments'])) {
     foreach ($router_item['page_arguments'] as $string) {
       if (is_string($string)) {
         $router_item['page_arguments'] = $string;
-        break ;
+        break;
       }
     }
   }
   // Set empty if page_arguments is an empty object.
   if (empty($router_item['page_arguments'])) {
     $router_item['page_arguments'] = '';
+  }
+  // Set to first object in array if page_arguments is still an array and cast it as an string.
+  if (is_array($router_item['page_arguments'])) {
+    $router_item['page_arguments'] = (string)$router_item['page_arguments'][0];
   }
 
   // Handle Views
@@ -2090,7 +2100,7 @@ function boost_async_call_crawler($self) {
  *  File extension, controlls the content type DB lookup
  */
 function boost_crawler_add_to_table($push_setting, $extension) {
-  // Insert batch of html url's into boost_crawler table
+  // Insert batch of url's into boost_crawler table
   $count = 10000;
   $total = boost_crawler_count($push_setting, $extension);
   $loaded = variable_get('boost_crawler_loaded_count' . $extension, 0);
