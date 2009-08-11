@@ -23,39 +23,46 @@
     ForceType text/javascript
   </FilesMatch>
 
+  # GZIP - Cached css & js files
+  RewriteCond %{HTTP:Accept-encoding} !gzip
+  RewriteRule .* - [S=2]
+  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}__\.css\.gz -s
+  RewriteRule .* cache/gz/%{SERVER_NAME}%{REQUEST_URI}__\.css\.gz [L,QSA,T=text/css]
+  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}__\.js\.gz -s
+  RewriteRule .* cache/gz/%{SERVER_NAME}%{REQUEST_URI}__\.js\.gz [L,QSA,T=text/javascript]
+
+  # NORMAL - Cached css & js files
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}__\.css -s
+  RewriteRule .* cache/%{SERVER_NAME}%{REQUEST_URI}__\.css [L,QSA,T=text/css]
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}__\.js -s
+  RewriteRule .* cache/%{SERVER_NAME}%{REQUEST_URI}__\.js [L,QSA,T=text/javascript]
+
+  # Caching for anonymous users
   # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR https request
   RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
   RewriteCond %{REQUEST_URI} (^/(admin|cache|misc|modules|sites|system|themes))|(/(comment/reply|user|user/(login|password|register))$) [OR]
   RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]
   RewriteCond %{HTTPS} on
-  RewriteRule .* - [S=11]
+  RewriteRule .* - [S=7]
 
   # GZIP
   RewriteCond %{HTTP:Accept-encoding} !gzip
-  RewriteRule .* - [S=5]
-
+  RewriteRule .* - [S=3]
   RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz -s
   RewriteRule .* cache/gz/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz [L,T=text/html]
   RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml\.gz -s
   RewriteRule .* cache/gz/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml\.gz [L,T=text/xml]
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}_\.css\.gz -s
-  RewriteRule .* cache/gz/%{SERVER_NAME}%{REQUEST_URI}_\.css\.gz [L,QSA,T=text/css]
   RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.js\.gz -s
   RewriteRule .* cache/gz/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.js\.gz [L,T=text/javascript]
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}_\.js\.gz -s
-  RewriteRule .* cache/gz/%{SERVER_NAME}%{REQUEST_URI}_\.js\.gz [L,QSA,T=text/javascript]
 
   # NORMAL
   RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html -s
   RewriteRule .* cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html [L,T=text/html]
   RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml -s
   RewriteRule .* cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml [L,T=text/xml]
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}_\.css -s
-  RewriteRule .* cache/%{SERVER_NAME}%{REQUEST_URI}_\.css [L,QSA,T=text/css]
   RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.js -s
   RewriteRule .* cache/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.js [L,T=text/javascript]
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{SERVER_NAME}%{REQUEST_URI}_\.js -s
-  RewriteRule .* cache/%{SERVER_NAME}%{REQUEST_URI}_\.js [L,QSA,T=text/javascript]
+
   ### BOOST END ###
 
-# $Id: boosted1.txt,v 1.1.2.9 2009/07/31 09:49:24 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.10 2009/08/11 04:52:21 mikeytown2 Exp $
