@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.96 2009/08/11 05:01:05 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.97 2009/08/11 05:11:23 mikeytown2 Exp $
 
 /**
  * @file
@@ -51,6 +51,7 @@ define('BOOST_CRAWL_ON_CRON',        variable_get('boost_crawl_on_cron', FALSE))
 define('BOOST_PUSH_HTML',            variable_get('boost_push_html', FALSE));
 define('BOOST_PUSH_XML',             variable_get('boost_push_xml', FALSE));
 define('BOOST_PUSH_JSON',            variable_get('boost_push_json', FALSE));
+define('BOOST_CHAR',                 '_');
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -100,10 +101,10 @@ function boost_init() {
   //set variables
   $GLOBALS['_boost_path'] = $_REQUEST['q'];
   // Make the proper filename for our query
-  $GLOBALS['_boost_query'] = '_';
+  $GLOBALS['_boost_query'] = BOOST_CHAR;
   foreach ($_GET as $key => $val) {
     if ($key != 'q' && $key != 'destination') {
-      $GLOBALS['_boost_query'] .= (($GLOBALS['_boost_query'] == '_') ? '' : '&') . $key . '=' . $val;
+      $GLOBALS['_boost_query'] .= (($GLOBALS['_boost_query'] == BOOST_CHAR) ? '' : '&') . $key . '=' . $val;
     }
   }
 
@@ -907,7 +908,7 @@ function boost_is_cacheable($path) {
   if (!BOOST_CACHE_XML && (preg_match('!/feed$!', $normal_path) || preg_match('!\.xml$!', $normal_path))) {
     return FALSE;
   }
-  if (!BOOST_CACHE_QUERY && $GLOBALS['_boost_query'] != '_') {
+  if (!BOOST_CACHE_QUERY && $GLOBALS['_boost_query'] != BOOST_CHAR) {
     return FALSE;
   }
 
@@ -1481,7 +1482,7 @@ function boost_cache_directory($host = NULL, $absolute = TRUE) {
  */
 function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION) {
   //handling of url variables
-  if ($GLOBALS['_boost_query'] != '_') {
+  if ($GLOBALS['_boost_query'] != BOOST_CHAR) {
     if ($query) {
       $path .= $GLOBALS['_boost_query'];
     }
@@ -1731,17 +1732,17 @@ function _boost_copy_css_files($css) {
   foreach ($css_files as $css_file) {
     if (file_exists($css_file . '.css')) {
       $src = $css_file . '.css';
-      $dest = BOOST_FILE_PATH . '/' . $css_file . '.css__.css';
+      $dest = BOOST_FILE_PATH . '/' . $css_file . '.css' . BOOST_CHAR . BOOST_CHAR . '.css';
       _boost_copy_file($src, $dest);
     }
     if (file_exists($css_file . '.css.gz')) {
       $src = $css_file . '.css.gz';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css__.css.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css' . BOOST_CHAR . BOOST_CHAR . '.css.gz';
       _boost_copy_file($src, $dest);
     }
     elseif (BOOST_GZIP && file_exists($css_file . '.css')) {
       $src = $css_file . '.css';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css__.css.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css' . BOOST_CHAR . BOOST_CHAR . '.css.gz';
       _boost_gz_copy_file($src, $dest);
     }
   }
@@ -1769,32 +1770,32 @@ function _boost_copy_js_files($js) {
   foreach ($js_files as $js_file) {
     if (file_exists($js_file . '.js')) {
       $src = $js_file . '.js';
-      $dest = BOOST_FILE_PATH . '/' . $js_file . '.js__.js';
+      $dest = BOOST_FILE_PATH . '/' . $js_file . '.js' . BOOST_CHAR . BOOST_CHAR . '.js';
       _boost_copy_file($src, $dest);
     }
     if (file_exists($js_file . '.js.gz')) {
       $src = $js_file . '.js.gz';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js__.js.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js' . BOOST_CHAR . BOOST_CHAR . '.js.gz';
       _boost_copy_file($src, $dest);
     }
     elseif (BOOST_GZIP && file_exists($js_file . '.js')) {
       $src = $js_file . '.js';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js__.js.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js' . BOOST_CHAR . BOOST_CHAR . '.js.gz';
       _boost_gz_copy_file($src, $dest);
     }
     if (file_exists($js_file . '.jsmin.js')) {
       $src = $js_file . '.jsmin.js';
-      $dest = BOOST_FILE_PATH . '/' . $js_file . '.jsmin.js__.js';
+      $dest = BOOST_FILE_PATH . '/' . $js_file . '.jsmin.js' . BOOST_CHAR . BOOST_CHAR . '.js';
       _boost_copy_file($src, $dest);
     }
     if (file_exists($js_file . '.jsmin.js.gz')) {
       $src = $js_file . '.jsmin.js.gz';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js__.js.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js' . BOOST_CHAR . BOOST_CHAR . '.js.gz';
       _boost_copy_file($src, $dest);
     }
     elseif (BOOST_GZIP && file_exists($js_file . '.jsmin.js')) {
       $src = $js_file . '.jsmin.js';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js__.js.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js' . BOOST_CHAR . BOOST_CHAR . '.js.gz';
       _boost_gz_copy_file($src, $dest);
     }
   }

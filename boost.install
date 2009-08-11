@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.27 2009/08/11 04:46:50 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.28 2009/08/11 05:11:23 mikeytown2 Exp $
 
 /**
  * @file
@@ -65,6 +65,7 @@ function boost_requirements($phase) {
         $cache_directories[] = BOOST_GZIP_FILE_PATH;
       }
       $htaccess = file_get_contents('.htaccess');
+      $char = BOOST_CHAR;
       foreach($cache_directories as $cache_directory) {
         $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
         _boost_mkdir_p($cache_directory);
@@ -94,7 +95,7 @@ function boost_requirements($phase) {
             'value'       => $t('Cache path'),
           );
         }
-      elseif ($htaccess && count(explode("%{REQUEST_URI}_%{QUERY_STRING}\.html", $htaccess)) < 5) {
+      elseif ($htaccess && count(explode("%{REQUEST_URI}$char%{QUERY_STRING}\.html", $htaccess)) < 3) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
           'description' => $t('.htaccess file does not contain the boost specific rewrite rules, or the rewrite rules have changed and they need to be updated.', array()),

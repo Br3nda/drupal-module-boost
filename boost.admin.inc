@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.50 2009/08/11 05:01:05 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.51 2009/08/11 05:11:23 mikeytown2 Exp $
 
 /**
  * @file
@@ -513,6 +513,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   $css = '\\.css';
   $js = '\\.js';
   $gz = '\\.gz';
+  $char = BOOST_CHAR;
 
   $string = <<<ETO
   ### BOOST START ###
@@ -543,16 +544,16 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   # GZIP - Cached css & js files
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=2]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}__$css$gz -s
-  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}__$css$gz [L,QSA,T=text/css]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}__$js$gz -s
-  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}__$js$gz [L,QSA,T=text/javascript]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char$char$css$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char$char$css$gz [L,QSA,T=text/css]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char$char$js$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char$char$js$gz [L,QSA,T=text/javascript]
 
   # NORMAL - Cached css & js files
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}__$css -s
-  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}__$css [L,QSA,T=text/css]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}__$js -s
-  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}__$js [L,QSA,T=text/javascript]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}$char$char$css -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}$char$char$css [L,QSA,T=text/css]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}$char$char$js -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}$char$char$js [L,QSA,T=text/javascript]
 
   # Caching for anonymous users
   # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR https request
@@ -565,20 +566,20 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   # GZIP
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=3]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html$gz -s
-  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html$gz [L,T=text/html]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml$gz -s
-  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml$gz [L,T=text/xml]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$js$gz -s
-  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$js$gz [L,T=text/javascript]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz [L,T=text/html]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz [L,T=text/xml]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$js$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$js$gz [L,T=text/javascript]
 
   # NORMAL
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html -s
-  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$html [L,T=text/html]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml -s
-  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$xml [L,T=text/xml]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$js -s
-  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}_%{QUERY_STRING}$js [L,T=text/javascript]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html [L,T=text/html]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml [L,T=text/xml]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$js -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$js [L,T=text/javascript]
 
   ### BOOST END ###
 ETO;
