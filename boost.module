@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.91 2009/08/11 04:43:45 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.92 2009/08/11 04:49:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -418,6 +418,12 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
           'weight' => 10,
           'cache'  => BLOCK_NO_CACHE,
         ),
+        'config' => array(
+          'info'   => t('Boost: Pages cache configuration'),
+          'region' => 'right',
+          'weight' => 10,
+          'cache'  => BLOCK_NO_CACHE,
+        ),
         'stats' => array(
           'info'   => t('Boost: AJAX core statistics'),
           'region' => 'right',
@@ -478,10 +484,17 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
                 $output .= t(' MESSAGES: %msg <br /> !performance', array('%msg' => $drupal_msg, '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')));
               }
             }
-            $output .=  drupal_get_form('boost_block_db_settings_form');
 
             $block['subject'] = '';
             $block['content'] = theme('boost_cache_status', isset($ttl) ? $ttl : -1, $output);
+          }
+          break;
+        case 'config':
+          // Don't show the block to anonymous users, nor on any pages that
+          // aren't even cacheable to begin with (e.g. admin/*).
+          if (!empty($user->uid) && boost_is_cacheable($GLOBALS['_boost_path'])) {
+            $block['subject'] = '';
+            $block['content'] = theme('boost_cache_status', -1, drupal_get_form('boost_block_db_settings_form'));
           }
           break;
         case 'stats':
