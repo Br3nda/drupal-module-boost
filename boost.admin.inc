@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.47 2009/08/06 08:20:31 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.48 2009/08/11 04:45:25 mikeytown2 Exp $
 
 /**
  * @file
@@ -580,10 +580,10 @@ return $string;
  */
 function boost_count_db($all = 0) {
   if ($all == 0) {
-    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE expire <> 0"));
+    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE expire <> 0 and base_dir = '%s'", BOOST_FILE_PATH));
   }
   elseif ($all == 1) {
-    return db_result(db_query('SELECT COUNT(*) FROM {boost_cache} WHERE expire BETWEEN 1 AND %d', BOOST_TIME));
+    return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE expire BETWEEN 1 AND %d AND base_dir ='%s'", BOOST_TIME, BOOST_FILE_PATH));
   }
   elseif ($all == 2) {
     return db_result(db_query("SELECT COUNT(*) FROM {boost_cache}"));
