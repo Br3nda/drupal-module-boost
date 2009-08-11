@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.49 2009/08/11 04:52:20 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.50 2009/08/11 05:01:05 mikeytown2 Exp $
 
 /**
  * @file
@@ -358,11 +358,15 @@ function boost_admin_boost_performace_page() {
       5 => t('5 Show all'),
     ),
   );
-  $form['advanced']['boost_stop_crawler'] = array(
-    '#type' => 'submit',
-    '#value' => t('Stop Crawler. !count out of !total URL\'s done.', array( '!count' => variable_get('boost_crawler_position', 0), '!total' => boost_crawler_total_count())),
-    '#submit' => array('boost_stop_crawler_submit'),
-  );
+  $total = boost_crawler_total_count();
+  $number_done = min($total, variable_get('boost_crawler_position', 0));
+  if (variable_get('boost_crawler_number_of_threads', 0) != 0 && $total != $number_done) {
+    $form['advanced']['boost_stop_crawler'] = array(
+      '#type' => 'submit',
+      '#value' => t('Stop Crawler. !count URL\'s left.', array('!count' => $total - $number_done)),
+      '#submit' => array('boost_stop_crawler_submit'),
+    );
+  }
 
   // Apache .htaccess settings generation
   $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'), 'cache', 'gz', variable_get('boost_file_extension', '.html'));
@@ -602,10 +606,6 @@ function boost_count_db($all = 0) {
  */
 function boost_count_core_db($all = FALSE) {
   return db_result(db_query("SELECT COUNT(*) FROM {cache_page}"));
-}
-
-function boost_crawler_total_count() {
-  return db_result(db_query("SELECT COUNT(*) FROM {boost_crawler}"));
 }
 
 /**
