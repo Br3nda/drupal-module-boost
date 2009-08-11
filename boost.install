@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.26 2009/08/06 08:20:31 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.27 2009/08/11 04:46:50 mikeytown2 Exp $
 
 /**
  * @file
@@ -59,41 +59,47 @@ function boost_requirements($phase) {
   $t = get_t();
   switch ($phase) {
     case 'runtime':
-      $cache_directory = variable_get('boost_file_path', boost_cache_directory(NULL, FALSE));
+      $cache_directories = array();
+      $cache_directories[] = BOOST_FILE_PATH;
+      if (BOOST_GZIP) {
+        $cache_directories[] = BOOST_GZIP_FILE_PATH;
+      }
       $htaccess = file_get_contents('.htaccess');
-      _boost_mkdir_p($cache_directory);
-      $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
-
-      if ($cache_directory != boost_cache_directory(NULL, FALSE)) {
-        $requirements['boost'] = array(
-          'title'       => $t('Boost'),
-          'description' => $t('!url: is not set to the default(!default). ', array('!url' => l('Cache file path', 'admin/settings/performance'), '!default'    => boost_cache_directory(NULL, FALSE))),
-          'severity'    => REQUIREMENT_WARNING,
-          'value'       => $t('Cache path'),
-        );
+      foreach($cache_directories as $cache_directory) {
+        $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
+        _boost_mkdir_p($cache_directory);
+        if (!is_dir($cache_directory)) {
+          $requirements['boost'] = array(
+            'title'       => $t('Boost'),
+            'description' => $t('!cache_dir: does not exist.', array('!cache_dir' => $cache_directory)),
+            'severity'    => REQUIREMENT_ERROR,
+            'value'       => $t('Cache path'),
+          );
+        }
+        elseif (!$root_file || !is_writable($cache_directory)) {
+          $requirements['boost'] = array(
+            'title'       => $t('Boost'),
+            'description' => $t('Directory %dir credentials - Permissions: %fp. Owner %fo. Group %fg.<br /> Your credentials - Group ID: %gid. User ID: %uid. Current script owner: %user.', array('%dir' => getcwd() . '/' . $cache_directory, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user(), '%fp' => substr(sprintf('%o', fileperms($cache_directory)), -4), '%fo' => fileowner($cache_directory), '%fg' => filegroup($cache_directory) )),
+            'severity'    => REQUIREMENT_ERROR,
+            'value'       => $t('Can not write to filesystem'),
+          );
+        }
       }
-      elseif (!is_dir($cache_directory)) {
-        $requirements['boost'] = array(
-          'title'       => $t('Boost'),
-          'description' => $t('!cache_dir: does not exist.', array('!cache_dir' => $cache_directory)),
-          'severity'    => REQUIREMENT_ERROR,
-          'value'       => $t('Cache path'),
-        );
-      }
+      if (isset($requirements['boost'])) {}
+      elseif (BOOST_FILE_PATH != boost_cache_directory(NULL, FALSE)) {
+          $requirements['boost'] = array(
+            'title'       => $t('Boost'),
+            'description' => $t('!url: is not set to the default(!default). ', array('!url' => l('Cache file path', 'admin/settings/performance'), '!default'    => boost_cache_directory(NULL, FALSE))),
+            'severity'    => REQUIREMENT_WARNING,
+            'value'       => $t('Cache path'),
+          );
+        }
       elseif ($htaccess && count(explode("%{REQUEST_URI}_%{QUERY_STRING}\.html", $htaccess)) < 5) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
           'description' => $t('.htaccess file does not contain the boost specific rewrite rules, or the rewrite rules have changed and they need to be updated.', array()),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('.htaccess file'),
-        );
-      }
-      elseif (!$root_file || !is_writable($cache_directory)) {
-        $requirements['boost'] = array(
-          'title'       => $t('Boost'),
-          'description' => $t('Directory %dir credentials - Permissions: %fp. Owner %fo. Group %fg.<br /> Your credentials - Group ID: %gid. User ID: %uid. Current script owner: %user.', array('%dir' => getcwd() . '/' . $cache_directory, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user(), '%fp' => substr(sprintf('%o', fileperms($cache_directory)), -4), '%fo' => fileowner($cache_directory), '%fg' => filegroup($cache_directory) )),
-          'severity'    => REQUIREMENT_ERROR,
-          'value'       => $t('Can not write to filesystem'),
         );
       }
       else {
