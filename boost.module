@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.98 2009/08/13 06:36:20 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.99 2009/08/13 06:40:04 mikeytown2 Exp $
 
 /**
  * @file
@@ -206,7 +206,7 @@ function boost_menu() {
     'file' => 'stats/boost_stats.ajax.inc',
   );
   $items['boost-crawler'] = array(
-    'page callback' => 'boost_crawler_init',
+    'page callback' => 'boost_crawler_run',
     'type' => MENU_CALLBACK,
     'access callback' => 1,
     'file path' => drupal_get_path('module', 'boost'),
@@ -289,7 +289,7 @@ function boost_cron() {
 
   // Crawl Site
   if (BOOST_CRAWL_ON_CRON) {
-    boost_crawler_init();
+    boost_crawler_run();
   }
 }
 
@@ -918,6 +918,8 @@ function boost_is_cacheable($path) {
       || preg_match('!^user/(login|register|password)!', $normal_path)
       || preg_match('!^admin!', $normal_path)
       || preg_match('!comment/reply$!', $normal_path)
+      || preg_match('!edit$!', $normal_path)
+      || preg_match('!^node/add!', $normal_path)
     ) {
     return FALSE;
   }
@@ -2016,7 +2018,7 @@ if (!function_exists('file_put_contents')) {
 /**
  * The brains of the crawler.
  */
-function boost_crawler_init() {
+function boost_crawler_run() {
   // Set PHP INI Variables, try to prevent crawler from stalling.
   Global $base_url;
   ini_set('max_execution_time', 600);
@@ -2042,7 +2044,7 @@ function boost_crawler_init() {
     }
     // Start to do crawler stuff
     else {
-      if (boost_crawler_init_tables()) {
+      if (boost_crawler_seed_tables()) {
         //Spin Up Threads
         $thread_primed = variable_get('boost_crawler_threads_primed', FALSE);
         $threads = 2;
@@ -2215,7 +2217,7 @@ function boost_crawler_count($push_setting, $extension) {
 /**
  * Logic to get boost_crawler table ready.
  */
-function boost_crawler_init_tables() {
+function boost_crawler_seed_tables() {
   if (   boost_crawler_add_to_table(BOOST_PUSH_HTML, BOOST_FILE_EXTENSION)
       && boost_crawler_add_to_table(BOOST_PUSH_XML, BOOST_XML_EXTENSION)
       && boost_crawler_add_to_table(BOOST_PUSH_JSON, '.js')
