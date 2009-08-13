@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.99 2009/08/13 06:40:04 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.100 2009/08/13 06:44:02 mikeytown2 Exp $
 
 /**
  * @file
@@ -52,6 +52,9 @@ define('BOOST_PUSH_HTML',            variable_get('boost_push_html', FALSE));
 define('BOOST_PUSH_XML',             variable_get('boost_push_xml', FALSE));
 define('BOOST_PUSH_JSON',            variable_get('boost_push_json', FALSE));
 define('BOOST_CHAR',                 '_');
+define('BOOST_MAX_TIMESTAMP',        variable_get('boost_max_timestamp', BOOST_TIME));
+define('BOOST_CHECK_BEFORE_CRON_EXPIRE', variable_get('boost_check_before_cron_expire', FALSE));
+
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
@@ -274,8 +277,12 @@ function boost_cron() {
     return;
   }
 
+  $expire = TRUE;
+  if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
+    $expire = boost_has_site_changed();
+  }
   // Expire old content
-  if (variable_get('boost_expire_cron', TRUE) && boost_cache_db_expire()) {
+  if (variable_get('boost_expire_cron', TRUE) && $expire && boost_cache_db_expire()) {
     if (BOOST_VERBOSE >= 5) {
       watchdog('boost', 'Expired stale files from static page cache.', array(), WATCHDOG_NOTICE);
     }
@@ -1422,6 +1429,51 @@ function boost_get_db_term($term) {
     $filenames[] = $filename['filename'];
   }
   return $filenames;
+}
+
+/**
+ * Checks various timestamps in the database.
+ *
+ * @return bool
+ *  Returns TRUE if the site has changed since the last time this function was called.
+ */
+function boost_has_site_changed() {
+
+  // Get timestamps from the database
+  $node_revisions = boost_get_time('node_revisions', 'timestamp');
+  $history = boost_get_time('history', 'timestamp');
+  $files = boost_get_time('files', 'timestamp');
+  $comments = boost_get_time('comments', 'timestamp');
+  $node = boost_get_time('node', 'changed');
+  $last_comment_timestamp = boost_get_time('node_comment_statistics', 'last_comment_timestamp');
+
+  $max = max($node_revisions, $history, $files, $comments, $node, $last_comment_timestamp);
+  if ($max > BOOST_MAX_TIMESTAMP) {
+    variable_set('boost_max_timestamp', $max);
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Checks various timestamps in the database.
+ *
+ * @param $table
+ *  Database table name
+ * @param $column
+ *  Column containing the time stamp
+ * @return int
+ *  Returns largest time in the table.
+ */
+function boost_get_time($table, $column) {
+  if (db_result(db_query_range("SHOW TABLES LIKE '%s'", $table))) {
+    return db_result(db_query_range("SELECT %s FROM {%s} ORDER BY %s DESC", $column, $table, $column, 0, 1));
+  }
+  else {
+    return 0;
+  }
 }
 
 /**
