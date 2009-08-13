@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.28 2009/08/11 05:11:23 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.29 2009/08/13 06:42:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -67,8 +67,8 @@ function boost_requirements($phase) {
       $htaccess = file_get_contents('.htaccess');
       $char = BOOST_CHAR;
       foreach($cache_directories as $cache_directory) {
-        $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
         _boost_mkdir_p($cache_directory);
+        $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
         if (!is_dir($cache_directory)) {
           $requirements['boost'] = array(
             'title'       => $t('Boost'),
@@ -90,7 +90,7 @@ function boost_requirements($phase) {
       elseif (BOOST_FILE_PATH != boost_cache_directory(NULL, FALSE)) {
           $requirements['boost'] = array(
             'title'       => $t('Boost'),
-            'description' => $t('!url: is not set to the default(!default). ', array('!url' => l('Cache file path', 'admin/settings/performance'), '!default'    => boost_cache_directory(NULL, FALSE))),
+            'description' => $t('<a href="@url">Cache file path</a>: is not set to the default(!default). ', array('@url' => url('admin/settings/performance/boost#edit-boost-file-path'), '!default'    => boost_cache_directory(NULL, FALSE))),
             'severity'    => REQUIREMENT_WARNING,
             'value'       => $t('Cache path'),
           );
@@ -98,7 +98,7 @@ function boost_requirements($phase) {
       elseif ($htaccess && count(explode("%{REQUEST_URI}$char%{QUERY_STRING}\.html", $htaccess)) < 3) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('.htaccess file does not contain the boost specific rewrite rules, or the rewrite rules have changed and they need to be updated.', array()),
+          'description' => $t('.htaccess file does not contain the boost specific rewrite rules, or the rewrite rules have changed and they need to be updated. Get rules: <a href"@url">Boost Apache .htaccess settings generation</a>.', array('@url' => url('admin/settings/performance/boost#edit-boost-verbose'))),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('.htaccess file'),
         );
