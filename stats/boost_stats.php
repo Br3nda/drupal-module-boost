@@ -1,5 +1,5 @@
 <?php
-// $Id: boost_stats.php,v 1.1.2.9 2009/07/31 09:49:24 mikeytown2 Exp $
+// $Id: boost_stats.php,v 1.1.2.10 2009/08/13 06:48:14 mikeytown2 Exp $
 
 if (!isset($_GET['js'])) {
   // stats not called via JS, send image out & close connection.
@@ -52,7 +52,7 @@ exit;
 
 
 function boost_stats_async_image() {
-  // Script should take under 1mb of memory to work.
+  // Script should take under 1MB of memory to work.
   // Prime php for background operations
   ob_end_clean();
   header("Connection: close");
@@ -107,7 +107,7 @@ function boost_stats_init() {
   // Anonymous users always get a User ID of 0.
   $uid = 0;
 
-  // load all boost, statistics & throttle variables; 1 transaction instead of mutiple
+  // load all boost, statistics & throttle variables; 1 transaction instead of multiple
   $result = db_query("
 SELECT * FROM {variable}
 WHERE name LIKE 'boost_%'

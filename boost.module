@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.100 2009/08/13 06:44:02 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.101 2009/08/13 06:48:14 mikeytown2 Exp $
 
 /**
  * @file
@@ -195,7 +195,7 @@ function boost_menu() {
     'title' => 'Boost Settings',
     'description' => 'Advanced boost configuration.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('boost_admin_boost_performace_page'),
+    'page arguments' => array('boost_admin_boost_performance_page'),
     'access arguments' => array('administer site configuration'),
     'weight' => 10,
     'type' => MENU_LOCAL_TASK,
@@ -907,7 +907,7 @@ function _boost_get_http_header($regex, $default = NULL) {
  * To avoid potentially troublesome situations, the user login page is never
  * cached, nor are any admin pages. At present, we also refuse to cache any
  * RSS feeds provided by Drupal, since they would require special handling
- * in the mod_rewrite ruleset as they shouldn't be sent out using the
+ * in the mod_rewrite rule-set as they shouldn't be sent out using the
  * text/html content type.
  * TODO: don't cache pages with unacceptable symbols
  *
@@ -1063,7 +1063,7 @@ function boost_cache_expire_derivative($path, $wildcard = FALSE) {
  * @param $wildcard
  *   If true get all chached files that start with this path.
  *
- * TODO: Replace glob() with a database opperation.
+ * TODO: Replace glob() with a database operation.
  */
 function boost_cache_expire($path, $wildcard = FALSE) {
   // Sanity check
@@ -1163,7 +1163,7 @@ function boost_cache_get($path) {
  *   File extension for this mime type
  */
 function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
-  // Code commenting style baised on what is being cached.
+  // Code commenting style based on what is being cached.
   switch ($extension) {
     case '.html':
       if (!BOOST_CACHE_HTML) {
@@ -1230,7 +1230,7 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
  * @param $extension
  *  Filename extension: Used for content types.
  * @param $expire
- *  Cache expiration time in seconds (unix time).
+ *  Cache expiration time in seconds (UNIX time).
  */
 function boost_db_prep($filename, $extension, $expire) {
   $router_item = _boost_get_menu_router();
@@ -1280,7 +1280,7 @@ function boost_db_prep($filename, $extension, $expire) {
  * @param $timer
  *   Time it took drupal to build this page.
  * @param $timer_average
- *   Average time durpal has spent building this page.
+ *   Average time Drupal has spent building this page.
  * @param $extension
  *   Filename extension: Used for content types.
  */
@@ -1420,7 +1420,7 @@ function boost_get_settings_db($router_item) {
 }
 
 /**
- * Returns all cached pages asscoited with the taxonomy term.
+ * Returns all cached pages associated with the taxonomy term.
  */
 function boost_get_db_term($term) {
  $filenames = array();
@@ -1713,7 +1713,7 @@ function boost_cache_css_js_files($buffer) {
  * Support for printing of objects as well as the $return parameter functionality
  * added by Fredrik Wollsén (fredrik dot motin at gmail), to make it work as a drop-in
  * replacement for print_r (Except for that this function does not output
- * paranthesises around element groups... ;) )
+ * parenthesis around element groups... ;) )
  *
  * Based on return_array() By Matthew Ruivo (mruivo at gmail)
  * (http://www.php.net/manual/en/function.print-r.php#73436)
@@ -1756,7 +1756,7 @@ function boost_print_r($var, $return = false, $html = false, $level = 0) {
 }
 
 /**
- * Alt to drupal's url() function.
+ * Alt to Drupal's url() function.
  * @see http://drupal.org/node/513860
  *
  * http://php.net/parse-url#85963
@@ -1906,7 +1906,7 @@ function _boost_gz_copy_file($src, $dest) {
 }
 
 /**
- * Get's page_callback & page_arguments from menu_router table
+ * Gets page_callback & page_arguments from menu_router table
  *
  * Allows for any content type to have it's own cache expiration.
  */
@@ -1987,7 +1987,7 @@ function _boost_get_menu_router() {
  * @param $pathname
  *   The top-level directory that will be recursively created.
  * @param $recursive
- *   Opperate in a recursive manner.
+ *   Operate in a recursive manner.
  */
 function _boost_mkdir_p($pathname, $recursive = TRUE) {
   $mode = is_numeric(BOOST_PERMISSIONS_DIR) ? octdec(BOOST_PERMISSIONS_DIR) : 0775;
@@ -2122,7 +2122,7 @@ function boost_crawler_run() {
           exit;
         }
 
-        // Wait 0 to 1 seconds before grabing DB position counter.
+        // Wait 0 to 1 seconds before grabbing DB position counter.
         usleep(mt_rand(0,1000000));
         db_lock_table('variable');
         $from = unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_position'")));
@@ -2163,7 +2163,7 @@ function boost_crawler_run() {
   }
   elseif (variable_get('boost_crawler_number_of_threads', 0) != 0) {
     watchdog('boost', 'Crawler already running');
-    drupal_set_message(t('Boost: Craler is already running. Atempt to start crawler failed.'), 'warning');
+    drupal_set_message(t('Boost: Crawler is already running. Attempt to start crawler failed.'), 'warning');
   }
   elseif (variable_get('cron_semaphore', FALSE) == TRUE) {
     // This function called from cron; reset & call self.
@@ -2225,12 +2225,12 @@ function boost_async_call_crawler($self) {
  * Add URL's to the boost_crawler table.
  *
  * @param $push_setting
- *  Default crawler settting for the content type
+ *  Default crawler setting for the content type
  * @param $extension
- *  File extension, controlls the content type DB lookup
+ *  File extension, controls the content type DB lookup
  */
 function boost_crawler_add_to_table($push_setting, $extension) {
-  // Insert batch of url's into boost_crawler table
+  // Insert batch of URL's into boost_crawler table
   $count = 10000;
   $total = boost_crawler_count($push_setting, $extension);
   $loaded = variable_get('boost_crawler_loaded_count' . $extension, 0);
@@ -2253,9 +2253,9 @@ function boost_crawler_add_to_table($push_setting, $extension) {
  * Count the number of URL's in the boost_cache table.
  *
  * @param $push_setting
- *  Default crawler settting for the content type
+ *  Default crawler setting for the content type
  * @param $extension
- *  File extension, controlls the content type DB lookup
+ *  File extension, controls the content type DB lookup
  */
 function boost_crawler_count($push_setting, $extension) {
   if ($push_setting) {
@@ -2275,7 +2275,7 @@ function boost_crawler_seed_tables() {
       && boost_crawler_add_to_table(BOOST_PUSH_JSON, '.js')
       && boost_crawler_add_alias_to_table()
       ) {
-    // All URL's added to boost_cralwer table; start hitting URL's
+    // All URL's added to boost_crawler table; start hitting URL's
     return TRUE;
   }
   else {
@@ -2287,7 +2287,7 @@ function boost_crawler_seed_tables() {
  * Get URLs from url alias table
  */
 function boost_crawler_add_alias_to_table() {
-  // Insert batch of html url's into boost_crawler table
+  // Insert batch of html URL's into boost_crawler table
   global $base_url;
   $count = 1000;
   $total = db_query("SELECT COUNT(*) FROM {url_alias}");

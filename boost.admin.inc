@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.53 2009/08/13 06:44:02 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.54 2009/08/13 06:48:14 mikeytown2 Exp $
 
 /**
  * @file
@@ -104,7 +104,7 @@ function boost_admin_performance_page($form = array()) {
     '#submit' => array('boost_clear_expired_cache_submit'),
   );
 
-  // Alter core page cache setttings.
+  // Alter core page cache settings.
   $form['core'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Core Database Cache'),
@@ -175,12 +175,12 @@ function boost_admin_clear_cache_submit($form, &$form_state) {
  * TODO: Cacheability settings use core code. Look at Blocks.
  *  http://drupal.org/node/337756
  */
-function boost_admin_boost_performace_page() {
+function boost_admin_boost_performance_page() {
   Global $base_path;
 
   // Cacheability settings
   $options = array(t('Cache every page except the listed pages.'), t('Cache only the listed pages.'));
-  $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are '%blog' for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
+  $description = t("Enter one page per line as Drupal paths. The '*' character is a wild-card. Example paths are '%blog' for the blog page and %blog-wild-card for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wild-card' => 'blog/*', '%front' => '<front>'));
   if (user_access('use PHP for block visibility')) {
     $options[] = t('Cache pages for which the following PHP code returns <code>TRUE</code> (PHP-mode, experts only).');
     $description .= t('If the PHP-mode is chosen, enter PHP code between %php. Note that executing incorrect PHP-code can severely break your Drupal site.', array('%php' => '<?php ?>'));
@@ -279,7 +279,7 @@ function boost_admin_boost_performace_page() {
      '#type'          => 'checkbox',
      '#title'         => t('Cache ajax/json'),
      '#default_value' => BOOST_CACHE_JSON,
-     '#description'   => t('Boost will cache ajax/json responces.'),
+     '#description'   => t('Boost will cache ajax/json responses.'),
    );
   $form['advanced']['boost_only_ascii_path'] = array(
     '#type'          => 'checkbox',
@@ -297,11 +297,11 @@ function boost_admin_boost_performace_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Flush directories from cache if they are empty'),
     '#default_value' => BOOST_FLUSH_DIR,
-    '#description'   => t('Disable this if you have to set settings for each dir/subdir, due to the way your server opperates (permissions, etc...).'),
+    '#description'   => t('Disable this if you have to set settings for each dir/subdir, due to the way your server operates (permissions, etc...).'),
   );
   $form['advanced']['boost_flush_node_terms'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Flush all cached terms pages associted with a node on insert/update/delete'),
+    '#title'         => t('Flush all cached terms pages associated with a node on insert/update/delete'),
     '#default_value' => BOOST_FLUSH_NODE_TERMS,
     '#description'   => t('Works with view\'s taxonomy/term/% path as well as core.'),
   );
@@ -351,7 +351,7 @@ function boost_admin_boost_performace_page() {
     '#type'          => 'radios',
     '#title'         => t('Ignore cache flushing'),
     '#default_value' => BOOST_IGNORE_FLUSH,
-    '#options'       => array(0 => t('Disabled'), 1 => t('Only Ignore Complete Flushes'), 2 => t('Ignore Fluses & Expiration'), 3 => t('Ignore All Delete Commands (Not Recommended)')),
+    '#options'       => array(0 => t('Disabled'), 1 => t('Only Ignore Complete Flushes'), 2 => t('Ignore Flushes & Expiration'), 3 => t('Ignore All Delete Commands (Not Recommended)')),
     '#description'   => t('Enable to put your site into a static state. Recommend turning on CSS & JS caching if enabled.'),
   );
   $form['advanced']['boost_verbose'] = array(
@@ -410,7 +410,7 @@ function boost_admin_boost_performace_page() {
   if ($_SERVER['DOCUMENT_ROOT'] == $document_root) {
     $best = '%{DOCUMENT_ROOT}';
   }
-  $description = t("Value of $best is recommened for this server.");
+  $description = t("Value of $best is recommended for this server.");
   if (!isset($best)) {
     $best = $document_root;
     $description .= t(' Please open an boost issue on drupal.org, since apache and php are not configured correctly.');
@@ -444,14 +444,14 @@ function boost_admin_boost_performace_page() {
     '#submit' => array('boost_reset_database_submit'),
   );
 
-  $form['#validate'][] = 'boost_admin_boost_performace_page_validate';
+  $form['#validate'][] = 'boost_admin_boost_performance_page_validate';
   return system_settings_form($form);
 }
 
 /**
  * validate system_themes_form form submissions.
  */
-function boost_admin_boost_performace_page_validate($form, &$form_state) {
+function boost_admin_boost_performance_page_validate($form, &$form_state) {
   $form_state['values']['boost_previously'] = variable_get('boost_enabled', '');
   extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
 
@@ -509,7 +509,7 @@ function boost_admin_themes_submit($form, &$form_state) {
  * @param $gzip_dir
  *   gz dir
  * @param $html
- *   html document file extention
+ *   html document file extension
  */
 function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz', $html = '.html', $xml = '.xml') {
   Global $base_path;
