@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.54 2009/08/13 06:48:14 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.55 2009/08/19 20:58:48 mikeytown2 Exp $
 
 /**
  * @file
@@ -207,15 +207,23 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'fieldset',
     '#title'         => t('Boost advanced settings'),
   );
-  $form['advanced']['boost_file_path'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Cache file path'),
-    '#default_value' => BOOST_FILE_PATH,
-    '#size'          => 60,
-    '#maxlength'     => 255,
-    '#required'      => TRUE,
-    '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named %default-path under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.', array('%default-path' => boost_cache_directory(NULL, FALSE))),
+  $form['advanced']['boost_multisite_single_db'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Do not store the cache file path in the database'),
+    '#default_value' => BOOST_MULTISITE_SINGLE_DB,
+    '#description'   => t('Enabling will allow for correct multi-site caching, in cases where different content is served from the same Drupal installation, based on domain. Examples: Multi-site with a single/shared database, site translation detection based on domain, and the contributed "Domain Access" module.'),
   );
+  if (!BOOST_MULTISITE_SINGLE_DB) {
+    $form['advanced']['boost_file_path'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Cache file path'),
+      '#default_value' => BOOST_FILE_PATH,
+      '#size'          => 60,
+      '#maxlength'     => 255,
+      '#required'      => TRUE,
+      '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named %default-path under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.', array('%default-path' => boost_cache_directory(NULL, FALSE))),
+    );
+  }
   $form['advanced']['boost_expire_cron'] = array(
     '#type'          => 'radios',
     '#title'         => t('Purge expired cache files on cron runs'),
@@ -322,12 +330,6 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Turn off clean url\'s for logged in users'),
     '#default_value' => BOOST_DISABLE_CLEAN_URL,
     '#description'   => t('Drupal will output non clean url\'s for non anonymous users. This allows for the browser to cache the page and still have logging in work. This is more on the extreme side of tweaks.'),
-  );
-  $form['advanced']['boost_multisite_single_db'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Do not store the cache file path in the database'),
-    '#default_value' => BOOST_MULTISITE_SINGLE_DB,
-    '#description'   => t('If Drupal is running on a multi-site with a single/shared database, then enabling this will allow for correct multi-site caching.'),
   );
   $form['advanced']['boost_crawl_on_cron'] = array(
     '#type'          => 'checkbox',
