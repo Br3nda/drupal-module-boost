@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.56 2009/08/21 02:37:23 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.57 2009/08/21 02:43:13 mikeytown2 Exp $
 
 /**
  * @file
@@ -189,6 +189,97 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'fieldset',
     '#title'         => t('Boost cacheability settings'),
   );
+  $form['cacheability']['boost_cache_query'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Cache pages that contain URL Variables'),
+    '#default_value' => BOOST_CACHE_QUERY,
+    '#description'   => t('Boost will cache pages that end with ?page=1 among others.'),
+  );
+  $form['cacheability']['boost_cache_html'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Cache html documents/pages'),
+    '#default_value' => BOOST_CACHE_HTML,
+    '#description'   => t('Boost will cache most drupal pages.'),
+  );
+//   if (BOOST_CACHE_HTML) {
+//     $form['cacheability']['boost_file_extension'] = array(
+//       '#type'          => 'textfield',
+//       '#title'         => t('Cache html file extension'),
+//       '#default_value' => BOOST_FILE_EXTENSION,
+//       '#size'          => 10,
+//       '#maxlength'     => 32,
+//       '#required'      => TRUE,
+//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.html\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+//     );
+//   }
+  $form['cacheability']['boost_cache_xml'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Cache .xml & /feed'),
+    '#default_value' => BOOST_CACHE_XML,
+    '#description'   => t('Boost will cache .xml and /feed urls as xml data.'),
+  );
+//   if (BOOST_CACHE_XML) {
+//     $form['cacheability']['boost_xml_extension'] = array(
+//       '#type'          => 'textfield',
+//       '#title'         => t('Cache xml file extension'),
+//       '#default_value' => BOOST_XML_EXTENSION,
+//       '#size'          => 10,
+//       '#maxlength'     => 32,
+//       '#required'      => TRUE,
+//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.xml\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+//     );
+//   }
+  $form['cacheability']['boost_cache_json'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Cache ajax/json'),
+    '#default_value' => BOOST_CACHE_JSON,
+    '#description'   => t('Boost will cache ajax/json responses.'),
+  );
+//   if (BOOST_CACHE_JSON) {
+//     $form['cacheability']['boost_json_extension'] = array(
+//       '#type'          => 'textfield',
+//       '#title'         => t('Cache ajax/json file extension'),
+//       '#default_value' => BOOST_JSON_EXTENSION,
+//       '#size'          => 10,
+//       '#maxlength'     => 32,
+//       '#required'      => TRUE,
+//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.js\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+//     );
+//   }
+  $form['cacheability']['boost_cache_css'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Cache .css'),
+    '#default_value' => BOOST_CACHE_CSS,
+    '#description'   => t('Boost will cache CSS files.'),
+  );
+//   if (BOOST_CACHE_CSS) {
+//     $form['cacheability']['boost_css_extension'] = array(
+//       '#type'          => 'textfield',
+//       '#title'         => t('Cache css file extension'),
+//       '#default_value' => BOOST_CSS_EXTENSION,
+//       '#size'          => 10,
+//       '#maxlength'     => 32,
+//       '#required'      => TRUE,
+//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.css\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+//     );
+//   }
+  $form['cacheability']['boost_cache_js'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Cache .js'),
+    '#default_value' => BOOST_CACHE_JS,
+    '#description'   => t('Boost will cache javascript files.'),
+  );
+//   if (BOOST_CACHE_JS) {
+//     $form['cacheability']['boost_js_extension'] = array(
+//       '#type'          => 'textfield',
+//       '#title'         => t('Cache javascript file extension'),
+//       '#default_value' => BOOST_JS_EXTENSION,
+//       '#size'          => 10,
+//       '#maxlength'     => 32,
+//       '#required'      => TRUE,
+//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.js\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+//     );
+//   }
   $form['cacheability']['boost_cacheability_option'] = array(
     '#type'          => 'radios',
     '#title'         => t('Statically cache specific pages'),
@@ -237,15 +328,6 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_CHECK_BEFORE_CRON_EXPIRE,
     '#description'   => t('Check timestamps in the database for any changes to the site. If theres been a change, flush the expired content.'),
   );
-  $form['advanced']['boost_file_extension'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Cache file extension'),
-    '#default_value' => BOOST_FILE_EXTENSION,
-    '#size'          => 10,
-    '#maxlength'     => 32,
-    '#required'      => TRUE,
-    '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.html\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
-  );
   $form['advanced']['boost_pre_process_function'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Pre-process function'),
@@ -253,53 +335,11 @@ function boost_admin_boost_performance_page() {
     '#maxlength'     => 255,
     '#description'   => t('The name of a PHP function used to pre-process the contents of each page before writing them out to static files. The function is called with the contents of the page passed as a string argument, and its return value is used as the data written out to the disk.'),
   );
-    $form['advanced']['boost_cache_query'] = array(
-      '#type'          => 'checkbox',
-      '#title'         => t('Cache pages that contain URL Variables'),
-      '#default_value' => BOOST_CACHE_QUERY,
-      '#description'   => t('Boost will cache pages that end with ?page=1 among others.'),
-    );
-   $form['advanced']['boost_cache_html'] = array(
-     '#type'          => 'checkbox',
-     '#title'         => t('Cache html documents/pages'),
-     '#default_value' => BOOST_CACHE_HTML,
-     '#description'   => t('Boost will cache most drupal pages.'),
-   );
-   $form['advanced']['boost_cache_xml'] = array(
-     '#type'          => 'checkbox',
-     '#title'         => t('Cache .xml & /feed'),
-     '#default_value' => BOOST_CACHE_XML,
-     '#description'   => t('Boost will cache .xml and /feed urls as xml data.'),
-   );
-   $form['advanced']['boost_cache_css'] = array(
-     '#type'          => 'checkbox',
-     '#title'         => t('Cache .css'),
-     '#default_value' => BOOST_CACHE_CSS,
-     '#description'   => t('Boost will cache CSS files.'),
-   );
-   $form['advanced']['boost_cache_js'] = array(
-     '#type'          => 'checkbox',
-     '#title'         => t('Cache .js'),
-     '#default_value' => BOOST_CACHE_JS,
-     '#description'   => t('Boost will cache javascript files.'),
-   );
-   $form['advanced']['boost_cache_json'] = array(
-     '#type'          => 'checkbox',
-     '#title'         => t('Cache ajax/json'),
-     '#default_value' => BOOST_CACHE_JSON,
-     '#description'   => t('Boost will cache ajax/json responses.'),
-   );
   $form['advanced']['boost_only_ascii_path'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Only allow ASCII characters in path'),
     '#default_value' => BOOST_ONLY_ASCII_PATH,
     '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
-  );
-  $form['advanced']['boost_clear_cache_offline'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Clear Boosts cache when site goes offline'),
-    '#default_value' => BOOST_CLEAR_CACHE_OFFLINE,
-    '#description'   => t('Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off.'),
   );
   $form['advanced']['boost_flush_dir'] = array(
     '#type'          => 'checkbox',
@@ -312,6 +352,12 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Flush all cached terms pages associated with a node on insert/update/delete'),
     '#default_value' => BOOST_FLUSH_NODE_TERMS,
     '#description'   => t('Works with view\'s taxonomy/term/% path as well as core.'),
+  );
+  $form['advanced']['boost_clear_cache_offline'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Clear Boosts cache when site goes offline'),
+    '#default_value' => BOOST_CLEAR_CACHE_OFFLINE,
+    '#description'   => t('Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off.'),
   );
   $form['advanced']['boost_overwrite_file'] = array(
     '#type'          => 'checkbox',
@@ -423,7 +469,7 @@ function boost_admin_boost_performance_page() {
   }
 
   // Apache .htaccess settings generation
-  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'), 'cache', 'gz', variable_get('boost_file_extension', '.html'));
+  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'), 'cache', 'gz');
   $form['htaccess'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Boost Apache .htaccess settings generation'),
@@ -509,9 +555,9 @@ function boost_admin_boost_performance_page_validate($form, &$form_state) {
     file_check_directory($boost_file_path, FILE_CREATE_DIRECTORY, 'boost_file_path');
   }
 
-  if (strpos($boost_file_extension, '.') !== 0) {
-    form_set_error('boost_file_extension', t('Cache file extension %extension must begin with a period.', array('%extension' => $boost_file_extension)));
-  }
+//   if (strpos($boost_file_extension, '.') !== 0) {
+//     form_set_error('boost_file_extension', t('Cache file extension %extension must begin with a period.', array('%extension' => $boost_file_extension)));
+//   }
 
   if (!empty($boost_pre_process_function) && !is_callable($boost_pre_process_function)) {
     form_set_error('boost_pre_process_function', t('Pre-process function %function() does not exist.', array('%function' => $boost_pre_process_function)));
@@ -559,13 +605,14 @@ function boost_admin_themes_submit($form, &$form_state) {
  * @param $html
  *   html document file extension
  */
-function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz', $html = '.html', $xml = '.xml') {
+function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}', $cache_dir = 'cache', $gzip_dir = 'gz') {
   Global $base_path;
   $drupal_subdir = rtrim($base_path, '/');
-  $html = '\\' . $html;
-  $xml = '\\' . $xml;
-  $css = '\\.css';
-  $js = '\\.js';
+  $html = '\\' . BOOST_FILE_EXTENSION;
+  $xml = '\\' . BOOST_XML_EXTENSION;
+  $css = '\\' . BOOST_CSS_EXTENSION;
+  $js = '\\' . BOOST_JS_EXTENSION;
+  $json = '\\' . BOOST_JSON_EXTENSION;
   $gz = '\\.gz';
   $char = BOOST_CHAR;
 
@@ -624,16 +671,16 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz [L,T=text/html]
   RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz -s
   RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz [L,T=text/xml]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$js$gz -s
-  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$js$gz [L,T=text/javascript]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json$gz -s
+  RewriteRule .* $cache_dir/$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json$gz [L,T=text/javascript]
 
   # NORMAL
   RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html -s
   RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html [L,T=text/html]
   RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml -s
   RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml [L,T=text/xml]
-  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$js -s
-  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$js [L,T=text/javascript]
+  RewriteCond $document_root$drupal_subdir/$cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json -s
+  RewriteRule .* $cache_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json [L,T=text/javascript]
 
   ### BOOST END ###
 ETO;
