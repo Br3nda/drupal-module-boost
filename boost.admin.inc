@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.55 2009/08/19 20:58:48 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.56 2009/08/21 02:37:23 mikeytown2 Exp $
 
 /**
  * @file
@@ -331,12 +331,6 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_DISABLE_CLEAN_URL,
     '#description'   => t('Drupal will output non clean url\'s for non anonymous users. This allows for the browser to cache the page and still have logging in work. This is more on the extreme side of tweaks.'),
   );
-  $form['advanced']['boost_crawl_on_cron'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Preemptive Cache: Crawl URL\'s with the boost block setting to yes'),
-    '#default_value' => BOOST_CRAWL_ON_CRON,
-    '#description'   => t('Touch some select URL\'s so they are cached before anyone accesses them.'),
-  );
   $form['advanced']['boost_permissions_file'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
@@ -366,10 +360,62 @@ function boost_admin_boost_performance_page() {
       5 => t('5 Show all'),
     ),
   );
+
+  // Crawler
+  $form['crawler'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Boost crawler'),
+  );
+  $form['crawler']['boost_crawl_on_cron'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Preemptive Cache: Crawl URL\'s with the boost block setting to yes'),
+    '#default_value' => BOOST_CRAWL_ON_CRON,
+    '#description'   => t('Touch some select URL\'s so they are cached before anyone accesses them.'),
+  );
+  $form['crawler']['boost_crawler_throttle'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Crawler Throttle'),
+    '#default_value' => BOOST_CRAWLER_THROTTLE,
+    '#description'   => t('Wait X micro seconds inbetween hitting each url. 1000000 is 1 second.'),
+  );
+  $form['crawler']['boost_crawler_batch_size'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Crawler Batch Size'),
+    '#default_value' => BOOST_CRAWLER_BATCH_SIZE,
+    '#description'   => t('Number of URL\'s each thread grabs per database opperation.'),
+  );
+  $form['crawler']['boost_crawler_threads'] = array(
+    '#type'          => 'select',
+    '#title'         => t('Number Of Threads'),
+    '#default_value' => BOOST_CRAWLER_THREADS,
+    '#options' => array(
+      1 => 1,
+      2 => 2,
+      3 => 3,
+      4 => 4,
+      5 => 5,
+      6 => 6,
+      7 => 7,
+      8 => 8,
+    ),
+    '#description'   => t('Be careful when choosing more then 2 threads.'),
+  );
   $total = boost_crawler_total_count();
-  $number_done = min($total, variable_get('boost_crawler_position', 0));
-  if (variable_get('boost_crawler_number_of_threads', 0) != 0 && $total != $number_done) {
-    $form['advanced']['boost_stop_crawler'] = array(
+  //variable_get
+  $number_done = min($total, unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_position'"))));
+  if (variable_get('boost_crawler_number_of_threads', 0) > 0) {
+    $form['crawler']['live'] = array(
+      '#type'          => 'fieldset',
+      '#title'         => t('Boost crawler - Live info'),
+    );
+    $crawl_rate = round((BOOST_TIME - variable_get('boost_crawler_start_time', BOOST_TIME))/$number_done, 2);
+    $form['crawler']['live']['boost_crawler_rate'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Crawl Rate - Seconds Per Node (highly inaccurate)'),
+      '#default_value' => $crawl_rate,
+      '#disabled'      => TRUE,
+    );
+    $form['crawler']['live']['boost_stop_crawler'] = array(
       '#type' => 'submit',
       '#value' => t('Stop Crawler. !count URL\'s left.', array('!count' => $total - $number_done)),
       '#submit' => array('boost_stop_crawler_submit'),
@@ -669,6 +715,7 @@ function boost_reset_database_submit () {
  */
 function boost_stop_crawler_submit() {
   variable_set('boost_crawler_stopped', TRUE);
+  variable_set('boost_crawler_number_of_threads', 0);
 }
 
 /**
