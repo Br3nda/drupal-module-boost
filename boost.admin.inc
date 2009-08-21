@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.57 2009/08/21 02:43:13 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.58 2009/08/21 02:48:02 mikeytown2 Exp $
 
 /**
  * @file
@@ -56,12 +56,14 @@ function boost_admin_performance_page($form = array()) {
       '#options' => $period,
       '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
     );
-    $form['boost']['boost_push_html'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Preemptive Cache HTML'),
-      '#default_value' => BOOST_PUSH_HTML,
-      '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
-    );
+    if (BOOST_CRAWL_ON_CRON) {
+      $form['boost']['boost_push_html'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Preemptive Cache HTML'),
+        '#default_value' => BOOST_PUSH_HTML,
+        '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
+      );
+    }
   }
   if (BOOST_CACHE_XML) {
     $form['boost']['boost_cache_xml_lifetime'] = array(
@@ -71,12 +73,14 @@ function boost_admin_performance_page($form = array()) {
       '#options' => $period,
       '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
     );
-    $form['boost']['boost_push_xml'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Preemptive Cache XML'),
-      '#default_value' => BOOST_PUSH_XML,
-      '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
-    );
+    if (BOOST_CRAWL_ON_CRON) {
+      $form['boost']['boost_push_xml'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Preemptive Cache XML'),
+        '#default_value' => BOOST_PUSH_XML,
+        '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
+      );
+    }
   }
   if (BOOST_CACHE_JSON) {
     $form['boost']['boost_cache_json_lifetime'] = array(
@@ -86,12 +90,14 @@ function boost_admin_performance_page($form = array()) {
       '#options' => $period,
       '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
     );
-    $form['boost']['boost_push_json'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Preemptive Cache AJAX/JSON'),
-      '#default_value' => BOOST_PUSH_JSON,
-      '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
-    );
+    if (BOOST_CRAWL_ON_CRON) {
+      $form['boost']['boost_push_json'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Preemptive Cache AJAX/JSON'),
+        '#default_value' => BOOST_PUSH_JSON,
+        '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
+      );
+    }
   }
   $form['boost']['boost_clear'] = array(
     '#type' => 'submit',
@@ -417,6 +423,12 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Preemptive Cache: Crawl URL\'s with the boost block setting to yes'),
     '#default_value' => BOOST_CRAWL_ON_CRON,
     '#description'   => t('Touch some select URL\'s so they are cached before anyone accesses them.'),
+  );
+  $form['crawler']['boost_crawl_url_alias'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Crawl All URL\'s in the url_alias table'),
+    '#default_value' => BOOST_CRAWL_URL_ALIAS,
+    '#description'   => t('Preemptively cache all urls found in the url_alias table. This will crawl that page even if it is not expired. Enable & run cron to get the boost cache loaded.'),
   );
   $form['crawler']['boost_crawler_throttle'] = array(
     '#type'          => 'textfield',
