@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.108 2009/08/21 02:48:02 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.109 2009/08/29 08:14:25 mikeytown2 Exp $
 
 /**
  * @file
@@ -55,6 +55,7 @@ define('BOOST_PUSH_HTML',            variable_get('boost_push_html', FALSE));
 define('BOOST_PUSH_XML',             variable_get('boost_push_xml', FALSE));
 define('BOOST_PUSH_JSON',            variable_get('boost_push_json', FALSE));
 define('BOOST_CHAR',                 '_');
+define('BOOST_PERM_CHAR',            '_');
 define('BOOST_MAX_TIMESTAMP',        variable_get('boost_max_timestamp', BOOST_TIME));
 define('BOOST_CHECK_BEFORE_CRON_EXPIRE', variable_get('boost_check_before_cron_expire', FALSE));
 define('BOOST_CRAWLER_THROTTLE',     variable_get('boost_crawler_throttle', 0));
@@ -1819,28 +1820,30 @@ function boost_glue_url($parsed) {
  */
 function _boost_copy_css_files($css) {
   //extract css file name
-  $start = 'href="' . base_path();
-  $css_files=explode($start, $css);
+  $css_files=explode('href="', $css);
   array_shift($css_files);
   for ($i = 0; $i < count($css_files); $i++) {
-    $css_files[$i]=array_shift(explode('.css', $css_files[$i]));
+    $temp = array_pop(explode('//', $css_files[$i]));
+    $temp = explode(base_path(), array_shift(explode('.css', $temp)));
+    array_shift($temp);
+    $css_files[$i] = implode(base_path(), $temp);
   }
 
   //copy files
   foreach ($css_files as $css_file) {
     if (file_exists($css_file . '.css')) {
       $src = $css_file . '.css';
-      $dest = BOOST_FILE_PATH . '/' . $css_file . '.css' . BOOST_CHAR . BOOST_CHAR . BOOST_CSS_EXTENSION;
+      $dest = BOOST_FILE_PATH . '/' . $css_file . '.css' . BOOST_PERM_CHAR . BOOST_CSS_EXTENSION;
       _boost_copy_file($src, $dest);
     }
     if (file_exists($css_file . '.css.gz')) {
       $src = $css_file . '.css.gz';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css' . BOOST_CHAR . BOOST_CHAR . BOOST_CSS_EXTENSION . '.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css' . BOOST_PERM_CHAR . BOOST_CSS_EXTENSION . '.gz';
       _boost_copy_file($src, $dest);
     }
     elseif (BOOST_GZIP && file_exists($css_file . '.css')) {
       $src = $css_file . '.css';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css' . BOOST_CHAR . BOOST_CHAR . BOOST_CSS_EXTENSION . '.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $css_file . '.css' . BOOST_PERM_CHAR . BOOST_CSS_EXTENSION . '.gz';
       _boost_gz_copy_file($src, $dest);
     }
   }
@@ -1854,46 +1857,48 @@ function _boost_copy_css_files($css) {
  */
 function _boost_copy_js_files($js) {
   //extract js file name
-  $start = 'src="'. base_path();
-  $js_files=explode($start, $js);
+  $js_files=explode('src="', $js);
   array_shift($js_files);
   for ($i = 0; $i < count($js_files); $i++) {
     $temp = array_shift(explode('"', $js_files[$i]));
+    $temp = array_pop(explode('//', $temp));
     $temp = explode('.', $temp);
     array_pop($temp);
-    $js_files[$i]=implode('.', $temp);
+    $temp = explode(base_path(), implode('.', $temp));
+    array_shift($temp);
+    $js_files[$i] = implode(base_path(), $temp);
   }
 
   //copy files
   foreach ($js_files as $js_file) {
     if (file_exists($js_file . '.js')) {
       $src = $js_file . '.js';
-      $dest = BOOST_FILE_PATH . '/' . $js_file . '.js' . BOOST_CHAR . BOOST_CHAR . BOOST_JS_EXTENSION;
+      $dest = BOOST_FILE_PATH . '/' . $js_file . '.js' . BOOST_PERM_CHAR . BOOST_JS_EXTENSION;
       _boost_copy_file($src, $dest);
     }
     if (file_exists($js_file . '.js.gz')) {
       $src = $js_file . '.js.gz';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js' . BOOST_CHAR . BOOST_CHAR . BOOST_JS_EXTENSION . '.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js' . BOOST_PERM_CHAR . BOOST_JS_EXTENSION . '.gz';
       _boost_copy_file($src, $dest);
     }
     elseif (BOOST_GZIP && file_exists($js_file . '.js')) {
       $src = $js_file . '.js';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js' . BOOST_CHAR . BOOST_CHAR . BOOST_JS_EXTENSION . '.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.js' . BOOST_PERM_CHAR . BOOST_JS_EXTENSION . '.gz';
       _boost_gz_copy_file($src, $dest);
     }
     if (file_exists($js_file . '.jsmin.js')) {
       $src = $js_file . '.jsmin.js';
-      $dest = BOOST_FILE_PATH . '/' . $js_file . '.jsmin.js' . BOOST_CHAR . BOOST_CHAR . BOOST_JS_EXTENSION;
+      $dest = BOOST_FILE_PATH . '/' . $js_file . '.jsmin.js' . BOOST_PERM_CHAR . BOOST_JS_EXTENSION;
       _boost_copy_file($src, $dest);
     }
     if (file_exists($js_file . '.jsmin.js.gz')) {
       $src = $js_file . '.jsmin.js.gz';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js' . BOOST_CHAR . BOOST_CHAR . BOOST_JS_EXTENSION . '.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js' . BOOST_PERM_CHAR . BOOST_JS_EXTENSION . '.gz';
       _boost_copy_file($src, $dest);
     }
     elseif (BOOST_GZIP && file_exists($js_file . '.jsmin.js')) {
       $src = $js_file . '.jsmin.js';
-      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js' . BOOST_CHAR . BOOST_CHAR . BOOST_JS_EXTENSION . '.gz';
+      $dest = BOOST_GZIP_FILE_PATH . '/' . $js_file . '.jsmin.js' . BOOST_PERM_CHAR . BOOST_JS_EXTENSION . '.gz';
       _boost_gz_copy_file($src, $dest);
     }
   }
