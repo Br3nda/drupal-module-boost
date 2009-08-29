@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.59 2009/08/29 08:12:45 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.60 2009/08/29 08:15:36 mikeytown2 Exp $
 
 /**
  * @file
@@ -471,6 +471,12 @@ function boost_admin_boost_performance_page() {
       '#type'          => 'textfield',
       '#title'         => t('Crawl Rate - Seconds Per Node (highly inaccurate)'),
       '#default_value' => $crawl_rate,
+      '#disabled'      => TRUE,
+    );
+    $form['crawler']['live']['boost_crawler_eta'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Crawl ETA - highly inaccurate'),
+      '#default_value' => format_interval(($total - $number_done)/$crawl_rate),
       '#disabled'      => TRUE,
     );
     $form['crawler']['live']['boost_stop_crawler'] = array(
