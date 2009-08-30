@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.62 2009/08/30 01:11:43 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.63 2009/08/30 01:16:26 mikeytown2 Exp $
 
 /**
  * @file
@@ -377,6 +377,12 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_DISABLE_CLEAN_URL,
     '#description'   => t('Drupal will output non clean url\'s for non anonymous users. This allows for the browser to cache the page and still have logging in work. This is more on the extreme side of tweaks.'),
   );
+  $form['advanced']['boost_aggressive_gzip'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Do an iframe javascript cookie test for gzip'),
+    '#default_value' => BOOST_AGGRESSIVE_GZIP,
+    '#description'   => t('Inject an iframe on the homepage on the non-gzip version to check if the browser can actually handle gzip encoding. See <a href="@url">Website Performance - Activate Gzip</a> for reason why.', array('@url' => 'http://actionable-stats.com/website-performance-activate-gzip')),
+  );
   $form['advanced']['boost_permissions_file'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
@@ -645,7 +651,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   $_gz = BOOST_GZIP_EXTENSION;
 
   $char = BOOST_CHAR;
-  $permanant_char = BOOST_PERM_CHAR;
+  $permanent_char = BOOST_PERM_CHAR;
 
   $string = <<<ETO
   ### BOOST START ###
@@ -679,19 +685,23 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     ForceType text/javascript
   </FilesMatch>
 
+  # Gzip Cookie Test
+  RewriteRule boost-gzip-cookie-test\.html  $cache_dir$permanent_dir_gzip/boost-gzip-cookie-test\.html\.gz [L,T=text/html]
+
   # GZIP - Cached css & js files
+  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=2]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanant_char$css$gz -s
-  RewriteRule .* $cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanant_char$css$gz [L,QSA,T=text/css]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanant_char$js$gz -s
-  RewriteRule .* $cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanant_char$js$gz [L,QSA,T=text/javascript]
+  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$css$gz -s
+  RewriteRule .* $cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$css$gz [L,QSA,T=text/css]
+  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$js$gz -s
+  RewriteRule .* $cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$js$gz [L,QSA,T=text/javascript]
 
   # NORMAL - Cached css & js files
-  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanant_char$css -s
-  RewriteRule .* $cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanant_char$css [L,QSA,T=text/css]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanant_char$js -s
-  RewriteRule .* $cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanant_char$js [L,QSA,T=text/javascript]
+  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$css -s
+  RewriteRule .* $cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$css [L,QSA,T=text/css]
+  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$js -s
+  RewriteRule .* $cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$js [L,QSA,T=text/javascript]
 
   # Caching for anonymous users
   # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR https request
@@ -702,6 +712,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   RewriteRule .* - [S=7]
 
   # GZIP
+  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=3]
   RewriteCond $document_root$drupal_subdir/$cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz -s

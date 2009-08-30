@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.115 2009/08/30 01:10:34 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.116 2009/08/30 01:16:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -49,6 +49,7 @@ define('BOOST_POST_UPDATE_COMMAND',  variable_get('boost_post_update_command', '
 define('BOOST_CRON_LIMIT',           variable_get('boost_cron_limit', 100));
 define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE));
 define('BOOST_GZIP',                 variable_get('page_compression', TRUE));
+define('BOOST_AGGRESSIVE_GZIP',      variable_get('boost_aggressive_gzip', TRUE));
 define('BOOST_CLEAR_CACHE_OFFLINE',  variable_get('boost_clear_cache_offline', TRUE));
 define('BOOST_HALT_ON_ERRORS',       variable_get('boost_halt_on_errors', FALSE));
 define('BOOST_ROOT_FILE',            variable_get('boost_root_file', '.boost'));
@@ -1252,7 +1253,14 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
 
   // Create or update the static files as needed
   if (($filename = boost_file_path($path, TRUE, $extension)) && (BOOST_OVERWRITE_FILE || !file_exists($filename) || boost_db_is_expired($filename))) {
-    boost_cache_write($filename, $data);
+    // Special handling of the front page for aggressive gzip test
+    if ($path == '' && BOOST_AGGRESSIVE_GZIP) {
+      _boost_generate_gzip_test();
+      boost_cache_write($filename, _boost_gzip_test_inject_iframe($data));
+    }
+    else {
+      boost_cache_write($filename, $data);
+    }
     if (BOOST_GZIP) {
       boost_cache_write(str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename) . BOOST_GZIP_EXTENSION, gzencode($data, 9));
     }
@@ -2118,6 +2126,38 @@ function _boost_variable_get($name) {
  */
 function _boost_variable_set($name, $value) {
   db_query("UPDATE {variable} SET value = '%s' WHERE name = '%s'", serialize($value), $name);
+}
+
+/**
+ * Generate iframe gzip cookie test html.
+ */
+function _boost_generate_gzip_test() {
+  $filename = BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_GZ_DIR . '/boost-gzip-cookie-test.html.gz';
+  if (!file_exists($filename)) {
+    $string = <<<ETO
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
+<html><head><title>Gzip Test</title>
+<script type="text/javascript">
+var date = new Date();
+var days = 14;
+date.setTime(date.getTime() + (days * 24*60*60*1000));
+expires = '; expires=' + date.toUTCString();
+document.cookie = 'boost-gzip=true' + expires + '; path=/'
+</script>
+</head><body><h1>It works!</h1></body></html>
+ETO;
+    _boost_mkdir_p(dirname($filename));
+    file_put_contents($filename, gzencode($string, 9));
+  }
+
+}
+
+/**
+ * Inject iframe gzip cookie test.
+ */
+function _boost_gzip_test_inject_iframe($data) {
+ return str_replace('</body>', '<iframe src="/boost-gzip-cookie-test.html" style="width:0px; height:0px; border: 0px"></iframe>' . "\n" . '</body>', $data);
 }
 
 //////////////////////////////////////////////////////////////////////////////
