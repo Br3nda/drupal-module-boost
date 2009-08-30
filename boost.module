@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.114 2009/08/30 01:08:38 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.115 2009/08/30 01:10:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -2148,8 +2148,6 @@ function boost_crawler_run() {
   $this_thread = (isset($_GET['thread']) && is_numeric($_GET['thread'])) ? $_GET['thread'] : NULL;
   $total_threads = (isset($_GET['total']) && is_numeric($_GET['total'])) ? $_GET['total'] : NULL;
   $self = $base_url . '/' . 'boost-crawler?nocache=1';
-  $self .= isset($this_thread) ? '&thread=' . $this_thread : '';
-  $self .= isset($total_threads) ? '&total=' . $total_threads : '';
 
   // Only allow self to call this page if not called via cron.
   if ($_GET['q'] == 'boost-crawler' && $_SERVER['REMOTE_ADDR'] != $_SERVER['SERVER_ADDR']) {
@@ -2165,7 +2163,7 @@ function boost_crawler_run() {
     if (variable_get('cron_semaphore', FALSE) == TRUE) {
       watchdog('boost', 'Crawler Sleep');
       sleep(10);
-      boost_async_call_crawler($self);
+      boost_async_call_crawler($self, $this_thread, $total_threads);
       exit;
     }
     // Start to do crawler stuff
@@ -2181,7 +2179,7 @@ function boost_crawler_run() {
           }
           variable_set('boost_crawler_number_of_threads', (int)$threads);
           while ($threads > 0) {
-            boost_async_call_crawler($self . '&thread=' . $threads . '&total=' . variable_get('boost_crawler_number_of_threads', $threads));
+            boost_async_call_crawler($self, $threads, variable_get('boost_crawler_number_of_threads', $threads));
             $threads--;
           }
           watchdog('boost', 'All @num threads started', array('@num' => variable_get('boost_crawler_number_of_threads', $threads)));
@@ -2225,6 +2223,17 @@ function boost_crawler_run() {
           _boost_variable_set('boost_crawler_number_of_threads', $threads-1);
           db_unlock_tables();
           watchdog('boost', 'Crawler - Thread %num of %total Done.', array('%num' => $this_thread, '%total' => $total_threads));
+          // Re init crawler if it missed some, try 5 times
+          if (   _boost_variable_get('boost_crawler_number_of_threads') == 0
+              && _boost_variable_get('boost_crawler_number_of_tries') < 5
+              && boost_crawler_verify()
+              ) {
+            _boost_variable_set('boost_crawler_number_of_threads', 1);
+            watchdog('boost', 'Crawler - Restarting with 1 thread, to try & get the stubborn urls cached.');
+            boost_async_call_crawler($self, 1, 1);
+            exit;
+          }
+
           return TRUE;
         }
         while ($url = db_result($results)) {
@@ -2235,13 +2244,13 @@ function boost_crawler_run() {
           set_time_limit(0);
         }
         // Crawler for this round done, call self and exit
-        boost_async_call_crawler($self);
+        boost_async_call_crawler($self, $this_thread, $total_threads);
         exit;
       }
       else {
         // URL's added to table, call self and exit
         //watchdog('boost', 'Loading URL\'s');
-        boost_async_call_crawler($self);
+        boost_async_call_crawler($self, $this_thread, $total_threads);
         exit;
       }
     }
@@ -2257,11 +2266,12 @@ function boost_crawler_run() {
     variable_set('boost_crawler_position', 0);
     variable_set('boost_crawler_loaded_count' . BOOST_FILE_EXTENSION, 0);
     variable_set('boost_crawler_loaded_count' . BOOST_XML_EXTENSION, 0);
-    variable_set('boost_crawler_loaded_count' . '.js', 0);
+    variable_set('boost_crawler_loaded_count' . BOOST_JSON_EXTENSION, 0);
     variable_set('boost_crawler_loaded_count_alias', 0);
     variable_set('boost_crawler_threads_primed', FALSE);
+    variable_set('boost_crawler_number_of_tries', 0);
     variable_set('boost_crawler_stopped', FALSE);
-    boost_async_call_crawler($self);
+    boost_async_call_crawler($self, $this_thread, $total_threads);
     return TRUE;
   }
 }
@@ -2299,7 +2309,10 @@ function boost_async_opp($output) {
  * @param $self
  *  URL to restart the loop.
  */
-function boost_async_call_crawler($self) {
+function boost_async_call_crawler($self, $this_thread = NULL, $total_threads = NULL) {
+  $self .= isset($this_thread) ? '&thread=' . $this_thread : '';
+  $self .= isset($total_threads) ? '&total=' . $total_threads : '';
+
   $timeout = ini_get('default_socket_timeout');
   ini_set('default_socket_timeout', 3);
   @file_get_contents($self);
@@ -2357,7 +2370,7 @@ function boost_crawler_count($push_setting, $extension) {
 function boost_crawler_seed_tables() {
   if (   boost_crawler_add_to_table(BOOST_PUSH_HTML, BOOST_FILE_EXTENSION)
       && boost_crawler_add_to_table(BOOST_PUSH_XML, BOOST_XML_EXTENSION)
-      && boost_crawler_add_to_table(BOOST_PUSH_JSON, '.js')
+      && boost_crawler_add_to_table(BOOST_PUSH_JSON, BOOST_JSON_EXTENSION)
       && boost_crawler_add_alias_to_table()
       ) {
     // All URL's added to boost_crawler table; start hitting URL's
@@ -2382,8 +2395,8 @@ function boost_crawler_add_alias_to_table() {
   $loaded = variable_get('boost_crawler_loaded_count_alias', 0);
   if ($total > $loaded) {
     $list = db_query_range("SELECT dst FROM {url_alias}", $loaded, $count);
-    while ($url = db_fetch_array($list)) {
-      @db_query("INSERT INTO {boost_crawler} (url) VALUES ('%s')", $base_url . '/' . $url['dst']);
+    while ($url = db_result($list)) {
+      @db_query("INSERT INTO {boost_crawler} (url) VALUES ('%s')", $base_url . '/' . $url);
     }
     variable_set('boost_crawler_loaded_count_alias', $loaded + $count);
     return FALSE;
@@ -2398,4 +2411,19 @@ function boost_crawler_add_alias_to_table() {
  */
 function boost_crawler_total_count() {
   return db_result(db_query("SELECT COUNT(*) FROM {boost_crawler}"));
+}
+
+/**
+ * Reload any url's that did not get cached.
+ */
+function boost_crawler_verify() {
+  $list = db_query("SELECT boost_crawler.url FROM {boost_cache} INNER JOIN {boost_crawler} ON boost_cache.url=boost_crawler.url WHERE boost_cache.expire = 0");
+  db_query('TRUNCATE {boost_crawler}');
+  variable_set('boost_crawler_position', 0);
+  $recrawl = FALSE;
+  while ($url = db_result($list)) {
+    db_query("INSERT INTO {boost_crawler} (url) VALUES ('%s')", $url);
+    $recrawl = TRUE;
+  }
+  return $recrawl;
 }
