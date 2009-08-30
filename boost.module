@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.120 2009/08/30 08:06:34 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.121 2009/08/30 08:26:24 mikeytown2 Exp $
 
 /**
  * @file
@@ -144,7 +144,7 @@ function boost_init() {
       || $_SERVER['SERVER_SOFTWARE'] === 'PHP CLI'
       || !BOOST_ENABLED
       || isset($_GET['nocache'])
-      || !boost_is_cacheable()
+      || !boost_is_cacheable($GLOBALS['_boost_path'])
       ) {
     $GLOBALS['_boost_cache_this'] = FALSE;
     return;
@@ -498,7 +498,7 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
         case 'status':
           // Don't show the block to anonymous users, nor on any pages that
           // aren't even cacheable to begin with (e.g. admin/*).
-          if (!empty($user->uid) && boost_is_cacheable()) {
+          if (!empty($user->uid) && boost_is_cacheable($GLOBALS['_boost_path'])) {
             $output = t('This page is being served <strong>live</strong> to anonymous visitors, as it is not currently in the static page cache.');
 
             if (boost_is_cached($GLOBALS['_boost_path'])) {
@@ -533,7 +533,7 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
         case 'config':
           // Don't show the block to anonymous users, nor on any pages that
           // aren't even cacheable to begin with (e.g. admin/*).
-          if (!empty($user->uid) && boost_is_cacheable()) {
+          if (!empty($user->uid) && boost_is_cacheable($GLOBALS['_boost_path'])) {
             $block['subject'] = '';
             $block['content'] = theme('boost_cache_status', -1, drupal_get_form('boost_block_db_settings_form'));
           }
@@ -549,7 +549,7 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
               || $_SERVER['SERVER_SOFTWARE'] === 'PHP CLI'
               || !BOOST_ENABLED
               || isset($_GET['nocache'])
-              || !boost_is_cacheable()
+              || !boost_is_cacheable($GLOBALS['_boost_path'])
               || !empty($user->uid)
               || !module_exists('statistics')
               )) {
@@ -935,19 +935,26 @@ function _boost_get_http_header($regex, $default = NULL) {
  *
  * @param $path
  *   Current URL
+ *
+ * $path = $GLOBALS['_boost_path'] most of the time
  */
-function boost_is_cacheable($path = $GLOBALS['_boost_path']) {
+function boost_is_cacheable($path) {
   $path = (empty($path)) ? variable_get('site_frontpage', 'node') : $path;
   $normal_path = drupal_get_normal_path($path); // normalize path
 
   // Never cache the basic user login/registration pages or any administration pages
   // RSS feeds are not cacheable due to content type restrictions
   // Don't cache comment reply pages
+  // Under no circumstances should the incoming path contain '..' or null
+  // bytes; we also limit the maximum directory nesting depth of the path
   if (   $normal_path == 'user'
       || preg_match('!^user/(login|register|password)!', $normal_path)
       || preg_match('!^admin!', $normal_path)
       || preg_match('!comment/reply$!', $normal_path)
       || preg_match('!^node/add!', $normal_path)
+      || strpos($path, '..') !== FALSE
+      || strpos($path, "\0") !== FALSE
+      || count(explode('/', $path)) > BOOST_MAX_PATH_DEPTH
     ) {
     return FALSE;
   }
@@ -956,6 +963,13 @@ function boost_is_cacheable($path = $GLOBALS['_boost_path']) {
   }
   if (!BOOST_CACHE_QUERY && $GLOBALS['_boost_query'] != BOOST_CHAR) {
     return FALSE;
+  }
+
+  // Don't cache path if it can't be served by apache.
+  if (BOOST_ONLY_ASCII_PATH) {
+    if (preg_match('@[^/a-z0-9_\-&=,\.:]@i', $path)) {
+      return FALSE;
+    }
   }
 
   // Check for resevered characters if on windows
@@ -1599,6 +1613,8 @@ function boost_cache_directory($host = NULL, $absolute = TRUE) {
  *   add query to path
  * @param $extension
  *   add extension to end of filename
+ *
+ * $path = $GLOBALS['_boost_path'] most of the time
  */
 function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION) {
   //handling of url variables
@@ -1613,16 +1629,11 @@ function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION
 
   // Under no circumstances should the incoming path contain '..' or null
   // bytes; we also limit the maximum directory nesting depth of the path
-  if (strpos($path, '..') !== FALSE || strpos($path, "\0") !== FALSE ||
-      count(explode('/', $path)) > BOOST_MAX_PATH_DEPTH) {
+  if (   strpos($path, '..') !== FALSE
+      || strpos($path, "\0") !== FALSE
+      || count(explode('/', $path)) > BOOST_MAX_PATH_DEPTH
+      ) {
     return FALSE;
-  }
-
-  // Don't cache path if it can't be served by apache.
-  if (BOOST_ONLY_ASCII_PATH) {
-    if (preg_match('@[^/a-z0-9_\-&=,\.:]@i', $path)) {
-      return FALSE;
-    }
   }
 
   return implode('/', array(BOOST_FILE_PATH, $path . (is_null($extension) ? '' : $extension)));
