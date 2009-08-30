@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.31 2009/08/29 08:17:04 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.32 2009/08/30 08:39:15 mikeytown2 Exp $
 
 /**
  * @file
@@ -106,7 +106,7 @@ function boost_requirements($phase) {
       elseif (!boost_chk_module_versions()) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('You need to get a newer version of <a href="@url">poormanscron</a>, most likely the lastest dev.', array('@url' => "http://drupal.org/project/poormanscron")),
+          'description' => $t('You need to get a newer version of <a href="@url">poormanscron</a>, most likely the latest dev.', array('@url' => "http://drupal.org/project/poormanscron")),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('poormanscron is the wrong version'),
         );
@@ -610,4 +610,13 @@ function boost_update_6106() {
   $ret = array();
   db_create_table($ret, 'boost_crawler', $schema['boost_crawler']);
   return $ret;
+}
+
+/**
+ * Update 6107 - Flush core caches
+ */
+function boost_update_6107() {
+  // Flush caches, needed since some functions got renamed.
+  drupal_flush_all_caches();
+  return array(array('success' => TRUE, 'query' => 'Core Caches Flushed.'));
 }
