@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.124 2009/08/31 08:10:29 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.125 2009/08/31 08:59:33 mikeytown2 Exp $
 
 /**
  * @file
@@ -12,14 +12,15 @@
 define('BOOST_PATH',                 dirname(__FILE__));
 define('BOOST_ENABLED',              variable_get('boost_enabled', CACHE_DISABLED));
 define('BOOST_MULTISITE_SINGLE_DB',  variable_get('boost_multisite_single_db', FALSE));
-define('BOOST_ROOT_CACHE_DIR',      'cache');
-define('BOOST_NORMAL_DIR',          '');
-define('BOOST_GZIP_DIR',            'gz');
-define('BOOST_PERM_NORMAL_DIR',     '');
-define('BOOST_PERM_GZ_DIR',         'gz');
-define('BOOST_CHAR',                 '_');
-define('BOOST_PERM_CHAR',            '_');
-define('BOOST_FILE_PATH',            BOOST_MULTISITE_SINGLE_DB ? boost_cache_directory(NULL, FALSE) : variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
+define('BOOST_ROOT_CACHE_DIR',       variable_get('boost_root_cache_dir', 'cache'));
+define('BOOST_NORMAL_DIR',           variable_get('boost_normal_dir', ''));
+define('BOOST_GZIP_DIR',             variable_get('boost_gzip_dir', 'gz'));
+define('BOOST_PERM_NORMAL_DIR',      variable_get('boost_perm_normal_dir', ''));
+define('BOOST_PERM_GZ_DIR',          variable_get('boost_perm_gz_dir', 'gz'));
+define('BOOST_CHAR',                 variable_get('boost_char', '_'));
+define('BOOST_PERM_CHAR',            variable_get('boost_perm_char', '_'));
+define('BOOST_HOST',                 variable_get('boost_host', ''));
+define('BOOST_FILE_PATH',            BOOST_MULTISITE_SINGLE_DB ? boost_cache_directory(NULL, FALSE) : variable_get('boost_file_path', boost_cache_directory(BOOST_HOST, FALSE)));
 define('BOOST_GZIP_FILE_PATH',       implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_GZIP_DIR . '/', BOOST_FILE_PATH)))));
 define('BOOST_PERM_GZIP_FILE_PATH',  implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_GZ_DIR . '/', BOOST_FILE_PATH)))));
 define('BOOST_PERM_FILE_PATH',       implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_NORMAL_DIR . '/', BOOST_FILE_PATH)))));

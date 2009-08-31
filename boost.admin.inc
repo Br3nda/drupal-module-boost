@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.63 2009/08/30 01:16:26 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.64 2009/08/31 08:59:33 mikeytown2 Exp $
 
 /**
  * @file
@@ -201,85 +201,30 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_CACHE_HTML,
     '#description'   => t('Boost will cache most drupal pages.'),
   );
-//   if (BOOST_CACHE_HTML) {
-//     $form['cacheability']['boost_file_extension'] = array(
-//       '#type'          => 'textfield',
-//       '#title'         => t('Cache html file extension'),
-//       '#default_value' => BOOST_FILE_EXTENSION,
-//       '#size'          => 10,
-//       '#maxlength'     => 32,
-//       '#required'      => TRUE,
-//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.html\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
-//     );
-//   }
   $form['cacheability']['boost_cache_xml'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Cache .xml & /feed'),
     '#default_value' => BOOST_CACHE_XML,
     '#description'   => t('Boost will cache .xml and /feed urls as xml data.'),
   );
-//   if (BOOST_CACHE_XML) {
-//     $form['cacheability']['boost_xml_extension'] = array(
-//       '#type'          => 'textfield',
-//       '#title'         => t('Cache xml file extension'),
-//       '#default_value' => BOOST_XML_EXTENSION,
-//       '#size'          => 10,
-//       '#maxlength'     => 32,
-//       '#required'      => TRUE,
-//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.xml\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
-//     );
-//   }
   $form['cacheability']['boost_cache_json'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Cache ajax/json'),
     '#default_value' => BOOST_CACHE_JSON,
     '#description'   => t('Boost will cache ajax/json responses.'),
   );
-//   if (BOOST_CACHE_JSON) {
-//     $form['cacheability']['boost_json_extension'] = array(
-//       '#type'          => 'textfield',
-//       '#title'         => t('Cache ajax/json file extension'),
-//       '#default_value' => BOOST_JSON_EXTENSION,
-//       '#size'          => 10,
-//       '#maxlength'     => 32,
-//       '#required'      => TRUE,
-//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.js\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
-//     );
-//   }
   $form['cacheability']['boost_cache_css'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Cache .css'),
     '#default_value' => BOOST_CACHE_CSS,
     '#description'   => t('Boost will cache CSS files.'),
   );
-//   if (BOOST_CACHE_CSS) {
-//     $form['cacheability']['boost_css_extension'] = array(
-//       '#type'          => 'textfield',
-//       '#title'         => t('Cache css file extension'),
-//       '#default_value' => BOOST_CSS_EXTENSION,
-//       '#size'          => 10,
-//       '#maxlength'     => 32,
-//       '#required'      => TRUE,
-//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.css\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
-//     );
-//   }
   $form['cacheability']['boost_cache_js'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Cache .js'),
     '#default_value' => BOOST_CACHE_JS,
     '#description'   => t('Boost will cache javascript files.'),
   );
-//   if (BOOST_CACHE_JS) {
-//     $form['cacheability']['boost_js_extension'] = array(
-//       '#type'          => 'textfield',
-//       '#title'         => t('Cache javascript file extension'),
-//       '#default_value' => BOOST_JS_EXTENSION,
-//       '#size'          => 10,
-//       '#maxlength'     => 32,
-//       '#required'      => TRUE,
-//       '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.js\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
-//     );
-//   }
   $form['cacheability']['boost_cacheability_option'] = array(
     '#type'          => 'radios',
     '#title'         => t('Statically cache specific pages'),
@@ -298,23 +243,6 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'fieldset',
     '#title'         => t('Boost advanced settings'),
   );
-  $form['advanced']['boost_multisite_single_db'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Do not store the cache file path in the database'),
-    '#default_value' => BOOST_MULTISITE_SINGLE_DB,
-    '#description'   => t('Enabling will allow for correct multi-site caching, in cases where different content is served from the same Drupal installation, based on domain. Examples: Multi-site with a single/shared database, site translation detection based on domain, and the contributed "Domain Access" module.'),
-  );
-  if (!BOOST_MULTISITE_SINGLE_DB) {
-    $form['advanced']['boost_file_path'] = array(
-      '#type'          => 'textfield',
-      '#title'         => t('Cache file path'),
-      '#default_value' => BOOST_FILE_PATH,
-      '#size'          => 60,
-      '#maxlength'     => 255,
-      '#required'      => TRUE,
-      '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named %default-path under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.', array('%default-path' => boost_cache_directory(NULL, FALSE))),
-    );
-  }
   $form['advanced']['boost_expire_cron'] = array(
     '#type'          => 'radios',
     '#title'         => t('Purge expired cache files on cron runs'),
@@ -412,6 +340,159 @@ function boost_admin_boost_performance_page() {
       5 => t('5 Show all'),
     ),
   );
+
+  // directories
+  $form['directories'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Boost directories and file extensions'),
+  );
+  $form['directories']['boost_root_cache_dir'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Cache Dir'),
+    '#default_value' => BOOST_ROOT_CACHE_DIR,
+    '#size'          => 15,
+    '#maxlength'     => 255,
+    '#required'      => TRUE,
+    '#description'   => t(''),
+  );
+  $form['directories']['boost_multisite_single_db'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Do not store the cache file path in the database'),
+    '#default_value' => BOOST_MULTISITE_SINGLE_DB,
+    '#description'   => t('Enabling will allow for correct multi-site caching, in cases where different content is served from the same Drupal installation, based on domain. Examples: Multi-site with a single/shared database, site translation detection based on domain, and the contributed "Domain Access" module.'),
+  );
+  if (!BOOST_MULTISITE_SINGLE_DB) {
+//     $form['directories']['boost_host'] = array(
+//       '#type'          => 'textfield',
+//       '#title'         => t('Hostname'),
+//       '#default_value' => BOOST_HOST,
+//       '#size'          => 60,
+//       '#maxlength'     => 255,
+//       '#description'   => t(''),
+//     );
+    $form['directories']['boost_file_path'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Cache file path'),
+      '#default_value' => BOOST_FILE_PATH,
+      '#size'          => 60,
+      '#maxlength'     => 255,
+      '#required'      => TRUE,
+      '#description'   => t('A file system path where the static cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named %default-path under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.', array('%default-path' => boost_cache_directory(BOOST_HOST, FALSE))),
+    );
+  }
+  $form['directories']['generated'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Generated output storage (HTML, XML, AJAX)'),
+  );
+  $form['directories']['generated']['boost_normal_dir'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Dir for non compressed files'),
+    '#default_value' => BOOST_NORMAL_DIR,
+    '#size'          => 15,
+    '#maxlength'     => 255,
+    '#description'   => t('Leave blank to not use a subdir'),
+  );
+  $form['directories']['generated']['boost_gzip_dir'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Dir for compressed files'),
+    '#default_value' => BOOST_GZIP_DIR,
+    '#size'          => 15,
+    '#maxlength'     => 255,
+    '#description'   => t('Leave blank to not use a subdir'),
+  );
+  $form['directories']['generated']['boost_char'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Character used to replace "?"'),
+    '#default_value' => BOOST_CHAR,
+    '#size'          => 15,
+    '#maxlength'     => 255,
+    '#required'      => TRUE,
+    '#description'   => t('Best to leave at _'),
+  );
+  if (BOOST_CACHE_HTML) {
+    $form['directories']['generated']['boost_file_extension'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Cache html file extension'),
+      '#default_value' => BOOST_FILE_EXTENSION,
+      '#size'          => 10,
+      '#maxlength'     => 32,
+      '#required'      => TRUE,
+      '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.html\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+    );
+  }
+  if (BOOST_CACHE_XML) {
+    $form['directories']['generated']['boost_xml_extension'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Cache xml file extension'),
+      '#default_value' => BOOST_XML_EXTENSION,
+      '#size'          => 10,
+      '#maxlength'     => 32,
+      '#required'      => TRUE,
+      '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.xml\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+    );
+  }
+  if (BOOST_CACHE_JSON) {
+    $form['directories']['generated']['boost_json_extension'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Cache ajax/json file extension'),
+      '#default_value' => BOOST_JSON_EXTENSION,
+      '#size'          => 10,
+      '#maxlength'     => 32,
+      '#required'      => TRUE,
+      '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.js\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+    );
+  }
+  $form['directories']['static'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Static storage (CSS, JS)'),
+  );
+  $form['directories']['static']['boost_perm_normal_dir'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Dir for more permanent files (css/js)'),
+    '#default_value' => BOOST_PERM_NORMAL_DIR,
+    '#size'          => 15,
+    '#maxlength'     => 255,
+    '#description'   => t('Leave blank to not use a subdir'),
+  );
+  $form['directories']['static']['boost_perm_gz_dir'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Dir for compressed more permanent files (css/js)'),
+    '#default_value' => BOOST_PERM_GZ_DIR,
+    '#size'          => 15,
+    '#maxlength'     => 255,
+    '#description'   => t('Leave blank to not use a subdir'),
+  );
+  $form['directories']['static']['boost_perm_char'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Character used to replace "?" in the permanent dir'),
+    '#default_value' => BOOST_PERM_CHAR,
+    '#size'          => 15,
+    '#maxlength'     => 255,
+    '#required'      => TRUE,
+    '#description'   => t('Best to leave at _'),
+  );
+  if (BOOST_CACHE_CSS) {
+    $form['directories']['static']['boost_css_extension'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Cache css file extension'),
+      '#default_value' => BOOST_CSS_EXTENSION,
+      '#size'          => 10,
+      '#maxlength'     => 32,
+      '#required'      => TRUE,
+      '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.css\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+    );
+  }
+  if (BOOST_CACHE_JS) {
+    $form['directories']['static']['boost_js_extension'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Cache javascript file extension'),
+      '#default_value' => BOOST_JS_EXTENSION,
+      '#size'          => 10,
+      '#maxlength'     => 32,
+      '#required'      => TRUE,
+      '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.js\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
+    );
+  }
 
   // Crawler
   $form['crawler'] = array(
