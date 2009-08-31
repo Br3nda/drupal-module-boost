@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.122 2009/08/30 08:39:15 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.123 2009/08/31 07:27:47 mikeytown2 Exp $
 
 /**
  * @file
@@ -20,9 +20,9 @@ define('BOOST_PERM_GZ_DIR',         'gz');
 define('BOOST_CHAR',                 '_');
 define('BOOST_PERM_CHAR',            '_');
 define('BOOST_FILE_PATH',            BOOST_MULTISITE_SINGLE_DB ? boost_cache_directory(NULL, FALSE) : variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
-define('BOOST_GZIP_FILE_PATH',       str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_GZIP_DIR . '/', BOOST_FILE_PATH));
-define('BOOST_PERM_GZIP_FILE_PATH',  str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_GZ_DIR . '/', BOOST_FILE_PATH));
-define('BOOST_PERM_FILE_PATH',       str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_NORMAL_DIR . '/', BOOST_FILE_PATH));
+define('BOOST_GZIP_FILE_PATH',       implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_GZIP_DIR . '/', BOOST_FILE_PATH)))));
+define('BOOST_PERM_GZIP_FILE_PATH',  implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_GZ_DIR . '/', BOOST_FILE_PATH)))));
+define('BOOST_PERM_FILE_PATH',       implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_NORMAL_DIR . '/', BOOST_FILE_PATH)))));
 define('BOOST_FILE_EXTENSION',       variable_get('boost_file_extension', '.html'));
 define('BOOST_XML_EXTENSION',        variable_get('boost_xml_extension', '.xml'));
 define('BOOST_JSON_EXTENSION',       variable_get('boost_json_extension', '.js'));
@@ -1945,10 +1945,13 @@ function _boost_copy_js_files($js) {
  *   Destination.
  */
 function _boost_copy_file($src, $dest) {
-  if (_boost_mkdir_p(dirname($dest))) {
-    @copy($src, $dest);
-    if (is_numeric(BOOST_PERMISSIONS_FILE)) {
-      @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
+  $destinations = _boost_copy_file_get_domains($dest);
+  foreach ($destinations as $destination) {
+    if (_boost_mkdir_p(dirname($destination))) {
+      @copy($src, $destination);
+      if (is_numeric(BOOST_PERMISSIONS_FILE)) {
+        @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
+      }
     }
   }
 }
@@ -1962,12 +1965,38 @@ function _boost_copy_file($src, $dest) {
  *   Destination.
  */
 function _boost_gz_copy_file($src, $dest) {
-  if (_boost_mkdir_p(dirname($dest))) {
-    @file_put_contents($dest, gzencode(file_get_contents($src), 9));
-    if (is_numeric(BOOST_PERMISSIONS_FILE)) {
-      @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
+  $destinations = _boost_copy_file_get_domains($dest);
+  foreach ($destinations as $destination) {
+    if (_boost_mkdir_p(dirname($destination))) {
+      @file_put_contents($dest, gzencode(file_get_contents($src), 9));
+      if (is_numeric(BOOST_PERMISSIONS_FILE)) {
+        @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
+      }
     }
   }
+}
+
+/**
+ * Get the various subdomains from parallel module.
+ *
+ * @param $dest
+ *   Destination.
+ */
+function _boost_copy_file_get_domains($dest) {
+  global $base_url;
+  $parts = parse_url($base_url);
+  $destinations = array();
+  $destinations[] = $dest;
+  $domains = array();
+  $domains[] = str_replace('//', '', variable_get('parallel_domain_css', ''));
+  $domains[] = str_replace('//', '', variable_get('parallel_domain_img', ''));
+  $domains[] = str_replace('//', '', variable_get('parallel_domain_js', ''));
+  $domains = array_unique(array_filter($domains));
+
+  foreach ($domains as $domain) {
+    $destinations[] = str_replace($parts['host'], $domain, $dest);
+  }
+  return $destinations;
 }
 
 /**
