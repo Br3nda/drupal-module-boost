@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.126 2009/09/01 00:13:30 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.127 2009/09/01 23:40:11 mikeytown2 Exp $
 
 /**
  * @file
@@ -994,7 +994,7 @@ function boost_is_cacheable($path) {
       // When BOOST_CACHEABILITY_OPTION has a value of 0, boost will cache
       // all pages except those listed in BOOST_CACHEABILITY_PAGES. When set
       // to 1, boost will cache only on those pages listed in BOOST_CACHEABILITY_PAGES.
-      $page_match =  !($block->visibility xor $page_match);
+      $page_match =  !(BOOST_CACHEABILITY_OPTION xor $page_match);
     }
     else {
       $page_match =  drupal_eval(BOOST_CACHEABILITY_PAGES);
