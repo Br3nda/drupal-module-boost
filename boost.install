@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.33 2009/08/31 07:32:01 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.34 2009/09/01 00:13:30 mikeytown2 Exp $
 
 /**
  * @file
@@ -66,6 +66,8 @@ function boost_requirements($phase) {
       }
       $htaccess = file_get_contents('.htaccess');
       $char = BOOST_CHAR;
+      $crawler_response = drupal_http_request(BOOST_CRAWLER_SELF);
+      $crawler_response = $crawler_response->code;
       foreach($cache_directories as $cache_directory) {
         _boost_mkdir_p($cache_directory);
         $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
@@ -122,6 +124,22 @@ function boost_requirements($phase) {
             'page. ', array('!url' => url('admin/settings/language/configure'))),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('Cannot use "language fallback" language negotiation'),
+        );
+      }
+      if (!variable_get('boost_crawler_key', FALSE)) {
+        $requirements['boost_crawler'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('Please Run the database update, as the crawler key is not generated yet.'),
+          'severity'    => REQUIREMENT_ERROR,
+          'value'       => $t('Boost Crawler Key Not Found.'),
+        );
+      }
+      elseif ($crawler_response != 200) {
+        $requirements['boost_crawler'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('@number returned. Crawler URL (@url) is not available, please <a href="@link">report this issue</a>', array('@number' => $crawler_response, '@url' => BOOST_CRAWLER_SELF, '@link' => 'http://drupal.org/node/add/project-issue/boost')),
+          'severity'    => REQUIREMENT_ERROR,
+          'value'       => $t('Boost crawler did not get a 200 response.'),
         );
       }
       if (empty($requirements)) {
@@ -632,4 +650,12 @@ function boost_update_6107() {
   // Flush caches, needed since some functions got renamed.
   drupal_flush_all_caches();
   return array(array('success' => TRUE, 'query' => 'Core Caches Flushed.'));
+}
+
+/**
+ * Update 6108 - Create crawler key
+ */
+function boost_update_6108() {
+  variable_set('boost_crawler_key', md5(mt_rand()));
+  return array(array('success' => TRUE, 'query' => 'Crawler key generated.'));
 }
