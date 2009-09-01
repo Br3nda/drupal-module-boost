@@ -1,5 +1,5 @@
   ### BOOST START ###
-  <FilesMatch "(\.html\.gz|\.html)$">
+  <FilesMatch "(\.html\.gz|\.html|\.xml\.gz|\.xml|)$">
     <IfModule mod_headers.c>
       Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
       Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
@@ -8,8 +8,10 @@
   <IfModule mod_mime.c>
     AddCharset utf-8 .html
     AddCharset utf-8 .xml
+    AddCharset utf-8 .css
+    AddCharset utf-8 .js
+    AddEncoding gzip .gz
   </IfModule>
-  AddEncoding x-gzip .gz
   <FilesMatch "\.html\.gz$">
     ForceType text/html
   </FilesMatch>
@@ -23,19 +25,23 @@
     ForceType text/javascript
   </FilesMatch>
 
+  # Gzip Cookie Test
+  RewriteRule boost-gzip-cookie-test\.html  cache/gz/boost-gzip-cookie-test\.html\.gz [L,T=text/html]
+
   # GZIP - Cached css & js files
+  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=2]
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}__\.css\.gz -s
-  RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}__\.css\.gz [L,QSA,T=text/css]
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}__\.js\.gz -s
-  RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}__\.js\.gz [L,QSA,T=text/javascript]
+  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}_\.css\.gz -s
+  RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}_\.css\.gz [L,QSA,T=text/css]
+  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}_\.js\.gz -s
+  RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}_\.js\.gz [L,QSA,T=text/javascript]
 
   # NORMAL - Cached css & js files
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}__\.css -s
-  RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}__\.css [L,QSA,T=text/css]
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}__\.js -s
-  RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}__\.js [L,QSA,T=text/javascript]
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}_\.css -s
+  RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}_\.css [L,QSA,T=text/css]
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}_\.js -s
+  RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}_\.js [L,QSA,T=text/javascript]
 
   # Caching for anonymous users
   # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR https request
@@ -46,6 +52,7 @@
   RewriteRule .* - [S=7]
 
   # GZIP
+  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=3]
   RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz -s
@@ -65,4 +72,4 @@
 
   ### BOOST END ###
 
-# $Id: boosted2.txt,v 1.1.2.12 2009/08/13 06:40:04 mikeytown2 Exp $
+# $Id: boosted2.txt,v 1.1.2.13 2009/09/01 00:11:54 mikeytown2 Exp $
