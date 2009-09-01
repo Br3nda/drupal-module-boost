@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.64 2009/08/31 08:59:33 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.65 2009/09/01 23:41:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -542,7 +542,7 @@ function boost_admin_boost_performance_page() {
   $total = boost_crawler_total_count();
   //variable_get
   $number_done = min($total, unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_position'"))));
-  if (variable_get('boost_crawler_number_of_threads', 0) > 0) {
+  if (variable_get('boost_crawler_number_of_threads', 0) > 0 && $number_done > 0) {
     $form['crawler']['live'] = array(
       '#type'          => 'fieldset',
       '#title'         => t('Boost crawler - Live info'),
