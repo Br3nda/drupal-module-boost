@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.34 2009/09/01 00:13:30 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.35 2009/09/01 23:42:49 mikeytown2 Exp $
 
 /**
  * @file
@@ -37,6 +37,7 @@ function boost_disable() {
 function boost_install() {
   // Ensure that the module is loaded early in the bootstrap:
   db_query("UPDATE {system} SET weight = -90 WHERE name = '%s'", 'boost');
+  variable_set('boost_crawler_key', md5(mt_rand()));
   // Create tables.
   drupal_install_schema('boost');
 }
