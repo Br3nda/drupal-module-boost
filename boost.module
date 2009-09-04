@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.129 2009/09/04 06:56:59 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.130 2009/09/04 06:58:28 mikeytown2 Exp $
 
 /**
  * @file
@@ -2226,10 +2226,7 @@ if (!function_exists('file_put_contents')) {
  * The brains of the crawler.
  */
 function boost_crawler_run() {
-  // Set PHP INI Variables, try to prevent crawler from stalling.
   Global $base_url;
-  ini_set('max_execution_time', 600);
-  ini_set('output_buffering', 'off');
   $this_thread = (isset($_GET['thread']) && is_numeric($_GET['thread'])) ? $_GET['thread'] : NULL;
   $total_threads = (isset($_GET['total']) && is_numeric($_GET['total'])) ? $_GET['total'] : NULL;
   $self = BOOST_CRAWLER_SELF;
@@ -2246,6 +2243,9 @@ function boost_crawler_run() {
       exit;
     }
 
+    // Set PHP INI Variables, try to prevent crawler from stalling.
+    ini_set('max_execution_time', 600);
+    ini_set('output_buffering', 'off');
     // Return html so connection closes
     boost_async_opp('async');
 
@@ -2278,6 +2278,8 @@ function boost_crawler_run() {
             watchdog('boost', 'All @num threads started', array('@num' => variable_get('boost_crawler_number_of_threads', $threads)));
           }
           variable_set('boost_crawler_start_time', BOOST_TIME);
+          ini_restore('max_execution_time');
+          ini_restore('output_buffering');
           exit;
         }
 
@@ -2292,6 +2294,8 @@ function boost_crawler_run() {
           if (BOOST_VERBOSE >= 5) {
             watchdog('boost', 'Crawler - Thread %num of %total Stopped.', array('%num' => $this_thread, '%total' => $total_threads));
           }
+          ini_restore('max_execution_time');
+          ini_restore('output_buffering');
           exit;
         }
 
@@ -2417,10 +2421,11 @@ function boost_async_call_crawler($self, $this_thread = NULL, $total_threads = N
   $self .= isset($this_thread) ? '&thread=' . $this_thread : '';
   $self .= isset($total_threads) ? '&total=' . $total_threads : '';
 
-  $timeout = ini_get('default_socket_timeout');
   ini_set('default_socket_timeout', 3);
   @file_get_contents($self);
-  ini_set('default_socket_timeout', $timeout);
+  ini_restore('default_socket_timeout');
+  ini_restore('max_execution_time');
+  ini_restore('output_buffering');
 }
 
 /**
