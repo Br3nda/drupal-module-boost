@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.35 2009/09/01 23:42:49 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.36 2009/09/04 07:38:25 mikeytown2 Exp $
 
 /**
  * @file
@@ -138,7 +138,7 @@ function boost_requirements($phase) {
       elseif ($crawler_response != 200) {
         $requirements['boost_crawler'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('@number returned. Crawler URL (@url) is not available, please <a href="@link">report this issue</a>', array('@number' => $crawler_response, '@url' => BOOST_CRAWLER_SELF, '@link' => 'http://drupal.org/node/add/project-issue/boost')),
+          'description' => $t('@number returned. Crawler URL (@url) is not available, please <a href="@link">report this issue</a>', array('@number' => $crawler_response, '@url' => array_shift(explode('?', BOOST_CRAWLER_SELF)), '@link' => 'http://drupal.org/node/add/project-issue/boost')),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('Boost crawler did not get a 200 response.'),
         );
