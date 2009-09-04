@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.127 2009/09/01 23:40:11 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.128 2009/09/04 06:52:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -1515,7 +1515,7 @@ function boost_has_site_changed() {
   $last_comment_timestamp = boost_get_time('node_comment_statistics', 'last_comment_timestamp');
 
   $max = max($node_revisions, $history, $files, $comments, $node, $last_comment_timestamp);
-  if ($max > BOOST_MAX_TIMESTAMP) {
+  if ($max != BOOST_MAX_TIMESTAMP) {
     variable_set('boost_max_timestamp', $max);
     return TRUE;
   }
