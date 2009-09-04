@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.36 2009/09/04 07:38:25 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.37 2009/09/04 09:11:45 mikeytown2 Exp $
 
 /**
  * @file
@@ -135,7 +135,7 @@ function boost_requirements($phase) {
           'value'       => $t('Boost Crawler Key Not Found.'),
         );
       }
-      elseif ($crawler_response != 200) {
+      elseif ($crawler_response != 200 && !variable_get('site_offline', 0)) {
         $requirements['boost_crawler'] = array(
           'title'       => $t('Boost'),
           'description' => $t('@number returned. Crawler URL (@url) is not available, please <a href="@link">report this issue</a>', array('@number' => $crawler_response, '@url' => array_shift(explode('?', BOOST_CRAWLER_SELF)), '@link' => 'http://drupal.org/node/add/project-issue/boost')),
