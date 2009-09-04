@@ -1,5 +1,5 @@
   ### BOOST START ###
-  <FilesMatch "(\.html\.gz|\.html|\.xml\.gz|\.xml|)$">
+  <FilesMatch "(\.html\.gz|\.html|\.xml\.gz|\.xml)$">
     <IfModule mod_headers.c>
       Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
       Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
@@ -72,4 +72,4 @@
 
   ### BOOST END ###
 
-# $Id: boosted2.txt,v 1.1.2.13 2009/09/01 00:11:54 mikeytown2 Exp $
+# $Id: boosted2.txt,v 1.1.2.14 2009/09/04 06:53:24 mikeytown2 Exp $
