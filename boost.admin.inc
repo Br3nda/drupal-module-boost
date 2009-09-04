@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.65 2009/09/01 23:41:27 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.66 2009/09/04 07:27:58 mikeytown2 Exp $
 
 /**
  * @file
@@ -501,7 +501,7 @@ function boost_admin_boost_performance_page() {
   );
   $form['crawler']['boost_crawl_on_cron'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Preemptive Cache: Crawl URL\'s with the boost block setting to yes'),
+    '#title'         => t('Enable the cron cralwer'),
     '#default_value' => BOOST_CRAWL_ON_CRON,
     '#description'   => t('Touch some select URL\'s so they are cached before anyone accesses them.'),
   );
