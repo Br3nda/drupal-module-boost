@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.38 2009/09/05 09:26:34 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.39 2009/09/05 21:23:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -65,10 +65,12 @@ function boost_requirements($phase) {
       if (BOOST_GZIP) {
         $cache_directories[] = BOOST_GZIP_FILE_PATH;
       }
-      $htaccess = file_get_contents('.htaccess');
+      $htaccess = stristr($_SERVER["SERVER_SOFTWARE"], 'apache') ? file_get_contents('.htaccess') : FALSE;
       $char = BOOST_CHAR;
-      $crawler_response = drupal_http_request(BOOST_CRAWLER_SELF . '&test=1');
-      $crawler_response = $crawler_response->code;
+      if (BOOST_CRAWL_ON_CRON) {
+        $crawler_response = drupal_http_request(BOOST_CRAWLER_SELF . '&test=1');
+        $crawler_response = $crawler_response->code;
+      }
       foreach($cache_directories as $cache_directory) {
         _boost_mkdir_p($cache_directory);
         $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
@@ -135,7 +137,7 @@ function boost_requirements($phase) {
           'value'       => $t('Boost Crawler Key Not Found.'),
         );
       }
-      elseif ($crawler_response != 200 && !variable_get('site_offline', 0)) {
+      elseif (isset($crawler_response) && $crawler_response != 200 && !variable_get('site_offline', 0)) {
         $requirements['boost_crawler'] = array(
           'title'       => $t('Boost'),
           'description' => $t('@number returned. Crawler URL (@url) is not available, please <a href="@link">report this issue</a>', array('@number' => $crawler_response, '@url' => array_shift(explode('?', BOOST_CRAWLER_SELF)), '@link' => 'http://drupal.org/node/add/project-issue/boost')),
