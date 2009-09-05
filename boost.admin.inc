@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.67 2009/09/04 18:51:30 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.68 2009/09/05 09:26:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -523,6 +523,7 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_CRAWLER_BATCH_SIZE,
     '#description'   => t('Number of URL\'s each thread grabs per database operation.'),
   );
+  // TODO use BOOST_MAX_THREADS;
   $form['crawler']['boost_crawler_threads'] = array(
     '#type'          => 'select',
     '#title'         => t('Number Of Threads'),
@@ -541,13 +542,13 @@ function boost_admin_boost_performance_page() {
   );
   $total = boost_crawler_total_count();
   //variable_get
-  $number_done = min($total, unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_position'"))));
-  if (variable_get('boost_crawler_number_of_threads', 0) > 0 && $number_done > 0) {
+  $number_done = min($total, unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_position'")))) + 1;
+  $crawl_rate = round((BOOST_TIME - variable_get('boost_crawler_start_time', BOOST_TIME))/$number_done, 2);
+  if (boost_crawler_threads_alive() && $number_done > 0 && !variable_get('boost_crawler_stopped', FALSE) && round(($total - $number_done)/$crawl_rate) > 0) {
     $form['crawler']['live'] = array(
       '#type'          => 'fieldset',
       '#title'         => t('Boost crawler - Live info'),
     );
-    $crawl_rate = round((BOOST_TIME - variable_get('boost_crawler_start_time', BOOST_TIME))/$number_done, 2);
     $form['crawler']['live']['boost_crawler_rate'] = array(
       '#type'          => 'textfield',
       '#title'         => t('Crawl Rate - Seconds Per Node (highly inaccurate)'),

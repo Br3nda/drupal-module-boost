@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.37 2009/09/04 09:11:45 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.38 2009/09/05 09:26:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -67,7 +67,7 @@ function boost_requirements($phase) {
       }
       $htaccess = file_get_contents('.htaccess');
       $char = BOOST_CHAR;
-      $crawler_response = drupal_http_request(BOOST_CRAWLER_SELF);
+      $crawler_response = drupal_http_request(BOOST_CRAWLER_SELF . '&test=1');
       $crawler_response = $crawler_response->code;
       foreach($cache_directories as $cache_directory) {
         _boost_mkdir_p($cache_directory);
