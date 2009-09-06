@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.39 2009/09/05 21:23:44 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.40 2009/09/06 23:00:48 mikeytown2 Exp $
 
 /**
  * @file
@@ -13,12 +13,18 @@
  * Implementation of hook_enable().
  */
 function boost_enable() {
-  drupal_set_message(t('Boost successfully installed. Please review the available <a href="@config">configuration</a> <a href="@settings">settings</a>.', array('@config' => url('admin/settings/performance'), '@settings' => url('admin/settings/performance/boost'))));
+  drupal_set_message(t('Boost successfully installed. Please review the available <a href="@settings">configuration settings</a>. There are 2 new <a href="@blocks">blocks</a> that you can add to help with the administrative side (<a href="@status">status</a>, <a href="@config">page configuration</a>), and 1 to support core <a href="@stats">stats</a>.', array(
+    '@settings' => url('admin/settings/performance/boost'),
+    '@blocks' => url('admin/build/block'),
+    '@status' => url('admin/build/block/configure/boost/status'),
+    '@config' => url('admin/build/block/configure/boost/config'),
+    '@stats' => url('admin/build/block/configure/boost/stats'),
+  )));
 
   // Forcibly disable Drupal's built-in SQL caching to prevent any conflicts of interest:
   if (variable_get('cache', CACHE_DISABLED) != CACHE_DISABLED) {
     variable_set('cache', CACHE_DISABLED);
-    drupal_set_message(t('Drupal\'s standard page caching disabled by Boost.'));
+    drupal_set_message(t('Drupal\'s <a href="@config">standard page caching</a> disabled by Boost.', array('@config' => url('admin/settings/performance'))), 'warning');
   }
 }
 
@@ -149,7 +155,7 @@ function boost_requirements($phase) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
           'severity'    => REQUIREMENT_OK,
-          'value'       => t('Configured correctly, should be working.'),
+          'value'       => t('Boost Installed correctly, should be working if properly <a href="@settings">configured</a>.', array('@settings' => url('admin/settings/performance/boost'))),
         );
       }
     break;
