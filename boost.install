@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.42 2009/09/07 07:51:19 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.43 2009/09/07 08:02:59 mikeytown2 Exp $
 
 /**
  * @file
@@ -683,5 +683,6 @@ function boost_update_6108() {
 function boost_update_6109() {
   variable_set('boost_json_extension', '.json');
   _boost_change_extension('.js', '.json');
+  drupal_set_message(t('Be sure to update your htaccess rules.'), BOOST_CACHE_JSON ? 'warning' : 'status');
   return array(array('success' => TRUE, 'query' => '.js extension changed to .json.'));
 }

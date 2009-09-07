@@ -1,5 +1,5 @@
   ### BOOST START ###
-  <FilesMatch "(\.html\.gz|\.html|\.xml\.gz|\.xml)$">
+  <FilesMatch "(\.html\.gz|\.html|\.xml\.gz|\.xml|\.json\.gz|\.json)$">
     <IfModule mod_headers.c>
       Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
       Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
@@ -8,6 +8,7 @@
   <IfModule mod_mime.c>
     AddCharset utf-8 .html
     AddCharset utf-8 .xml
+    AddCharset utf-8 .json
     AddCharset utf-8 .css
     AddCharset utf-8 .js
     AddEncoding gzip .gz
@@ -17,6 +18,9 @@
   </FilesMatch>
   <FilesMatch "\.xml\.gz$">
     ForceType text/xml
+  </FilesMatch>
+  <FilesMatch "\.json\.gz$">
+    ForceType text/javascript
   </FilesMatch>
   <FilesMatch "\.css\.gz$">
     ForceType text/css
@@ -59,17 +63,17 @@
   RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz [L,T=text/html]
   RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.xml\.gz -s
   RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.xml\.gz [L,T=text/xml]
-  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.js\.gz -s
-  RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.js\.gz [L,T=text/javascript]
+  RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.json\.gz -s
+  RewriteRule .* cache/gz/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.json\.gz [L,T=text/javascript]
 
   # NORMAL
   RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.html -s
   RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.html [L,T=text/html]
   RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.xml -s
   RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.xml [L,T=text/xml]
-  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.js -s
-  RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.js [L,T=text/javascript]
+  RewriteCond %{DOCUMENT_ROOT}/cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.json -s
+  RewriteRule .* cache/%{HTTP_HOST}%{REQUEST_URI}_%{QUERY_STRING}\.json [L,T=text/javascript]
 
   ### BOOST END ###
 
-# $Id: boosted2.txt,v 1.1.2.14 2009/09/04 06:53:24 mikeytown2 Exp $
+# $Id: boosted2.txt,v 1.1.2.15 2009/09/07 08:02:59 mikeytown2 Exp $
