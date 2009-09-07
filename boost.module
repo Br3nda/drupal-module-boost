@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.134 2009/09/06 08:02:42 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.135 2009/09/07 07:51:19 mikeytown2 Exp $
 
 /**
  * @file
@@ -26,7 +26,7 @@ define('BOOST_PERM_GZIP_FILE_PATH',  implode('/', array_filter(explode('/', str_
 define('BOOST_PERM_FILE_PATH',       implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_NORMAL_DIR . '/', BOOST_FILE_PATH)))));
 define('BOOST_FILE_EXTENSION',       variable_get('boost_file_extension', '.html'));
 define('BOOST_XML_EXTENSION',        variable_get('boost_xml_extension', '.xml'));
-define('BOOST_JSON_EXTENSION',       variable_get('boost_json_extension', '.js'));
+define('BOOST_JSON_EXTENSION',       variable_get('boost_json_extension', '.json'));
 define('BOOST_CSS_EXTENSION',        variable_get('boost_css_extension', '.css'));
 define('BOOST_JS_EXTENSION',         variable_get('boost_js_extension', '.js'));
 define('BOOST_GZIP_EXTENSION',       variable_get('boost_gzip_extension', '.gz'));
@@ -1852,6 +1852,38 @@ function boost_glue_url($parsed) {
 
 //////////////////////////////////////////////////////////////////////////////
 // Boost API internals
+
+/**
+ * Change a file extension in the database.
+ *
+ * @param $old
+ *   string of the old extension: .js
+ * @param $new
+ *   string of the new extension: .json
+ */
+function _boost_change_extension($old, $new) {
+  // make sure we are in the webroot
+  chdir(dirname($_SERVER['SCRIPT_FILENAME']));
+
+  $result = db_query("SELECT filename FROM {boost_cache} WHERE extension = '%s'", $old);
+  while ($filename = db_result($result)) {
+    // change extension
+    $new_filename = dirname($filename) . '/' . array_shift(explode('.', basename($filename))) . $new;
+    // update database
+    db_query("UPDATE {boost_cache} SET filename = '%s', extension = '%s' WHERE filename = '%s'", $new_filename, $new, $filename);
+
+    // update files, normal & gzip
+    if (file_exists($filename)) {
+      rename($filename, $new_filename);
+    }
+    $gz_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename) . BOOST_GZIP_EXTENSION;
+    $gz_new_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $new_filename) . BOOST_GZIP_EXTENSION;
+    if (file_exists($gz_filename)) {
+      rename($gz_filename, $gz_new_filename);
+    }
+  }
+}
+
 /**
  * Extract css filenames from html and copy them & their children.
  *
