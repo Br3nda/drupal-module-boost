@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.40 2009/09/06 23:00:48 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.41 2009/09/07 07:50:36 mikeytown2 Exp $
 
 /**
  * @file
@@ -151,6 +151,14 @@ function boost_requirements($phase) {
           'value'       => $t('Boost crawler did not get a 200 response.'),
         );
       }
+      if (!BOOST_ENABLED) {
+          $requirements['boost_is_enabled'] = array(
+            'title'       => $t('Boost'),
+            'description' => $t('Boost is disabled. <a href="@performance">Enable</a> it.', array('@performance' => url('admin/settings/performance'))),
+            'severity'    => REQUIREMENT_WARNING,
+            'value'       => $t('Boost Disabled'),
+          );
+        }
       if (empty($requirements)) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
