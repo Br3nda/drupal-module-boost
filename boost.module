@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.135 2009/09/07 07:51:19 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.136 2009/09/09 08:04:57 mikeytown2 Exp $
 
 /**
  * @file
@@ -1755,7 +1755,9 @@ function boost_cache_css_js_files($buffer) {
     array_shift($css_files);
     foreach ($css_files as $key => $value) {
       // Extract css filename
-      $css_files[$key] = array_shift(explode('"', array_shift(explode('?', array_pop(explode(base_path(), array_pop(explode('//', array_pop(explode('href="', array_shift(explode('" />', $value))))))))))));
+      $temp = explode(base_path(), array_pop(explode('//', array_pop(explode('href="', array_shift(explode('" />', $value)))))));
+      array_shift($temp);
+      $css_files[$key] = array_shift(explode('"', array_shift(explode('?', implode('/', $temp)))));
     }
     _boost_copy_css_files($css_files);
   }
@@ -1764,7 +1766,9 @@ function boost_cache_css_js_files($buffer) {
     array_shift($js_files);
     foreach ($js_files as $key => $value) {
       // Extract javascript src filename; kill scripts with no src tag
-      $js_files[$key] = array_shift(explode('type=', array_shift(explode('"', array_shift(explode('?', array_pop(explode(base_path(), array_pop(explode('//', array_pop(explode('src="', array_shift(explode('">', $value))))))))))))));
+      $temp = explode(base_path(), array_pop(explode('//', array_pop(explode('src="', array_shift(explode('">', $value)))))));
+      array_shift($temp);
+      $js_files[$key] = array_shift(explode('type=', array_shift(explode('"', array_shift(explode('?', implode('/', $temp)))))));
     }
     _boost_copy_js_files(array_filter($js_files));
   }
@@ -1868,7 +1872,7 @@ function _boost_change_extension($old, $new) {
   $result = db_query("SELECT filename FROM {boost_cache} WHERE extension = '%s'", $old);
   while ($filename = db_result($result)) {
     // change extension
-    $new_filename = dirname($filename) . '/' . array_shift(explode('.', basename($filename))) . $new;
+    $new_filename = _boost_kill_file_extension($filename) . $new;
     // update database
     db_query("UPDATE {boost_cache} SET filename = '%s', extension = '%s' WHERE filename = '%s'", $new_filename, $new, $filename);
 
@@ -1885,6 +1889,21 @@ function _boost_change_extension($old, $new) {
 }
 
 /**
+ * Removes file extension from filename.
+ *
+ * @param $filename
+ *   filename
+ */
+function _boost_kill_file_extension($filename) {
+  if (count(explode('/', $filename)) > 1 ) {
+    return dirname($filename) . '/' . array_shift(explode('.', basename($filename)));
+  }
+  else {
+    return array_shift(explode('.', basename($filename)));
+  }
+}
+
+/**
  * Extract css filenames from html and copy them & their children.
  *
  * @param $css_files
@@ -1894,7 +1913,7 @@ function _boost_copy_css_files($css_files) {
   //copy files
   foreach ($css_files as $css_file) {
     // Strip extenstion from filename
-    $css_file = dirname($css_file) . '/' . array_shift(explode('.', basename($css_file)));
+    $css_file = _boost_kill_file_extension($css_file);
 
     if (file_exists($css_file . '.css')) {
       $src = $css_file . '.css';
@@ -1924,7 +1943,7 @@ function _boost_copy_js_files($js_files) {
   //copy files
   foreach ($js_files as $js_file) {
     // Strip extenstion from filename
-    $js_file = dirname($js_file) . '/' . array_shift(explode('.', basename($js_file)));
+    $js_file = _boost_kill_file_extension($js_file);
 
     if (file_exists($js_file . '.js')) {
       $src = $js_file . '.js';
