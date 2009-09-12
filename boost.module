@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.138 2009/09/12 05:58:25 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.139 2009/09/12 06:00:42 mikeytown2 Exp $
 
 /**
  * @file
@@ -97,7 +97,6 @@ define('BOOST_USER_ID',              @$GLOBALS['user']->uid);
 //$GLOBALS['_boost_cache_this'] = '';
 //$GLOBALS['_boost_max_execution_time'] = '';
 //$GLOBALS['_boost_output_buffering'] = '';
-//$GLOBALS['_boost_default_socket_timeout'] = '';
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -2559,11 +2558,8 @@ function boost_async_opp($output) {
 function boost_async_call_crawler($self, $this_thread = NULL, $total_threads = NULL) {
   $self .= isset($this_thread) ? '&thread=' . $this_thread : '';
   $self .= isset($total_threads) ? '&total=' . $total_threads : '';
-  $GLOBALS['_boost_default_socket_timeout'] = ini_get('default_socket_timeout');
 
-  ini_set('default_socket_timeout', 3);
-  @file_get_contents($self);
-  ini_set('default_socket_timeout', $GLOBALS['_boost_default_socket_timeout']);
+  boost_drupal_http_request($self);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   ini_set('output_buffering', $GLOBALS['_boost_output_buffering']);
 }
@@ -2697,4 +2693,128 @@ function boost_crawler_threads_alive() {
  */
 function boost_average_time() {
   return variable_get('boost_crawler_average_generation', 5);
+}
+
+/**
+ * Perform an HTTP request.
+ *
+ * @see drupal_http_request()
+ *
+ * @param $url
+ *   A string containing a fully qualified URI.
+ * @param $timeout
+ *   How many seconds before giving up on request.
+ */
+function boost_drupal_http_request($url, $timeout = 3) {
+  global $db_prefix;
+  $headers = array();
+  $method = 'GET';
+  $data = NULL;
+
+  $result = new stdClass();
+
+  // Parse the URL and make sure we can handle the schema.
+  $uri = parse_url($url);
+
+  if ($uri == FALSE) {
+    $result->error = 'unable to parse URL';
+    return $result;
+  }
+
+  if (!isset($uri['scheme'])) {
+    $result->error = 'missing schema';
+    return $result;
+  }
+
+  switch ($uri['scheme']) {
+    case 'http':
+      $port = isset($uri['port']) ? $uri['port'] : 80;
+      $host = $uri['host'] . ($port != 80 ? ':'. $port : '');
+      $fp = @fsockopen($uri['host'], $port, $errno, $errstr, $timeout);
+      break;
+    case 'https':
+      // Note: Only works for PHP 4.3 compiled with OpenSSL.
+      $port = isset($uri['port']) ? $uri['port'] : 443;
+      $host = $uri['host'] . ($port != 443 ? ':'. $port : '');
+      $fp = @fsockopen('ssl://'. $uri['host'], $port, $errno, $errstr, $timeout);
+      break;
+    default:
+      $result->error = 'invalid schema '. $uri['scheme'];
+      return $result;
+  }
+
+  // Make sure the socket opened properly.
+  if (!$fp) {
+    // When a network error occurs, we use a negative number so it does not
+    // clash with the HTTP status codes.
+    $result->code = -$errno;
+    $result->error = trim($errstr);
+
+    // Mark that this request failed. This will trigger a check of the web
+    // server's ability to make outgoing HTTP requests the next time that
+    // requirements checking is performed.
+    // @see system_requirements()
+    variable_set('drupal_http_request_fails', TRUE);
+
+    return $result;
+  }
+
+  // Construct the path to act on.
+  $path = isset($uri['path']) ? $uri['path'] : '/';
+  if (isset($uri['query'])) {
+    $path .= '?'. $uri['query'];
+  }
+
+  // Create HTTP request.
+  $defaults = array(
+    // RFC 2616: "non-standard ports MUST, default ports MAY be included".
+    // We don't add the port to prevent from breaking rewrite rules checking the
+    // host that do not take into account the port number.
+    'Host' => "Host: $host",
+    'User-Agent' => 'User-Agent: Drupal (+http://drupal.org/)',
+  );
+
+  // Only add Content-Length if we actually have any content or if it is a POST
+  // or PUT request. Some non-standard servers get confused by Content-Length in
+  // at least HEAD/GET requests, and Squid always requires Content-Length in
+  // POST/PUT requests.
+  $content_length = strlen($data);
+  if ($content_length > 0 || $method == 'POST' || $method == 'PUT') {
+    $defaults['Content-Length'] = 'Content-Length: '. $content_length;
+  }
+
+  // If the server url has a user then attempt to use basic authentication
+  if (isset($uri['user'])) {
+    $defaults['Authorization'] = 'Authorization: Basic '. base64_encode($uri['user'] . (!empty($uri['pass']) ? ":". $uri['pass'] : ''));
+  }
+
+  // If the database prefix is being used by SimpleTest to run the tests in a copied
+  // database then set the user-agent header to the database prefix so that any
+  // calls to other Drupal pages will run the SimpleTest prefixed database. The
+  // user-agent is used to ensure that multiple testing sessions running at the
+  // same time won't interfere with each other as they would if the database
+  // prefix were stored statically in a file or database variable.
+  if (is_string($db_prefix) && preg_match("/^simpletest\d+$/", $db_prefix, $matches)) {
+    $defaults['User-Agent'] = 'User-Agent: ' . $matches[0];
+  }
+
+  foreach ($headers as $header => $value) {
+    $defaults[$header] = $header .': '. $value;
+  }
+
+  $request = $method .' '. $path ." HTTP/1.0\r\n";
+  $request .= implode("\r\n", $defaults);
+  $request .= "\r\n\r\n";
+  $request .= $data;
+
+  $result->request = $request;
+
+  fwrite($fp, $request);
+
+  // Fetch response.
+  $response = '';
+  while (!feof($fp) && $chunk = fread($fp, 1024)) {
+    $response .= $chunk;
+  }
+  fclose($fp);
 }
