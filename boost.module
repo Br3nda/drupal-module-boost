@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.137 2009/09/09 08:09:29 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.138 2009/09/12 05:58:25 mikeytown2 Exp $
 
 /**
  * @file
@@ -1915,7 +1915,7 @@ function _boost_kill_file_extension($filename) {
 function _boost_copy_css_files($css_files) {
   //copy files
   foreach ($css_files as $css_file) {
-    // Strip extenstion from filename
+    // Strip extension from filename
     $css_file = _boost_kill_file_extension($css_file);
 
     if (file_exists($css_file . '.css')) {
@@ -1945,7 +1945,7 @@ function _boost_copy_css_files($css_files) {
 function _boost_copy_js_files($js_files) {
   //copy files
   foreach ($js_files as $js_file) {
-    // Strip extenstion from filename
+    // Strip extension from filename
     $js_file = _boost_kill_file_extension($js_file);
 
     if (file_exists($js_file . '.js')) {
@@ -2284,6 +2284,24 @@ function boost_crawler_run() {
       exit;
     }
 
+    // Stop button code
+    if (_boost_variable_get('boost_crawler_stopped')) {
+      // Wait 0 to 0.1 seconds before grabbing number of threads.
+      usleep(mt_rand(0, 100000));
+      db_lock_table('variable');
+      $threads = _boost_variable_get('boost_crawler_number_of_threads');
+      _boost_variable_set('boost_crawler_number_of_threads', (int)$threads-1);
+      // Clock out
+      _boost_variable_set('boost_crawler_thread_num_' . $this_thread , 0);
+      db_unlock_tables();
+      if (BOOST_VERBOSE >= 5) {
+        watchdog('boost', 'Crawler - Thread %num stopped.', array('%num' => $this_thread));
+      }
+      ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
+      ini_set('output_buffering', $GLOBALS['_boost_output_buffering']);
+      exit;
+    }
+
     // Try to prevent crawler from stalling.
     ini_set('max_execution_time', 600);
     // Return html so connection closes
@@ -2291,20 +2309,23 @@ function boost_crawler_run() {
     // Turn off output buffer.
     ini_set('output_buffering', 'off');
 
-    // Wait 10 seconds if first run and try again (let cron finish).
-    if (variable_get('cron_semaphore', FALSE) == TRUE) {
+    // Fetch the cron semaphore
+    $semaphore = variable_get('cron_semaphore', FALSE);
+    // Wait 15 seconds if cron still running and try again (let cron finish); if longer then 5 minutes stop stalling and start crawling.
+    if ($semaphore == TRUE && BOOST_TIME - $semaphore < 300) {
       if (_boost_variable_get('boost_crawler_sleeping')) {
+        // Kill this thread; multiple crawlers sleeping.
         ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
         ini_set('output_buffering', $GLOBALS['_boost_output_buffering']);
         exit;
       }
       _boost_variable_set('boost_crawler_sleeping', TRUE);
       if (BOOST_VERBOSE >= 5) {
-        watchdog('boost', 'Crawler Sleep for 10 seconds');
+        watchdog('boost', 'Crawler Sleep for 15 seconds');
       }
-      sleep(10);
+      sleep(15);
       _boost_variable_set('boost_crawler_sleeping', FALSE);
-      boost_async_call_crawler($self);
+      boost_async_call_crawler($self, 1, NULL);
       exit;
     }
 
@@ -2327,31 +2348,13 @@ function boost_crawler_run() {
       }
       variable_set('boost_crawler_stopped', FALSE);
       _boost_variable_set('boost_crawler_sleeping', FALSE);
-      boost_async_call_crawler($self);
+      boost_async_call_crawler($self, 1, NULL);
       exit;
     }
 
     // Add URL's to crawler table, call self and exit
     if (!boost_crawler_seed_tables()) {
-      boost_async_call_crawler($self, $this_thread, $total_threads);
-      exit;
-    }
-
-    // Stop button code
-    if (_boost_variable_get('boost_crawler_stopped')) {
-      // Wait 0 to 0.1 seconds before grabbing number of threads.
-      usleep(mt_rand(0, 100000));
-      db_lock_table('variable');
-      $threads = _boost_variable_get('boost_crawler_number_of_threads');
-      _boost_variable_set('boost_crawler_number_of_threads', (int)$threads-1);
-      // Clock out
-      _boost_variable_set('boost_crawler_thread_num_' . $this_thread , 0);
-      db_unlock_tables();
-      if (BOOST_VERBOSE >= 5) {
-        watchdog('boost', 'Crawler - Thread %num stopped.', array('%num' => $this_thread));
-      }
-      ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
-      ini_set('output_buffering', $GLOBALS['_boost_output_buffering']);
+      boost_async_call_crawler($self, $this_thread, _boost_variable_get('boost_crawler_number_of_threads'));
       exit;
     }
 
@@ -2364,21 +2367,26 @@ function boost_crawler_run() {
     }
 
     // Start the clock on first run
-    if (!isset($this_thread)) {
-     variable_set('boost_crawler_start_time', BOOST_TIME);
+    if (!_boost_variable_get('boost_crawler_start_time')) {
+     _boost_variable_set('boost_crawler_start_time', BOOST_TIME);
      _boost_variable_set('boost_crawler_number_of_threads', (int)$threads);
+      // Clock in
+      _boost_variable_set('boost_crawler_thread_num_' . $this_thread , BOOST_TIME);
+      if (BOOST_VERBOSE >= 5) {
+          watchdog('boost', 'Crawler - Thread @num of @total started', array('@num' => 1, '@total' => $threads));
+      }
     }
 
     // Spin up threads on demand
-    while ($threads > 0 && (!isset($this_thread) || $this_thread == 1)) {
+    while ($threads > 0 && $this_thread == 1) {
       db_lock_table('variable');
       $thread_time = _boost_variable_get('boost_crawler_thread_num_' . $threads);
       if (!$thread_time || $thread_time + BOOST_MAX_THREAD_TIME < BOOST_TIME) {
         _boost_variable_set('boost_crawler_thread_num_' . $threads, BOOST_TIME);
         db_unlock_tables();
-        boost_async_call_crawler($self, $threads, _boost_variable_get('boost_crawler_number_of_threads', $threads));
+        boost_async_call_crawler($self, $threads, _boost_variable_get('boost_crawler_number_of_threads'));
         if (BOOST_VERBOSE >= 5) {
-            watchdog('boost', 'Crawler - Thread @num started', array('@num' => $threads));
+            watchdog('boost', 'Crawler - Thread @num of @total started', array('@num' => $threads, '@total' => _boost_variable_get('boost_crawler_number_of_threads')));
         }
         set_time_limit(0);
       }
@@ -2387,7 +2395,8 @@ function boost_crawler_run() {
     }
 
     // Make sure this thread is supposed to be running.
-    if (!isset($this_thread) || $this_thread > _boost_variable_get('boost_crawler_number_of_threads')) {
+    $thread = _boost_variable_get('boost_crawler_number_of_threads');
+    if ($thread >= 1 && $this_thread > $thread) {
       // Clock out
       if (isset($this_thread)) {
         _boost_variable_set('boost_crawler_thread_num_' . $this_thread , 0);
@@ -2398,6 +2407,18 @@ function boost_crawler_run() {
 //       elseif (BOOST_VERBOSE >= 5) {
 //         watchdog('boost', 'Crawler - Extra Thread Killed.');
 //       }
+      if (   !boost_crawler_threads_alive()
+          && _boost_variable_get('boost_crawler_number_of_tries') < 3
+          && boost_crawler_verify()
+          ) {
+        variable_set('boost_crawler_number_of_tries', (int)_boost_variable_get('boost_crawler_number_of_tries') + 1);
+        _boost_variable_set('boost_crawler_number_of_threads', 1);
+        if (BOOST_VERBOSE >= 5) {
+          watchdog('boost', 'Crawler - Restarting with 1 thread, to try & get the stubborn urls cached.');
+        }
+        boost_async_call_crawler($self, 1, 1);
+        exit;
+      }
       ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
       ini_set('output_buffering', $GLOBALS['_boost_output_buffering']);
       exit;
@@ -2429,10 +2450,11 @@ function boost_crawler_run() {
         watchdog('boost', 'Crawler - Thread %num of %total Done.', array('%num' => $this_thread, '%total' => $total_threads));
       }
       // Re init crawler if it missed some, try 5 times
-      if (   _boost_variable_get('boost_crawler_number_of_threads') == 0
-          && _boost_variable_get('boost_crawler_number_of_tries') < 5
+      if (   !boost_crawler_threads_alive()
+          && _boost_variable_get('boost_crawler_number_of_tries') < 3
           && boost_crawler_verify()
           ) {
+        variable_set('boost_crawler_number_of_tries', (int)_boost_variable_get('boost_crawler_number_of_tries') + 1);
         _boost_variable_set('boost_crawler_number_of_threads', 1);
         if (BOOST_VERBOSE >= 5) {
           watchdog('boost', 'Crawler - Restarting with 1 thread, to try & get the stubborn urls cached.');
@@ -2457,7 +2479,7 @@ function boost_crawler_run() {
       set_time_limit(0);
     }
     // Crawler for this round done, call self and exit
-    boost_async_call_crawler($self, $this_thread, $total_threads);
+    boost_async_call_crawler($self, $this_thread, _boost_variable_get('boost_crawler_number_of_threads'));
     exit;
   }
 
@@ -2488,12 +2510,13 @@ function boost_crawler_run() {
     variable_set('boost_crawler_number_of_threads', 0);
     variable_set('boost_crawler_sleeping', FALSE);
     variable_set('boost_crawler_average_generation', max(1, db_result(db_query("SELECT AVG(timer_average) FROM {boost_cache}"))));
+    variable_set('boost_crawler_start_time', FALSE);
     $threads = BOOST_MAX_THREADS;
     while ($threads > 0) {
       variable_set('boost_crawler_thread_num_' . $threads, 0);
       $threads--;
     }
-    boost_async_call_crawler($self);
+    boost_async_call_crawler($self, 1, NULL);
     return TRUE;
   }
 }
