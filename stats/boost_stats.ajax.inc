@@ -1,5 +1,5 @@
 <?php
-// $Id: boost_stats.ajax.inc,v 1.1.2.3 2009/08/13 06:48:14 mikeytown2 Exp $
+// $Id: boost_stats.ajax.inc,v 1.1.2.4 2009/09/12 23:03:58 mikeytown2 Exp $
 
 /**
  * AJAX Menu Callback.
@@ -128,7 +128,9 @@ function boost_stats_output_stats_block() {
 function boost_stats_async_image() {
   // Script should take under 1MB of memory to work.
   // Prime php for background operations
-  ob_end_clean();
+  while (ob_get_level()) {
+    ob_end_clean();
+  }
   header("Connection: close");
   ignore_user_abort();
 
