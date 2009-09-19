@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.143 2009/09/19 02:11:57 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.144 2009/09/19 02:16:32 mikeytown2 Exp $
 
 /**
  * @file
@@ -255,8 +255,6 @@ function boost_form_alter(&$form, $form_state, $form_id) {
     case 'system_performance_settings':
       module_load_include('inc', 'boost', 'boost.admin');
       $form['page_cache'] = boost_admin_performance_page($form['page_cache']);
-      $form['page_cache']['#title'] = t('Anonymous page caching');
-      $form['page_cache']['#description'] = t('Enabling the page cache will offer a significant performance boost. Drupal can store and send compressed cached pages requested by <em>anonymous</em> users. By caching the first request to the page, Drupal does not have to construct the page each time it is viewed. The page must first be visited by an anonymous user in order for the cache to work on subsequent requests for that page. Boost & Core caching do not work for logged in users.');
       $form['#submit'][] = 'boost_admin_performance_page_submit';
       $form['clear_cache']['clear']['#submit'][0] = 'boost_admin_clear_cache_submit';
       break;

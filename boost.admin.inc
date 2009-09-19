@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.70 2009/09/19 02:05:40 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.71 2009/09/19 02:16:32 mikeytown2 Exp $
 
 /**
  * @file
@@ -16,122 +16,10 @@
  *   in boost.module
  */
 function boost_admin_performance_page($form = array()) {
-  // Clear old settings
-  unset($form['cache']);
-  unset($form['cache_lifetime']);
-
-  // Set text
-  $description_core = '<p>'. t("The normal cache mode is suitable for most sites and does not cause any side effects. The aggressive cache mode causes Drupal to skip the loading (boot) and unloading (exit) of enabled modules when serving a cached page. This results in an additional performance boost but can cause unwanted side effects.") .'</p>';
-  $problem_modules = array_unique(array_merge(module_implements('boot'), module_implements('exit')));
-  sort($problem_modules);
-  if (count($problem_modules) > 0) {
-    $description_core .= '<p>'. t('<strong class="error">The following enabled modules are incompatible with aggressive mode caching and will probably not function properly: %modules</strong>', array('%modules' => implode(', ', $problem_modules))) .'.</p>';
-  }
-  else {
-    $description_core .= '<p>'. t('<strong class="ok">Currently, all enabled modules are compatible with the aggressive caching policy.</strong> Please note, if you use aggressive caching and enable new modules, you will need to check this page again to ensure compatibility.') .'</p>';
-  }
-  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800, 52*604800), 'format_interval');
-  $period[0] = '<' . t('none') . '>';
-
-  // Take over the relevant existing settings
+  $form['#title'] = t('Anonymous page caching');
   $form['page_compression']['#title'] = t('Gzip page compression (Boost & Core)');
-
-  $form['boost'] = array(
-    '#type'          => 'fieldset',
-    '#title'         => t('Boost File Cache'),
-  );
-  // Inject Boost-specific settings
-  $form['boost']['boost_enabled'] = array(
-    '#type'          => 'radios',
-    '#title'         => t('Boost - Static page cache'),
-    '#default_value' => variable_get('boost_enabled', CACHE_DISABLED),
-    '#options'       => array(
-      CACHE_DISABLED => t('Disabled'),
-      CACHE_NORMAL => t('Enabled'),
-      CACHE_AGGRESSIVE => t('(Not Recommended) Set Boost & Core (if enabled) cache for each page'),
-    ),
-    '#description'   => t('Static page caching is a mechanism that stores dynamically generated web pages as HTML files in a special cache directory located under the Drupal installation directory. By caching a web page in this manner, the web server can serve it out in the fastest possible manner, without invoking PHP or Drupal at all. While this does provide a significant performance and scalability boost, you should note that it could have negative usability side-effects unless your site is targeted at an audience consisting mostly of "anonymous" visitors.'),
-  );
-  $form['boost']['boost_cache_lifetime'] = array(
-    '#type' => 'select',
-    '#title' => t('Boost - HTML - Default minimum cache lifetime'),
-    '#default_value' => BOOST_CACHE_LIFETIME,
-    '#options' => $period,
-    '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
-    '#disabled' => !BOOST_CACHE_HTML,
-  );
-  $form['boost']['boost_push_html'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Preemptive Cache HTML'),
-    '#default_value' => BOOST_PUSH_HTML,
-    '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
-    '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_CACHE_HTML,
-  );
-  $form['boost']['boost_cache_xml_lifetime'] = array(
-    '#type' => 'select',
-    '#title' => t('Boost - XML - Default minimum cache lifetime'),
-    '#default_value' => BOOST_CACHE_XML_LIFETIME,
-    '#options' => $period,
-    '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
-    '#disabled' => !BOOST_CACHE_XML,
-  );
-  $form['boost']['boost_push_xml'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Preemptive Cache XML'),
-    '#default_value' => BOOST_PUSH_XML,
-    '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
-    '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_CACHE_XML,
-  );
-  $form['boost']['boost_cache_json_lifetime'] = array(
-    '#type' => 'select',
-    '#title' => t('Boost - JSON - Default minimum cache lifetime'),
-    '#default_value' => BOOST_CACHE_JSON_LIFETIME,
-    '#options' => $period,
-    '#description' => t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
-    '#disabled' => !BOOST_CACHE_JSON,
-  );
-  $form['boost']['boost_push_json'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Preemptive Cache AJAX/JSON'),
-    '#default_value' => BOOST_PUSH_JSON,
-    '#description' => t('Crawl Site after cron runs, so the cache is primed.'),
-    '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_CACHE_JSON,
-  );
-  $form['boost']['boost_clear'] = array(
-    '#type' => 'submit',
-    '#value' => t('Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(0))),
-    '#submit' => array('boost_clear_cache_submit'),
-  );
-  $form['boost']['boost_clear_expired'] = array(
-    '#type' => 'submit',
-    '#value' => t('Clear Boost expired data: !count pages', array('!count' => boost_count_db(1))),
-    '#submit' => array('boost_clear_expired_cache_submit'),
-  );
-
-  // Alter core page cache settings.
-  $form['core'] = array(
-    '#type'          => 'fieldset',
-    '#title'         => t('Core Database Cache'),
-  );
-  $form['core']['cache'] = array(
-    '#type'           => 'radios',
-    '#title'          => t('Core - Database page cache'),
-    '#default_value'  => variable_get('cache', CACHE_DISABLED),
-    '#options'        =>  array(
-      CACHE_DISABLED => t('Disabled'),
-      CACHE_NORMAL => t('Normal (recommended for production sites, no side effects)'),
-      CACHE_AGGRESSIVE => t('Aggressive (experts only, possible side effects)'),
-    ),
-    '#description'    => t("If boost can not or will not cache the page, then the database will try to cache it. If boost can cache the page then it will not appear in the database cache. This is the standard Drupal cache.") . $description_core,
-  );
-  $form['core']['cache_lifetime'] = array(
-    '#type' => 'select',
-    '#title' => t('Core - Default minimum cache lifetime'),
-    '#default_value' => variable_get('cache_lifetime', 0),
-    '#options' => $period,
-    '#description' => t('On high-traffic sites, it may be necessary to enforce a minimum cache lifetime. The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied and recreated, and is applied to both page and block caches. A larger minimum cache lifetime offers better performance, but users will not see new content for a longer period of time.')
-  );
-  $form['core']['boost_core_clear'] = array(
+  $form['#description'] .= ' ' . t('The page must first be visited by an anonymous user in order for the cache to work on subsequent requests for that page. Boost & Core caching do not work for logged in users.');
+  $form['boost_core_clear'] = array(
     '#type' => 'submit',
     '#value' => t('Clear core page cached data: !count pages', array('!count' => boost_count_core_db())),
     '#submit' => array('boost_clear_core_page_cache_submit'),
@@ -185,6 +73,66 @@ function boost_admin_clear_cache_submit($form, &$form_state) {
  */
 function boost_admin_boost_performance_page() {
   Global $base_path;
+
+  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800, 52*604800), 'format_interval');
+  $period[0] = '<' . t('none') . '>';
+
+  $form['boost'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Boost File Cache'),
+  );
+  $form['boost']['boost_enabled'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Boost - Static page cache'),
+    '#default_value' => variable_get('boost_enabled', CACHE_DISABLED),
+    '#options'       => array(
+      CACHE_DISABLED => t('Disabled'),
+      CACHE_NORMAL => t('Enabled'),
+      CACHE_AGGRESSIVE => t('(Not Recommended) Set Boost & Core (if enabled) cache for each page'),
+    ),
+    '#description'   => t('Static page caching is a mechanism that stores dynamically generated web pages as HTML files in a special cache directory located under the Drupal installation directory. By caching a web page in this manner, the web server can serve it out in the fastest possible manner, without invoking PHP or Drupal at all. While this does provide a significant performance and scalability boost, you should note that it could have negative usability side-effects unless your site is targeted at an audience consisting mostly of "anonymous" visitors.'),
+  );
+  $form['boost']['page_compression'] = array(
+    '#type' => 'radios',
+    '#title' => t('Gzip page compression (Boost & Core)'),
+    '#default_value' => variable_get('page_compression', TRUE),
+    '#options' => array(t('Disabled'), t('Enabled')),
+    '#description' => t("By default, Drupal compresses the pages it caches in order to save bandwidth and improve download times. This option should be disabled when using a webserver that performs compression."),
+  );
+  $form['boost']['boost_cache_lifetime'] = array(
+    '#type' => 'select',
+    '#title' => t('Boost - HTML - Default minimum cache lifetime'),
+    '#default_value' => BOOST_CACHE_LIFETIME,
+    '#options' => $period,
+    '#description' => !BOOST_CACHE_HTML ? t('Enable the caching of this content type to enable this selection box.') : t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    '#disabled' => !BOOST_CACHE_HTML,
+  );
+  $form['boost']['boost_cache_xml_lifetime'] = array(
+    '#type' => 'select',
+    '#title' => t('Boost - XML - Default minimum cache lifetime'),
+    '#default_value' => BOOST_CACHE_XML_LIFETIME,
+    '#options' => $period,
+    '#description' => !BOOST_CACHE_XML ? t('Enable the caching of this content type to enable this selection box.') : t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    '#disabled' => !BOOST_CACHE_XML,
+  );
+  $form['boost']['boost_cache_json_lifetime'] = array(
+    '#type' => 'select',
+    '#title' => t('Boost - JSON - Default minimum cache lifetime'),
+    '#default_value' => BOOST_CACHE_JSON_LIFETIME,
+    '#options' => $period,
+    '#description' => !BOOST_CACHE_JSON ? t('Enable the caching of this content type to enable this selection box.') : t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    '#disabled' => !BOOST_CACHE_JSON,
+  );
+  $form['boost']['boost_clear'] = array(
+    '#type' => 'submit',
+    '#value' => t('Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(0))),
+    '#submit' => array('boost_clear_cache_submit'),
+  );
+  $form['boost']['boost_clear_expired'] = array(
+    '#type' => 'submit',
+    '#value' => t('Clear Boost expired data: !count pages', array('!count' => boost_count_db(1))),
+    '#submit' => array('boost_clear_expired_cache_submit'),
+  );
 
   // Cacheability settings
   $options = array(t('Cache every page except the listed pages.'), t('Cache only the listed pages.'));
@@ -524,11 +472,33 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_CRAWL_ON_CRON,
     '#description'   => t('Pre-cache boosted URL\'s so they get cached before anyone accesses them.'),
   );
+  $form['crawler']['boost_push_html'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Preemptive Cache HTML'),
+    '#default_value' => BOOST_PUSH_HTML,
+    '#description' => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') : !BOOST_CACHE_HTML ? t('Enable the caching of this content type to enable this checkbox') : t('Crawl Site after cron runs, so the cache is primed.'),
+    '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_CACHE_HTML,
+  );
+  $form['crawler']['boost_push_xml'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Preemptive Cache XML'),
+    '#default_value' => BOOST_PUSH_XML,
+    '#description' => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') : !BOOST_CACHE_XML ? t('Enable the caching of this content type to enable this checkbox') : t('Crawl Site after cron runs, so the cache is primed.'),
+    '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_CACHE_XML,
+  );
+  $form['crawler']['boost_push_json'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Preemptive Cache AJAX/JSON'),
+    '#default_value' => BOOST_PUSH_JSON,
+    '#description' => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') : !BOOST_CACHE_JSON ? t('Enable the caching of this content type to enable this checkbox') : t('Crawl Site after cron runs, so the cache is primed.'),
+    '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_CACHE_JSON,
+  );
   $form['crawler']['boost_crawl_url_alias'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Crawl All URL\'s in the url_alias table'),
     '#default_value' => BOOST_CRAWL_URL_ALIAS,
-    '#description'   => t('Preemptively cache all urls found in the Drupal url_alias table. This will crawl that page even if it is not expired. Enable & run cron to get the boost cache loaded.'),
+    '#description'   => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') : t('Preemptively cache all urls found in the Drupal url_alias table. This will crawl that page even if it is not expired. Enable & run cron to get the boost cache loaded.'),
+    '#disabled' => !BOOST_CRAWL_ON_CRON
   );
   $form['crawler']['boost_crawler_throttle'] = array(
     '#type'          => 'textfield',
