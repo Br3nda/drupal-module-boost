@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.69 2009/09/06 23:00:48 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.70 2009/09/19 02:05:40 mikeytown2 Exp $
 
 /**
  * @file
@@ -586,6 +586,13 @@ function boost_admin_boost_performance_page() {
       '#submit' => array('boost_stop_crawler_submit'),
     );
   }
+  else {
+    $form['crawler']['boost_reset_crawler'] = array(
+      '#type' => 'submit',
+      '#value' => t('Reset Crawler & Cron Semaphore'),
+      '#submit' => array('boost_reset_crawler_submit'),
+    );
+  }
 
   // Apache .htaccess settings generation
   $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
@@ -917,6 +924,18 @@ function boost_reset_database_submit () {
 function boost_stop_crawler_submit() {
   variable_set('boost_crawler_stopped', TRUE);
   variable_set('boost_crawler_number_of_threads', 0);
+  drupal_set_message(t('Boost: Stop crawler signal given; all crawler threads should be stopped in less then %time', array('%time' => format_interval(BOOST_MAX_THREAD_TIME))));
+}
+
+/**
+ * Reset Crawler
+ */
+function boost_reset_crawler_submit() {
+  db_query("DELETE FROM {variable} WHERE name LIKE '%s%%'", 'boost_crawl');
+  db_query("DELETE FROM {variable} WHERE name = 'cron_semaphore'");
+  cache_clear_all('variables', 'cache');
+  variable_set('boost_crawler_key', md5(mt_rand()));
+  drupal_set_message(t('Boost: Crawler variables reset & cron semaphore cleared (cron reset)'));
 }
 
 /**
