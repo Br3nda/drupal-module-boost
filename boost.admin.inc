@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.72 2009/09/19 02:57:08 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.73 2009/09/24 10:32:30 mikeytown2 Exp $
 
 /**
  * @file
@@ -253,9 +253,15 @@ function boost_admin_boost_performance_page() {
   );
   $form['advanced']['boost_halt_on_errors'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Do not cache if error on page'),
+    '#title'         => t('Do not cache if php error on page'),
     '#default_value' => BOOST_HALT_ON_ERRORS,
-    '#description'   => t('Selected - Do not cache the page if there are PHP errors or drupal messages. Not Selected - Cache pages even if it might contain errors.'),
+    '#description'   => t('Selected - Do not cache the page if there are PHP errors. Not Selected - Cache pages even if it might contain errors.'),
+  );
+  $form['advanced']['boost_halt_on_messages'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Do not cache if a message is on the page'),
+    '#default_value' => BOOST_HALT_ON_MESSAGES,
+    '#description'   => t('Selected - Do not cache the page if there are drupal messages. Not Selected - Cache pages even if it might contain a drupal message.'),
   );
   $form['advanced']['boost_disable_clean_url'] = array(
     '#type'          => 'checkbox',
