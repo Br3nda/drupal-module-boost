@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.73 2009/09/24 10:32:30 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.74 2009/09/24 10:35:24 mikeytown2 Exp $
 
 /**
  * @file
@@ -226,6 +226,12 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Only allow ASCII characters in path'),
     '#default_value' => BOOST_ONLY_ASCII_PATH,
     '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
+  );
+  $form['advanced']['boost_asynchronous_output'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Asynchronous Opperation: output HTML, close connection, then store static file.'),
+    '#default_value' => BOOST_ASYNCHRONOUS_OUTPUT,
+    '#description'   => t('Run php in the background. When a cached page is generated, this will allow for faster page generation; downside is the headers are not the standard ones outputted by drupal; sends "Connection: close" instead of "Connection: Keep-Alive".'),
   );
   $form['advanced']['boost_flush_dir'] = array(
     '#type'          => 'checkbox',

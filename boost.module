@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.146 2009/09/24 10:32:30 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.147 2009/09/24 10:35:24 mikeytown2 Exp $
 
 /**
  * @file
@@ -48,6 +48,7 @@ define('BOOST_FETCH_METHOD',         variable_get('boost_fetch_method', 'php'));
 define('BOOST_PRE_PROCESS_FUNCTION', variable_get('boost_pre_process_function', ''));
 define('BOOST_POST_UPDATE_COMMAND',  variable_get('boost_post_update_command', ''));
 define('BOOST_CRON_LIMIT',           variable_get('boost_cron_limit', 100));
+define('BOOST_ASYNCHRONOUS_OUTPUT',  variable_get('boost_asynchronous_output', TRUE));
 define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE));
 define('BOOST_GZIP',                 variable_get('page_compression', TRUE));
 define('BOOST_AGGRESSIVE_GZIP',      variable_get('boost_aggressive_gzip', FALSE));
@@ -165,7 +166,8 @@ function boost_init() {
       $GLOBALS['conf']['cache'] = CACHE_DISABLED;
     }
     $GLOBALS['_boost_cache_this'] = TRUE;
-    ob_start('_boost_ob_handler');
+    register_shutdown_function('_boost_ob_handler');
+    ob_start();
   }
 }
 
@@ -799,13 +801,10 @@ function theme_boost_cache_status($ttl, $text) {
 
 /**
  * PHP output buffering callback for static page caching.
- *
- * NOTE: objects have already been destructed so $user is not available.
- *
- * @param $buffer
- *   Pages contents
  */
-function _boost_ob_handler($buffer) {
+function _boost_ob_handler() {
+  $buffer = ob_get_contents();
+
   // Ensure we're in the correct working directory, since some web servers (e.g. Apache) mess this up here.
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
 
@@ -821,7 +820,8 @@ function _boost_ob_handler($buffer) {
         if (BOOST_VERBOSE >= 3) {
           watchdog('boost', 'There are <strong>php errors</strong> on this page, preventing boost from caching. ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => boost_print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')), WATCHDOG_WARNING);
         }
-        return $buffer;
+        echo $buffer;
+        return FALSE;
       }
     }
   }
@@ -829,7 +829,8 @@ function _boost_ob_handler($buffer) {
     if (BOOST_VERBOSE >= 3) {
       watchdog('boost', 'There are <strong>drupal messages</strong> on this page, preventing boost from caching. MESSAGES: %msg <br /> !performance', array('%msg' => $GLOBALS['_boost_message_count'], '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')), WATCHDOG_WARNING);
     }
-    return $buffer;
+    echo $buffer;
+    return FALSE;
   }
 
 
@@ -883,9 +884,9 @@ function _boost_ob_handler($buffer) {
         break;
     }
   }
-
-  // Allow the page request to finish up normally
-  return $buffer;
+  if ($output_needed) {
+    echo $buffer;
+  }
 }
 
 /**
@@ -1256,25 +1257,16 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
   // Code commenting style based on what is being cached.
   switch ($extension) {
     case BOOST_FILE_EXTENSION:
-      if (!BOOST_CACHE_HTML) {
-        return FALSE;
-      }
       $comment_start = '<!-- ';
       $comment_end = " -->\n";
       $expire = BOOST_CACHE_LIFETIME;
       break;
     case BOOST_XML_EXTENSION:
-      if (!BOOST_CACHE_XML) {
-        return FALSE;
-      }
       $comment_start = '<!-- ';
       $comment_end = " -->\n";
       $expire = BOOST_CACHE_XML_LIFETIME;
       break;
     case BOOST_JSON_EXTENSION:
-      if (!BOOST_CACHE_JSON) {
-        return FALSE;
-      }
       $comment_start = '/* ';
       $comment_end = " */\n";
       $expire = BOOST_CACHE_JSON_LIFETIME;
@@ -1297,6 +1289,12 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
     $data = call_user_func(BOOST_PRE_PROCESS_FUNCTION, $data);
   }
   db_set_active();
+
+  // Final check, make sure this page should be cached. Allow for the preprocess
+  // function to have a final say in if this page should be cached.
+  if (!$GLOBALS['_boost_cache_this']) {
+    return FALSE;
+  }
 
   // Create or update the static files as needed
   if (($filename = boost_file_path($path, TRUE, $extension)) && (BOOST_OVERWRITE_FILE || !file_exists($filename) || boost_db_is_expired($filename))) {
@@ -2550,8 +2548,17 @@ function boost_crawler_run() {
 
 /**
  * Output text & set php in async mode.
+ *
+ * @param $output
+ *  string - Text to output to open connection.
+ * @param $wait
+ *  bool - Wait 1 second?
+ * @param $content_type
+ *  string - Content type header.
+ * @param $length
+ *  int - content lenght
  */
-function boost_async_opp($output) {
+function boost_async_opp($output, $wait = TRUE, $content_type = "text/html") {
   // Prime php for background operations
   while (ob_get_level()) {
     ob_end_clean();
@@ -2561,17 +2568,29 @@ function boost_async_opp($output) {
 
   // Output text
   ob_start();
-  header("Content-type: text/html");
-  header("Expires: Wed, 11 Nov 1998 11:11:11 GMT");
+  header("Content-type: " . $content_type);
+  header("Expires: Sun, 19 Nov 1978 05:00:00 GMT");
   header("Cache-Control: no-cache");
   header("Cache-Control: must-revalidate");
-  header("Content-Length: " . (strlen($output)-1));
+  if ($content_type == 'image/gif') {
+    header("Content-Length: 43");
+  }
+  else {
+    header("Content-Length: " . (strlen($output)-1));
+  }
   header("Connection: close");
-  print($output);
+  if ($content_type == 'image/gif') {
+    printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59);
+  }
+  else {
+    print($output);
+  }
   ob_end_flush();
   flush();
   // wait for 1 second
-  sleep(1);
+  if ($wait) {
+    sleep(1);
+  }
 
   // text returned and connection closed.
   // Do background processing. Time taken after should not effect page load times.

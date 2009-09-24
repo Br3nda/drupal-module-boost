@@ -1,5 +1,5 @@
 <?php
-// $Id: boost_stats.ajax.inc,v 1.1.2.4 2009/09/12 23:03:58 mikeytown2 Exp $
+// $Id: boost_stats.ajax.inc,v 1.1.2.5 2009/09/24 10:35:24 mikeytown2 Exp $
 
 /**
  * AJAX Menu Callback.
@@ -7,7 +7,7 @@
 function boost_stats_ajax_callback() {
   if (!isset($_GET['js'])) {
     // stats not called via JS, send image out & close connection.
-    boost_stats_async_image();
+    boost_async_opp('1px image', TRUE, 'image/gif');
   }
 
   // Exit if nothing was passed to this.
@@ -120,32 +120,4 @@ function boost_stats_output_stats_block() {
   }
 
   return array('#boost-stats' => $block);
-}
-
-/**
- * Returns a 1px image and allows for php to run in the background.
- */
-function boost_stats_async_image() {
-  // Script should take under 1MB of memory to work.
-  // Prime php for background operations
-  while (ob_get_level()) {
-    ob_end_clean();
-  }
-  header("Connection: close");
-  ignore_user_abort();
-
-  // Output of 1 pixel transparent gif
-  ob_start();
-  header("Content-type: image/gif");
-  header("Expires: Wed, 11 Nov 1998 11:11:11 GMT");
-  header("Cache-Control: no-cache");
-  header("Cache-Control: must-revalidate");
-  header("Content-Length: 43");
-  header("Connection: close");
-  printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59);
-  ob_end_flush();
-  flush();
-
-  // Image returned and connection closed.
-  // Do background processing. Time taken after this should not effect page loading.
 }
