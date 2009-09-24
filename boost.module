@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.144 2009/09/19 02:16:32 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.145 2009/09/24 10:29:16 mikeytown2 Exp $
 
 /**
  * @file
@@ -839,7 +839,7 @@ function _boost_ob_handler($buffer) {
   if ($GLOBALS['_boost_cache_this'] && strlen($buffer) > 0) {
     switch (_boost_get_content_type()) {
       case 'text/html':
-        if (_boost_get_http_status() == 200) {
+        if (boost_check_http_status()) {
           boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_FILE_EXTENSION);
           boost_cache_css_js_files($buffer);
         }
@@ -855,7 +855,7 @@ function _boost_ob_handler($buffer) {
       case 'application/rss':
       case 'text/xml':
       case 'application/rss+xml':
-        if (_boost_get_http_status() == 200) {
+        if (boost_check_http_status()) {
           boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_XML_EXTENSION);
         }
         else {
@@ -868,7 +868,7 @@ function _boost_ob_handler($buffer) {
         }
         break;
       case 'text/javascript':
-        if (_boost_get_http_status() == 200) {
+        if (boost_check_http_status()) {
           boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_JSON_EXTENSION);
         }
         else {
@@ -885,6 +885,21 @@ function _boost_ob_handler($buffer) {
 
   // Allow the page request to finish up normally
   return $buffer;
+}
+
+/**
+ * See's if this http status was returned.
+ *
+ * @param $default
+ *   Look for a 200 status
+ */
+function boost_check_http_status($status = 200) {
+  if (_boost_get_http_status() != $status || _boost_get_pressflow_http_status() != $status) {
+    return FALSE;
+  }
+  else {
+    return TRUE;
+  }
 }
 
 /**
@@ -907,10 +922,22 @@ function _boost_get_content_type($default = NULL) {
  * returning by examining the HTTP headers that have been output so far.
  *
  * @param $default
- *   Look for a 200 status
+ *   If none found, return 200
  */
 function _boost_get_http_status($default = 200) {
   static $regex = '!^HTTP/1.1\s+(\d+)!';
+  return (int)_boost_get_http_header($regex, $default);
+}
+
+/**
+ * Determines the HTTP response code that the current page request will be
+ * returning by examining the HTTP headers that have been output so far.
+ *
+ * @param $default
+ *   If none found, return 200
+ */
+function _boost_get_pressflow_http_status($default = 200) {
+  static $regex = '!^:status:\s+(\d+)!';
   return (int)_boost_get_http_header($regex, $default);
 }
 
