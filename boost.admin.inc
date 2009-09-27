@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.75 2009/09/24 10:36:58 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.76 2009/09/27 06:45:46 mikeytown2 Exp $
 
 /**
  * @file
@@ -67,9 +67,6 @@ function boost_admin_clear_cache_submit($form, &$form_state) {
  * Form builder; Displays Boost's configuration page.
  *
  * @see system_settings_form()
- *
- * TODO: Cacheability settings use core code. Look at Blocks.
- *  http://drupal.org/node/337756
  */
 function boost_admin_boost_performance_page() {
   Global $base_path;
@@ -194,127 +191,6 @@ function boost_admin_boost_performance_page() {
     '#description'   => $description,
   );
 
-  // Advanced settings
-  $form['advanced'] = array(
-    '#type'          => 'fieldset',
-    '#title'         => t('Boost advanced settings'),
-  );
-  $form['advanced']['boost_expire_cron'] = array(
-    '#type'          => 'radios',
-    '#title'         => t('Clear expired pages on cron runs'),
-    '#default_value' => (int)variable_get('boost_expire_cron', TRUE),
-    '#options'       => array(
-      0 => t('Disabled'),
-      1 => t('Enabled'),
-     ),
-    '#description'   => t('Caution - If disabled you will need some other method of clearing cached pages. If Disabled, files have to be manually deleted from server or cleared using the administrative interface (<a href="@blocks">Enable</a> the <a href="@status">Boost: Pages cache status</a> block).', array('@blocks' => url('admin/build/block'), '@status' => url('admin/build/block/configure/boost/status'))),
-  );
-  $form['advanced']['boost_check_before_cron_expire'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Check database timestamps for any site changes. Only if theres been a change will boost flush the expired content on cron.'),
-    '#default_value' => BOOST_CHECK_BEFORE_CRON_EXPIRE,
-  );
-  $form['advanced']['boost_pre_process_function'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Pre-process function'),
-    '#default_value' => BOOST_PRE_PROCESS_FUNCTION,
-    '#maxlength'     => 255,
-    '#description'   => t('The name of a PHP function used to pre-process the contents of each page before writing them out to static files. The function is called with the contents of the page passed as a string argument, and its return value is used as the data written out to the disk.'),
-  );
-  $form['advanced']['boost_only_ascii_path'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Only allow ASCII characters in path'),
-    '#default_value' => BOOST_ONLY_ASCII_PATH,
-    '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
-  );
-  $form['advanced']['boost_asynchronous_output'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Asynchronous Opperation: output HTML, close connection, then store static file.'),
-    '#default_value' => BOOST_ASYNCHRONOUS_OUTPUT,
-    '#description'   => t('Run php in the background. When a cached page is generated, this will allow for faster page generation; downside is the headers are not the standard ones outputted by drupal; sends "Connection: close" instead of "Connection: Keep-Alive".'),
-  );
-  $form['advanced']['boost_flush_dir'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Clear all empty folders from cache.'),
-    '#default_value' => BOOST_FLUSH_DIR,
-    '#description'   => t('Disable this if you have to set settings for each dir/subdir, due to the way your server operates (permissions, etc...).'),
-  );
-  $form['advanced']['boost_flush_node_terms'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Clear all cached terms pages associated with a node on insert/update/delete'),
-    '#default_value' => BOOST_FLUSH_NODE_TERMS,
-    '#description'   => t('Works with view\'s taxonomy/term/% path as well as core.'),
-  );
-  $form['advanced']['boost_clear_cache_offline'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Clear Boosts cache when site goes offline'),
-    '#default_value' => BOOST_CLEAR_CACHE_OFFLINE,
-    '#description'   => t('Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off.'),
-  );
-  $form['advanced']['boost_overwrite_file'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Overwrite the cached file if it already exits'),
-    '#default_value' => BOOST_OVERWRITE_FILE,
-    '#description'   => t('This is useful if crawling a site before it goes live.'),
-  );
-  $form['advanced']['boost_halt_on_errors'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Do not cache if php error on page'),
-    '#default_value' => BOOST_HALT_ON_ERRORS,
-    '#description'   => t('Selected - Do not cache the page if there are PHP errors. Not Selected - Cache pages even if it might contain errors.'),
-  );
-  $form['advanced']['boost_halt_on_messages'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Do not cache if a message is on the page'),
-    '#default_value' => BOOST_HALT_ON_MESSAGES,
-    '#description'   => t('Selected - Do not cache the page if there are drupal messages. Not Selected - Cache pages even if it might contain a drupal message.'),
-  );
-  $form['advanced']['boost_disable_clean_url'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Turn off clean url\'s for logged in users'),
-    '#default_value' => BOOST_DISABLE_CLEAN_URL,
-    '#description'   => t('Drupal will output non clean url\'s for non anonymous users. This allows for the browser to cache the page and still have logging in work. This is more on the extreme side of tweaks.'),
-  );
-  $form['advanced']['boost_aggressive_gzip'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Aggressive Gzip: Deliver gzipped content independent of the request header.'),
-    '#default_value' => BOOST_AGGRESSIVE_GZIP,
-    '#description'   => t('In order to deliver gzipped content independent of the header, this will test for gzip compression in a small iframe by sending it compressed content. This compressed content is javascript which creates a cookie with a note of gzip support. On the server side it checks for the cookie and then sends out gzipped content accordingly. See <a href="@url">Website Performance - Activate Gzip</a>. In short some firewalls/proxies mangle the gzip header; this gets around that. iframe is on non compressed version of the frontpage only.', array('@url' => 'http://actionable-stats.com/website-performance-activate-gzip')),
-  );
-  $form['advanced']['boost_permissions_file'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
-    '#default_value' => BOOST_PERMISSIONS_FILE,
-    '#description'   => t('Sometimes because of funky servers you need it use a different file mode then the default.'),
-  );
-  $form['advanced']['boost_permissions_dir'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Directories: Enter in a 4 digit number (octal) that will be used by !link. Example 0775', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
-    '#default_value' => BOOST_PERMISSIONS_DIR,
-    '#description'   => t('Sometimes because of funky servers you need it use a different file mode then the default.'),
-  );
-  $form['advanced']['boost_ignore_flush'] = array(
-    '#type'          => 'radios',
-    '#title'         => t('Ignore cache flushing'),
-    '#default_value' => BOOST_IGNORE_FLUSH,
-    '#options'       => array(
-      0 => t('Disabled'),
-      1 => t('Only Ignore Clear Entire Cache Commands (Recommended if caching css/js files)'),
-      2 => t('Ignore Clear Entire Cache Commands & Cron Expiration'),
-      3 => t('Ignore All Delete Commands (Not Recommended)'),
-    ),
-    '#description'   => t('Make a selection to put your site into a static cached state. Recommend turning on CSS & JS caching if enabled.'),
-  );
-  $form['advanced']['boost_verbose'] = array(
-    '#type'          => 'select',
-    '#title'         => t('Watchdog Verbose Setting'),
-    '#default_value' => BOOST_VERBOSE,
-    '#options'       => array(
-      1 => t('1 Record almost no errors'),
-      3 => t('3'),
-      5 => t('5 Record all errors to the db log (watchdog)'),
-    ),
-  );
 
   // directories
   $form['directories'] = array(
@@ -473,6 +349,128 @@ function boost_admin_boost_performance_page() {
     );
   }
 
+  // Advanced settings
+  $form['advanced'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Boost advanced settings'),
+  );
+  $form['advanced']['boost_expire_cron'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Clear expired pages on cron runs'),
+    '#default_value' => (int)variable_get('boost_expire_cron', TRUE),
+    '#options'       => array(
+      0 => t('Disabled'),
+      1 => t('Enabled'),
+     ),
+    '#description'   => t('Caution - If disabled you will need some other method of clearing cached pages. If Disabled, files have to be manually deleted from server or cleared using the administrative interface (<a href="@blocks">Enable</a> the <a href="@status">Boost: Pages cache status</a> block).', array('@blocks' => url('admin/build/block'), '@status' => url('admin/build/block/configure/boost/status'))),
+  );
+  $form['advanced']['boost_check_before_cron_expire'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Check database timestamps for any site changes. Only if theres been a change will boost flush the expired content on cron.'),
+    '#default_value' => BOOST_CHECK_BEFORE_CRON_EXPIRE,
+  );
+  $form['advanced']['boost_pre_process_function'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Pre-process function'),
+    '#default_value' => BOOST_PRE_PROCESS_FUNCTION,
+    '#maxlength'     => 255,
+    '#description'   => t('The name of a PHP function used to pre-process the contents of each page before writing them out to static files. The function is called with the contents of the page passed as a string argument, and its return value is used as the data written out to the disk.'),
+  );
+  $form['advanced']['boost_only_ascii_path'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Only allow ASCII characters in path'),
+    '#default_value' => BOOST_ONLY_ASCII_PATH,
+    '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
+  );
+  $form['advanced']['boost_asynchronous_output'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Asynchronous Operation: output HTML, close connection, then store static file.'),
+    '#default_value' => BOOST_ASYNCHRONOUS_OUTPUT,
+    '#description'   => t('Run php in the background. When a cached page is generated, this will allow for faster page generation; downside is the headers are not the standard ones outputted by drupal; sends "Connection: close" instead of "Connection: Keep-Alive".'),
+  );
+  $form['advanced']['boost_flush_dir'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Clear all empty folders from cache.'),
+    '#default_value' => BOOST_FLUSH_DIR,
+    '#description'   => t('Disable this if you have to set settings for each dir/subdir, due to the way your server operates (permissions, etc...).'),
+  );
+  $form['advanced']['boost_flush_node_terms'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Clear all cached terms pages associated with a node on insert/update/delete'),
+    '#default_value' => BOOST_FLUSH_NODE_TERMS,
+    '#description'   => t('Works with view\'s taxonomy/term/% path as well as core.'),
+  );
+  $form['advanced']['boost_clear_cache_offline'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Clear Boosts cache when site goes offline'),
+    '#default_value' => BOOST_CLEAR_CACHE_OFFLINE,
+    '#description'   => t('Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off.'),
+  );
+  $form['advanced']['boost_overwrite_file'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Overwrite the cached file if it already exits'),
+    '#default_value' => BOOST_OVERWRITE_FILE,
+    '#description'   => t('This is useful if crawling a site before it goes live.'),
+  );
+  $form['advanced']['boost_halt_on_errors'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Do not cache if php error on page'),
+    '#default_value' => BOOST_HALT_ON_ERRORS,
+    '#description'   => t('Selected - Do not cache the page if there are PHP errors. Not Selected - Cache pages even if it might contain errors.'),
+  );
+  $form['advanced']['boost_halt_on_messages'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Do not cache if a message is on the page'),
+    '#default_value' => BOOST_HALT_ON_MESSAGES,
+    '#description'   => t('Selected - Do not cache the page if there are drupal messages. Not Selected - Cache pages even if it might contain a drupal message.'),
+  );
+  $form['advanced']['boost_disable_clean_url'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Turn off clean url\'s for logged in users'),
+    '#default_value' => BOOST_DISABLE_CLEAN_URL,
+    '#description'   => t('Drupal will output non clean url\'s for non anonymous users. This allows for the browser to cache the page and still have logging in work. This is more on the extreme side of tweaks.'),
+  );
+  $form['advanced']['boost_aggressive_gzip'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Aggressive Gzip: Deliver gzipped content independent of the request header.'),
+    '#default_value' => BOOST_AGGRESSIVE_GZIP,
+    '#description'   => t('In order to deliver gzipped content independent of the header, this will test for gzip compression in a small iframe by sending it compressed content. This compressed content is javascript which creates a cookie with a note of gzip support. On the server side it checks for the cookie and then sends out gzipped content accordingly. See <a href="@url">Website Performance - Activate Gzip</a>. In short some firewalls/proxies mangle the gzip header; this gets around that. iframe is on non compressed version of the frontpage only.', array('@url' => 'http://actionable-stats.com/website-performance-activate-gzip')),
+  );
+  $form['advanced']['boost_permissions_file'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
+    '#default_value' => BOOST_PERMISSIONS_FILE,
+    '#description'   => t('Sometimes because of funky servers you need it use a different file mode then the default.'),
+  );
+  $form['advanced']['boost_permissions_dir'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Directories: Enter in a 4 digit number (octal) that will be used by !link. Example 0775', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
+    '#default_value' => BOOST_PERMISSIONS_DIR,
+    '#description'   => t('Sometimes because of funky servers you need it use a different file mode then the default.'),
+  );
+  $form['advanced']['boost_ignore_flush'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Ignore cache flushing'),
+    '#default_value' => BOOST_IGNORE_FLUSH,
+    '#options'       => array(
+      0 => t('Disabled'),
+      1 => t('Only Ignore Clear Entire Cache Commands (Recommended if caching css/js files)'),
+      2 => t('Ignore Clear Entire Cache Commands & Cron Expiration'),
+      3 => t('Ignore All Delete Commands (Not Recommended)'),
+    ),
+    '#description'   => t('Make a selection to put your site into a static cached state. Recommend turning on CSS & JS caching if enabled.'),
+  );
+  $form['advanced']['boost_verbose'] = array(
+    '#type'          => 'select',
+    '#title'         => t('Watchdog Verbose Setting'),
+    '#default_value' => BOOST_VERBOSE,
+    '#options'       => array(
+      1 => t('1 Record almost no errors'),
+      3 => t('3'),
+      5 => t('5 Record all errors to the db log (watchdog)'),
+    ),
+  );
+
   // Crawler
   $form['crawler'] = array(
     '#type'          => 'fieldset',
@@ -576,14 +574,13 @@ function boost_admin_boost_performance_page() {
     );
   }
 
+
   // Apache .htaccess settings generation
   $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
   $form['htaccess'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Boost Apache .htaccess settings generation'),
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
-    '#description'   => t('<a href="!link">Explanation of .htaccess variables</a> <br><br> Be sure to save the configuration and then come back here to copy the htaccess rules.', array('!link' => url('http://www.askapache.com/htaccess/mod_rewrite-variables-cheatsheet.html'))),
+    '#description'   => t('<a href="!link">Explanation of .htaccess variables</a> <br><br> <strong>Be sure to save the configuration and then go to the <a href="!rules">htaccess rules generation page</a> and copy the rules.</strong>', array('!link' => url('http://www.askapache.com/htaccess/mod_rewrite-variables-cheatsheet.html'), '!rules' => url('admin/settings/performance/boost-rules'))),
   );
   $form['htaccess']['boost_server_name_http_host'] = array(
     '#type'          => 'radios',
@@ -630,16 +627,7 @@ function boost_admin_boost_performance_page() {
     '#description'   => $description,
   );
 
-  $form['htaccess']['boost_generated'] = array(
-    '#type'          => 'textarea',
-    '#title'         => t('Generated Rules'),
-    '#default_value' => $htaccess,
-    '#rows'          => count(explode("\n", $htaccess))+1,
-    '#wysiwyg'       => FALSE,
-    '#description'   => t("Copy this into your .htaccess file below <pre><tt>  # RewriteBase / </tt></pre> and above <pre><tt>  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'</tt></pre>"),
-  );
-
-
+  // Clear database button
   $form['clear'] = array(
     '#type' => 'fieldset',
     '#title' => t('Clear Boost\'s Database'),
@@ -701,6 +689,25 @@ function boost_admin_themes_submit($form, &$form_state) {
       drupal_set_message(t('Boost: Static page cache cleared.'), 'warning');
     }
   }
+}
+
+/**
+ * Form builder; Displays Boost's htaccess generation page.
+ *
+ * @see system_settings_form()
+ */
+function boost_admin_htaccess_page() {
+  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
+
+  $form['boost_generated'] = array(
+    '#type'          => 'textarea',
+    '#title'         => t('Generated Rules'),
+    '#default_value' => $htaccess,
+    '#rows'          => count(explode("\n", $htaccess))+1,
+    '#wysiwyg'       => FALSE,
+    '#description'   => t("Copy this into your .htaccess file below <pre><tt>  # RewriteBase / </tt></pre> and above <pre><tt>  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'</tt></pre>"),
+  );
+  return $form;
 }
 
 /**

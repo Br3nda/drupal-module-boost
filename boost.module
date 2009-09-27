@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.148 2009/09/27 06:42:39 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.149 2009/09/27 06:45:46 mikeytown2 Exp $
 
 /**
  * @file
@@ -224,6 +224,16 @@ function boost_menu() {
     'page arguments' => array('boost_admin_boost_performance_page'),
     'access arguments' => array('administer site configuration'),
     'weight' => 10,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'boost.admin.inc',
+  );
+  $items['admin/settings/performance/boost-rules'] = array(
+    'title' => 'Boost htaccess rules generation',
+    'description' => 'htaccess boost rules.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('boost_admin_htaccess_page'),
+    'access arguments' => array('administer site configuration'),
+    'weight' => 12,
     'type' => MENU_LOCAL_TASK,
     'file' => 'boost.admin.inc',
   );
@@ -2555,8 +2565,6 @@ function boost_crawler_run() {
  *  bool - Wait 1 second?
  * @param $content_type
  *  string - Content type header.
- * @param $length
- *  int - content lenght
  */
 function boost_async_opp($output, $wait = TRUE, $content_type = "text/html") {
   // Prime php for background operations
