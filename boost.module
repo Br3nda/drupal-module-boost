@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.149 2009/09/27 06:45:46 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.150 2009/09/27 06:47:55 mikeytown2 Exp $
 
 /**
  * @file
@@ -100,6 +100,7 @@ define('BOOST_USER_ID',              @$GLOBALS['user']->uid);
 //$GLOBALS['_boost_max_execution_time'] = '';
 //$GLOBALS['_boost_output_buffering'] = '';
 //$GLOBALS['_boost_default_socket_timeout'] = '';
+//$GLOBALS['_boost_router_item'] = '';
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -127,6 +128,7 @@ function boost_help($path, $arg) {
 function boost_init() {
   global $user, $base_path;
   //set variables
+  $GLOBALS['_boost_router_item'] = _boost_get_menu_router();
   $GLOBALS['_boost_path'] = $_REQUEST['q'];
   // Make the proper filename for our query
   $GLOBALS['_boost_query'] = BOOST_CHAR;
@@ -155,6 +157,7 @@ function boost_init() {
       || !BOOST_ENABLED
       || isset($_GET['nocache'])
       || !boost_is_cacheable($GLOBALS['_boost_path'])
+      || $GLOBALS['_boost_router_item']['page_callback'] == 'seach404_page'
       ) {
     $GLOBALS['_boost_cache_this'] = FALSE;
     return;
@@ -610,7 +613,7 @@ function boost_block_db_settings_form() {
   $period[0] = '<' . t('none') . '>';
   $period[-1] = t('default');
   //$info = boost_get_db(boost_file_path($GLOBALS['_boost_path']));
-  $router_item = _boost_get_menu_router();
+  $router_item = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
   $settings = boost_get_settings_db($router_item);
   $default = 0;
   foreach ($settings as $key => $value) {
@@ -1338,7 +1341,7 @@ function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
  *  Cache expiration time in seconds (UNIX time).
  */
 function boost_db_prep($filename, $extension, $expire) {
-  $router_item = _boost_get_menu_router();
+  $router_item = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
   $timer = timer_read('page');
   $timer_average = $timer;
   $lifetime = -1;
@@ -1474,7 +1477,7 @@ function boost_remove_settings_db($csid) {
  *   Pre-cache this file
  */
 function boost_set_db_page_settings($lifetime, $push, $scope) {
-  $router_item = _boost_get_menu_router();
+  $router_item = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
   $filename = boost_file_path($GLOBALS['_boost_path']);
   $info = boost_get_db($filename);
   if (!$info) {
