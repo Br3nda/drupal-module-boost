@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.160 2009/09/30 09:37:00 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.161 2009/09/30 10:04:46 mikeytown2 Exp $
 
 /**
  * @file
@@ -1026,7 +1026,7 @@ function _boost_get_http_header($regex, $default = NULL) {
 // Boost API implementation
 
 /**
- * Determines whether a given Drupal page can be cached or not.
+ * Determines whether a given url can be cached or not by boost.
  *
  * To avoid potentially troublesome situations, the user login page is never
  * cached, nor are any admin pages.
@@ -1035,23 +1035,30 @@ function _boost_get_http_header($regex, $default = NULL) {
  *   Current URL
  *
  * $path = $GLOBALS['_boost_path'] most of the time
+ * uses $GLOBALS['_boost_query'] as well
  */
 function boost_is_cacheable($path) {
   $path = (empty($path)) ? variable_get('site_frontpage', 'node') : $path;
-  $normal_path = drupal_get_normal_path($path); // normalize path
+  $normal_path = drupal_get_normal_path($path); // normalize pathW
+  $full = $normal_path . '-' . $GLOBALS['_boost_query'];
 
-  // Never cache the basic user login/registration pages or any administration pages
-  // RSS feeds are not cacheable due to content type restrictions
-  // Don't cache comment reply pages
-  // Under no circumstances should the incoming path contain '..' or null
-  // bytes; we also limit the maximum directory nesting depth of the path
+  // Never cache
+  //  the user login/registration/password pages
+  //  any admin pages
+  //  comment reply pages
+  //  node add page
+  //  URL variables that contain / or \
+  //  if incoming URL contains '..' or null bytes
+  // Limit the maximum directory nesting depth of the path
   if (   $normal_path == 'user'
       || preg_match('!^user/(login|register|password)!', $normal_path)
       || preg_match('!^admin!', $normal_path)
       || preg_match('!comment/reply$!', $normal_path)
       || preg_match('!^node/add!', $normal_path)
-      || strpos($path, '..') !== FALSE
-      || strpos($path, "\0") !== FALSE
+      || strpos($GLOBALS['_boost_query'], '/')
+      || strpos($GLOBALS['_boost_query'], '\\')
+      || strpos($full, '..') !== FALSE
+      || strpos($full, "\0") !== FALSE
       || count(explode('/', $path)) > BOOST_MAX_PATH_DEPTH
     ) {
     return FALSE;
@@ -1074,7 +1081,7 @@ function boost_is_cacheable($path) {
   // http://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
   // " * : < > |
   $chars = '"*:<>|';
-  if (stristr(PHP_OS, 'WIN') && preg_match("/[".$chars."]/", $normal_path)) {
+  if (stristr(PHP_OS, 'WIN') && preg_match("/[".$chars."]/", $full)) {
     return FALSE;
   }
 
