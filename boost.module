@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.153 2009/09/30 00:05:15 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.154 2009/09/30 00:07:09 mikeytown2 Exp $
 
 /**
  * @file
@@ -2414,6 +2414,14 @@ function boost_crawler_run() {
       }
       ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
       ini_set('output_buffering', $GLOBALS['_boost_output_buffering']);
+      exit;
+    }
+
+    // Kill this thread if it doesn't have a thread number assigned to it.
+    if (!isset($this_thread)) {
+      if (BOOST_VERBOSE >= 5) {
+        watchdog('boost', 'Crawler - Rogue thread killed.');
+      }
       exit;
     }
 
