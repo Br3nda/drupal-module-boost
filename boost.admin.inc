@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.76 2009/09/27 06:45:46 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.77 2009/09/30 00:16:33 mikeytown2 Exp $
 
 /**
  * @file
@@ -649,8 +649,12 @@ function boost_admin_boost_performance_page() {
 function boost_admin_boost_performance_page_validate($form, &$form_state) {
   $form_state['values']['boost_previously'] = variable_get('boost_enabled', '');
   extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
+  if (BOOST_MULTISITE_SINGLE_DB) {
+    $boost_file_path = boost_cache_directory(NULL, FALSE);
+  }
 
-  if (!empty($boost_enabled)) { // the cache is enabled
+  if (!empty($boost_enabled)) {
+    // The cache is enabled
     // Ensure the cache directory exists or can be created:
     _boost_mkdir_p($boost_file_path);
     file_check_directory($boost_file_path, FILE_CREATE_DIRECTORY, 'boost_file_path');
