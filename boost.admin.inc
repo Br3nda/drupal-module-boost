@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.78 2009/09/30 00:18:29 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.79 2009/09/30 09:17:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -482,13 +482,13 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_CRAWL_ON_CRON,
     '#description'   => t('Pre-cache boosted URL\'s so they get cached before anyone accesses them. Enable the crawler first and save settings to use Preemptive Cache settings.'),
   );
-//   $form['crawler']['boost_loopback_bypass'] = array(
-//     '#type'          => 'checkbox',
-//     '#title'         => t('Do not flush expired content on cron run, instead recrawl and overwrite it.'),
-//     '#default_value' => BOOST_LOOPBACK_BYPASS,
-//     '#description'   => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') :!BOOST_OVERWRITE_FILE ? t('The "Overwrite the cached file if it already exits" must be turnned on inorder to enable this') : t('Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh.'),
-//     '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_OVERWRITE_FILE,
-//   );
+  $form['crawler']['boost_loopback_bypass'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Do not flush expired content on cron run, instead recrawl and overwrite it.'),
+    '#default_value' => BOOST_LOOPBACK_BYPASS,
+    '#description'   => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') :!BOOST_OVERWRITE_FILE ? t('The "Overwrite the cached file if it already exits" must be turnned on inorder to enable this') : t('Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh.'),
+    '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_OVERWRITE_FILE,
+  );
   $form['crawler']['boost_push_html'] = array(
     '#type' => 'checkbox',
     '#title' => t('Preemptive Cache HTML'),
