@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.159 2009/09/30 09:17:31 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.160 2009/09/30 09:37:00 mikeytown2 Exp $
 
 /**
  * @file
@@ -2739,11 +2739,15 @@ function boost_async_call_crawler($self, $this_thread = NULL, $total_threads = N
 function boost_crawler_add_to_table($push_setting, $extension) {
   // Insert batch of URL's into boost_crawler table
   $count = 10000;
-  $total = boost_crawler_count($push_setting, $extension);
+  $expire = TRUE;
+  if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
+    $expire = boost_has_site_changed();
+  }
+  $total = boost_crawler_count($push_setting, $extension, $expire);
   $loaded = variable_get('boost_crawler_loaded_count' . $extension, 0);
   if ($total > $loaded) {
     if ($push_setting) {
-      if (BOOST_LOOPBACK_BYPASS) {
+      if ($expire && BOOST_LOOPBACK_BYPASS) {
         db_query_range("INSERT INTO {boost_crawler} (url) SELECT url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
       }
       else {
@@ -2751,7 +2755,7 @@ function boost_crawler_add_to_table($push_setting, $extension) {
       }
     }
     else {
-      if (BOOST_LOOPBACK_BYPASS) {
+      if ($expire && BOOST_LOOPBACK_BYPASS) {
         db_query_range("INSERT INTO {boost_crawler} (url) SELECT url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
       }
       else {
@@ -2773,10 +2777,12 @@ function boost_crawler_add_to_table($push_setting, $extension) {
  *  Default crawler setting for the content type
  * @param $extension
  *  File extension, controls the content type DB lookup
+ * @param $expire
+ *  Has the site changed, if so get expire column
  */
-function boost_crawler_count($push_setting, $extension) {
+function boost_crawler_count($push_setting, $extension, $expire) {
   if ($push_setting) {
-    if (BOOST_LOOPBACK_BYPASS) {
+    if ($expire && BOOST_LOOPBACK_BYPASS) {
       return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME));
     }
     else {
@@ -2784,7 +2790,7 @@ function boost_crawler_count($push_setting, $extension) {
     }
   }
   else {
-    if (BOOST_LOOPBACK_BYPASS) {
+    if ($expire && BOOST_LOOPBACK_BYPASS) {
       return db_result(db_query("SELECT COUNT(*) FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME));
     }
     else {
@@ -2846,7 +2852,11 @@ function boost_crawler_total_count() {
  * Reload any url's that did not get cached.
  */
 function boost_crawler_verify() {
-  if (BOOST_LOOPBACK_BYPASS) {
+  $expire = TRUE;
+  if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
+    $expire = boost_has_site_changed();
+  }
+  if ($expire && BOOST_LOOPBACK_BYPASS) {
     $list = db_query("SELECT bcrawler.url FROM {boost_cache} bcache INNER JOIN {boost_crawler} bcrawler ON bcache.url=bcrawler.url WHERE bcache.expire BETWEEN 0 AND %d", BOOST_TIME);
   }
   else {
