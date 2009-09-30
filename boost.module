@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.161 2009/09/30 10:04:46 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.162 2009/09/30 19:57:36 mikeytown2 Exp $
 
 /**
  * @file
@@ -343,7 +343,7 @@ function boost_cron() {
 
   // Crawl Site
   if (BOOST_CRAWL_ON_CRON && !variable_get('site_offline', 0)) {
-    boost_crawler_run();
+    boost_crawler_run((int)$expire);
   }
 }
 
@@ -1616,7 +1616,7 @@ function boost_has_site_changed() {
 
   $max = max($node_revisions, $history, $files, $comments, $node, $last_comment_timestamp, $voteapi_vote);
   if ($max != BOOST_MAX_TIMESTAMP) {
-    variable_set('boost_max_timestamp', $max);
+    variable_set('boost_max_timestamp', (int)$max);
     return TRUE;
   }
   else {
@@ -1636,7 +1636,7 @@ function boost_has_site_changed() {
  */
 function boost_get_time($table, $column) {
   if (db_result(db_query("SHOW TABLES LIKE '%s'", $table))) {
-    return db_result(db_query_range("SELECT %s FROM {%s} ORDER BY %s DESC", $column, $table, $column, 0, 1));
+    return (int)db_result(db_query_range("SELECT %s FROM {%s} ORDER BY %s DESC", $column, $table, $column, 0, 1));
   }
   else {
     return 0;
@@ -2402,11 +2402,15 @@ if (!function_exists('file_put_contents')) {
 
 /**
  * The brains of the crawler.
+ *
+ * @param $expire
+ *  Has the site changed, if so get expire column
  */
-function boost_crawler_run() {
+function boost_crawler_run($expire = -1) {
   Global $base_url;
   $this_thread = (isset($_GET['thread']) && is_numeric($_GET['thread'])) ? $_GET['thread'] : NULL;
   $total_threads = (isset($_GET['total']) && is_numeric($_GET['total'])) ? $_GET['total'] : NULL;
+  $expire = ($expire == -1 && isset($_GET['expire']) && is_numeric($_GET['expire'])) ? $_GET['expire'] : $expire;
   $self = BOOST_CRAWLER_SELF;
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');;
   $GLOBALS['_boost_output_buffering'] = ini_get('output_buffering');
@@ -2472,7 +2476,7 @@ function boost_crawler_run() {
       }
       sleep(15);
       _boost_variable_set('boost_crawler_sleeping', FALSE);
-      boost_async_call_crawler($self, 1, NULL);
+      boost_async_call_crawler($self, 1, NULL, $expire);
       exit;
     }
 
@@ -2495,13 +2499,13 @@ function boost_crawler_run() {
       }
       variable_set('boost_crawler_stopped', FALSE);
       _boost_variable_set('boost_crawler_sleeping', FALSE);
-      boost_async_call_crawler($self, 1, NULL);
+      boost_async_call_crawler($self, 1, NULL, $expire);
       exit;
     }
 
     // Add URL's to crawler table, call self and exit
-    if (!boost_crawler_seed_tables()) {
-      boost_async_call_crawler($self, $this_thread, _boost_variable_get('boost_crawler_number_of_threads'));
+    if (!boost_crawler_seed_tables($expire)) {
+      boost_async_call_crawler($self, $this_thread, _boost_variable_get('boost_crawler_number_of_threads'), $expire);
       exit;
     }
 
@@ -2531,7 +2535,7 @@ function boost_crawler_run() {
       if (!$thread_time || $thread_time + BOOST_MAX_THREAD_TIME < BOOST_TIME) {
         _boost_variable_set('boost_crawler_thread_num_' . $threads, BOOST_TIME);
         db_unlock_tables();
-        boost_async_call_crawler($self, $threads, _boost_variable_get('boost_crawler_number_of_threads'));
+        boost_async_call_crawler($self, $threads, _boost_variable_get('boost_crawler_number_of_threads'), $expire);
         if (BOOST_VERBOSE >= 5) {
             watchdog('boost', 'Crawler - Thread @num of @total started', array('@num' => $threads, '@total' => _boost_variable_get('boost_crawler_number_of_threads')));
         }
@@ -2556,14 +2560,14 @@ function boost_crawler_run() {
 //       }
       if (   !boost_crawler_threads_alive()
           && _boost_variable_get('boost_crawler_number_of_tries') < 3
-          && boost_crawler_verify()
+          && boost_crawler_verify($expire)
           ) {
         variable_set('boost_crawler_number_of_tries', (int)_boost_variable_get('boost_crawler_number_of_tries') + 1);
         _boost_variable_set('boost_crawler_number_of_threads', 1);
         if (BOOST_VERBOSE >= 5) {
           watchdog('boost', 'Crawler - Restarting with 1 thread, to try & get the stubborn urls cached.');
         }
-        boost_async_call_crawler($self, 1, 1);
+        boost_async_call_crawler($self, 1, 1, $expire);
         exit;
       }
       ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
@@ -2599,14 +2603,14 @@ function boost_crawler_run() {
       // Re init crawler if it missed some, try 5 times
       if (   !boost_crawler_threads_alive()
           && _boost_variable_get('boost_crawler_number_of_tries') < 3
-          && boost_crawler_verify()
+          && boost_crawler_verify($expire)
           ) {
         variable_set('boost_crawler_number_of_tries', (int)_boost_variable_get('boost_crawler_number_of_tries') + 1);
         _boost_variable_set('boost_crawler_number_of_threads', 1);
         if (BOOST_VERBOSE >= 5) {
           watchdog('boost', 'Crawler - Restarting with 1 thread, to try & get the stubborn urls cached.');
         }
-        boost_async_call_crawler($self, 1, 1);
+        boost_async_call_crawler($self, 1, 1, $expire);
         exit;
       }
       return TRUE;
@@ -2626,7 +2630,7 @@ function boost_crawler_run() {
       _boost_set_time_limit(0);
     }
     // Crawler for this round done, call self and exit
-    boost_async_call_crawler($self, $this_thread, _boost_variable_get('boost_crawler_number_of_threads'));
+    boost_async_call_crawler($self, $this_thread, _boost_variable_get('boost_crawler_number_of_threads'), $expire);
     exit;
   }
 
@@ -2663,7 +2667,7 @@ function boost_crawler_run() {
       variable_set('boost_crawler_thread_num_' . $threads, 0);
       $threads--;
     }
-    boost_async_call_crawler($self, 1, NULL);
+    boost_async_call_crawler($self, 1, NULL, $expire);
     return TRUE;
   }
 }
@@ -2721,10 +2725,13 @@ function boost_async_opp($output, $wait = TRUE, $content_type = "text/html") {
  *
  * @param $self
  *  URL to restart the loop.
+ * @param $expire
+ *  Has the site changed, if so get expire column
  */
-function boost_async_call_crawler($self, $this_thread = NULL, $total_threads = NULL) {
+function boost_async_call_crawler($self, $this_thread = NULL, $total_threads = NULL, $expire) {
   $self .= isset($this_thread) ? '&thread=' . $this_thread : '';
   $self .= isset($total_threads) ? '&total=' . $total_threads : '';
+  $self .= isset($expire) ? '&expire=' . (int)$expire : '';
   $GLOBALS['_boost_default_socket_timeout'] = ini_get('default_socket_timeout');
 
   ini_set('default_socket_timeout', 3);
@@ -2742,14 +2749,12 @@ function boost_async_call_crawler($self, $this_thread = NULL, $total_threads = N
  *  Default crawler setting for the content type
  * @param $extension
  *  File extension, controls the content type DB lookup
+ * @param $expire
+ *  Has the site changed, if so get expire column
  */
-function boost_crawler_add_to_table($push_setting, $extension) {
+function boost_crawler_add_to_table($push_setting, $extension, $expire) {
   // Insert batch of URL's into boost_crawler table
   $count = 10000;
-  $expire = TRUE;
-  if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
-    $expire = boost_has_site_changed();
-  }
   $total = boost_crawler_count($push_setting, $extension, $expire);
   $loaded = variable_get('boost_crawler_loaded_count' . $extension, 0);
   if ($total > $loaded) {
@@ -2808,11 +2813,14 @@ function boost_crawler_count($push_setting, $extension, $expire) {
 
 /**
  * Logic to get boost_crawler table ready.
+ *
+ * @param $expire
+ *  Has the site changed, if so get expire column
  */
-function boost_crawler_seed_tables() {
-  if (   boost_crawler_add_to_table(BOOST_PUSH_HTML, BOOST_FILE_EXTENSION)
-      && boost_crawler_add_to_table(BOOST_PUSH_XML, BOOST_XML_EXTENSION)
-      && boost_crawler_add_to_table(BOOST_PUSH_JSON, BOOST_JSON_EXTENSION)
+function boost_crawler_seed_tables($expire) {
+  if (   boost_crawler_add_to_table(BOOST_PUSH_HTML, BOOST_FILE_EXTENSION, $expire)
+      && boost_crawler_add_to_table(BOOST_PUSH_XML, BOOST_XML_EXTENSION, $expire)
+      && boost_crawler_add_to_table(BOOST_PUSH_JSON, BOOST_JSON_EXTENSION, $expire)
       && boost_crawler_add_alias_to_table()
       ) {
     // All URL's added to boost_crawler table; start hitting URL's
@@ -2857,12 +2865,11 @@ function boost_crawler_total_count() {
 
 /**
  * Reload any url's that did not get cached.
+ *
+ * @param $expire
+ *  Has the site changed, if so get expire column
  */
-function boost_crawler_verify() {
-  $expire = TRUE;
-  if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
-    $expire = boost_has_site_changed();
-  }
+function boost_crawler_verify($expire) {
   if ($expire && BOOST_LOOPBACK_BYPASS) {
     $list = db_query("SELECT bcrawler.url FROM {boost_cache} bcache INNER JOIN {boost_crawler} bcrawler ON bcache.url=bcrawler.url WHERE bcache.expire BETWEEN 0 AND %d", BOOST_TIME);
   }
