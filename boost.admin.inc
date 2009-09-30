@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.77 2009/09/30 00:16:33 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.78 2009/09/30 00:18:29 mikeytown2 Exp $
 
 /**
  * @file
@@ -482,6 +482,13 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_CRAWL_ON_CRON,
     '#description'   => t('Pre-cache boosted URL\'s so they get cached before anyone accesses them. Enable the crawler first and save settings to use Preemptive Cache settings.'),
   );
+//   $form['crawler']['boost_loopback_bypass'] = array(
+//     '#type'          => 'checkbox',
+//     '#title'         => t('Do not flush expired content on cron run, instead recrawl and overwrite it.'),
+//     '#default_value' => BOOST_LOOPBACK_BYPASS,
+//     '#description'   => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') :!BOOST_OVERWRITE_FILE ? t('The "Overwrite the cached file if it already exits" must be turnned on inorder to enable this') : t('Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh.'),
+//     '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_OVERWRITE_FILE,
+//   );
   $form['crawler']['boost_push_html'] = array(
     '#type' => 'checkbox',
     '#title' => t('Preemptive Cache HTML'),
@@ -758,88 +765,158 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
 
   $char = BOOST_CHAR;
   $permanent_char = BOOST_PERM_CHAR;
+  $server_ip = str_replace('.', '\.', $_SERVER['SERVER_ADDR']);
 
-  $string = <<<ETO
-  ### BOOST START ###
-  <FilesMatch "($html$gz|$html|$xml$gz|$xml|$json$gz|$json)$">
-    <IfModule mod_headers.c>
-      Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
-      Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
-    </IfModule>
-  </FilesMatch>
-  <IfModule mod_mime.c>
-    AddCharset utf-8 $_html
-    AddCharset utf-8 $_xml
-    AddCharset utf-8 $_css
-    AddCharset utf-8 $_js
-    AddCharset utf-8 $_json
-    AddEncoding gzip $_gz
-  </IfModule>
-  <FilesMatch "$html$gz$">
-    ForceType text/html
-  </FilesMatch>
-  <FilesMatch "$xml$gz$">
-    ForceType text/xml
-  </FilesMatch>
-  <FilesMatch "$css$gz$">
-    ForceType text/css
-  </FilesMatch>
-  <FilesMatch "$js$gz$">
-    ForceType text/javascript
-  </FilesMatch>
-  <FilesMatch "$json$gz$">
-    ForceType text/javascript
-  </FilesMatch>
 
-  # Gzip Cookie Test
-  RewriteRule boost-gzip-cookie-test\.html  $cache_dir$permanent_dir_gzip/boost-gzip-cookie-test\.html\.gz [L,T=text/html]
+  // Generate the rules
+  $string  = "  ### BOOST START ###\n";
+  if (!BOOST_DISABLE_CLEAN_URL && (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON)) {
+    $files = '';
+    if (BOOST_CACHE_HTML) {
+      $files .= "$html|";
+      if (BOOST_GZIP) {
+        $files .= "$html$gz|";
+      }
+    }
+    if (BOOST_CACHE_XML) {
+      $files .= "$xml|";
+      if (BOOST_GZIP) {
+        $files .= "$xml$gz|";
+      }
+    }
+    if (BOOST_CACHE_JSON) {
+      $files .= "$json|";
+      if (BOOST_GZIP) {
+        $files .= "$json$gz|";
+      }
+    }
+    $files = trim($files, '|');
+    $string .= "  <FilesMatch \"($files)$\">\n";
+    $string .= "    <IfModule mod_headers.c>\n";
+    $string .= "      Header set Expires \"Sun, 19 Nov 1978 05:00:00 GMT\"\n";
+    $string .= "      Header set Cache-Control \"no-store, no-cache, must-revalidate, post-check=0, pre-check=0\"\n";
+    $string .= "    </IfModule>\n";
+    $string .= "  </FilesMatch>\n";
+  }
+  if (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_CSS || BOOST_CACHE_JS || BOOST_CACHE_JSON) {
+    $string .= "  <IfModule mod_mime.c>\n";
+    $string .= BOOST_CACHE_HTML ? "    AddCharset utf-8 $_html\n" : '';
+    $string .= BOOST_CACHE_XML ?  "    AddCharset utf-8 $_xml\n" : '';
+    $string .= BOOST_CACHE_CSS ?  "    AddCharset utf-8 $_css\n" : '';
+    $string .= BOOST_CACHE_JS ?   "    AddCharset utf-8 $_js\n" : '';
+    $string .= BOOST_CACHE_JSON ? "    AddCharset utf-8 $_json\n" : '';
+    $string .= BOOST_GZIP ?       "    AddEncoding gzip $_gz\n" : '';
+    $string .= "  </IfModule>\n";
+  }
+  if (BOOST_CACHE_HTML) {
+    $string .= "  <FilesMatch \"$html$gz$\">\n";
+    $string .= "    ForceType text/html\n";
+    $string .= "  </FilesMatch>\n";
+  }
+  if (BOOST_CACHE_XML) {
+    $string .= "  <FilesMatch \"$xml$gz$\">\n";
+    $string .= "    ForceType text/xml\n";
+    $string .= "  </FilesMatch>\n";
+  }
+  if (BOOST_CACHE_CSS) {
+    $string .= "  <FilesMatch \"$css$gz$\">\n";
+    $string .= "    ForceType text/css\n";
+    $string .= "  </FilesMatch>\n";
+  }
+  if (BOOST_CACHE_JS) {
+    $string .= "  <FilesMatch \"$js$gz$\">\n";
+    $string .= "    ForceType text/javascript\n";
+    $string .= "  </FilesMatch>\n";
+  }
+  if (BOOST_CACHE_JSON) {
+    $string .= "  <FilesMatch \"$json$gz$\">\n";
+    $string .= "    ForceType text/javascript\n";
+    $string .= "  </FilesMatch>\n";
+  }
+  if (BOOST_AGGRESSIVE_GZIP) {
+    $string .= "\n";
+    $string .= "  # Gzip Cookie Test\n";
+    $string .= "  RewriteRule boost-gzip-cookie-test\.html  $cache_dir$permanent_dir_gzip/boost-gzip-cookie-test\.html\.gz [L,T=text/html]\n";
+  }
+  if (BOOST_CACHE_CSS || BOOST_CACHE_JS) {
+    if (BOOST_GZIP) {
+      $skip = BOOST_CACHE_CSS && BOOST_CACHE_JS ? 2 : 1;
+      $string .= "\n";
+      $string .= "  # GZIP - Cached css & js files\n";
+      $string .= BOOST_AGGRESSIVE_GZIP ? "  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]\n" : '';
+      $string .= "  RewriteCond %{HTTP:Accept-encoding} !gzip\n";
+      $string .= "  RewriteRule .* - [S=$skip]\n";
+      if (BOOST_CACHE_CSS) {
+        $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$css$gz -s\n";
+        $string .= "  RewriteRule .* $cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$css$gz [L,QSA,T=text/css]\n";
+      }
+      if (BOOST_CACHE_JS) {
+        $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$js$gz -s\n";
+        $string .= "  RewriteRule .* $cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$js$gz [L,QSA,T=text/javascript]\n";
+      }
+    }
+    $string .= "\n";
+    $string .= "  # NORMAL - Cached css & js files\n";
+    if (BOOST_CACHE_CSS) {
+      $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$css -s\n";
+      $string .= "  RewriteRule .* $cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$css [L,QSA,T=text/css]\n";
+    }
+    if (BOOST_CACHE_JS) {
+      $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$js -s\n";
+      $string .= "  RewriteRule .* $cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$js [L,QSA,T=text/javascript]\n";
+    }
+  }
+  if (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON) {
+    $skip = (int)BOOST_CACHE_HTML + (int)BOOST_CACHE_XML + (int)BOOST_CACHE_JSON;
+    $skip = BOOST_GZIP ? $skip*2+1 : $skip;
+    $string .= "\n";
+    $string .= "  # Caching for anonymous users\n";
+    $string .= "  # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR request came from this server OR https request\n";
+    $string .= "  RewriteCond %{REQUEST_METHOD} !^GET$ [OR]\n";
+    $string .= "  RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|cache|misc|modules|sites|system|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
+    $string .= "  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]\n";
+    $string .= BOOST_LOOPBACK_BYPASS ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
+    $string .= "  RewriteCond %{HTTPS} on\n";
+    $string .= "  RewriteRule .* - [S=$skip]\n";
+    if (BOOST_GZIP) {
+      $skip = (int)BOOST_CACHE_HTML + (int)BOOST_CACHE_XML + (int)BOOST_CACHE_JSON;
+      $string .= "\n";
+      $string .= "  # GZIP\n";
+      $string .= BOOST_AGGRESSIVE_GZIP ? "  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]\n" : '';
+      $string .= "  RewriteCond %{HTTP:Accept-encoding} !gzip\n";
+      $string .= "  RewriteRule .* - [S=$skip]\n";
+      if (BOOST_CACHE_HTML) {
+        $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz -s\n";
+        $string .= "  RewriteRule .* $cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz [L,T=text/html]\n";
+      }
+      if (BOOST_CACHE_XML) {
+        $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz -s\n";
+        $string .= "  RewriteRule .* $cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz [L,T=text/xml]\n";
+      }
+      if (BOOST_CACHE_JSON) {
+        $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json$gz -s\n";
+        $string .= "  RewriteRule .* $cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json$gz [L,T=text/javascript]\n";
+      }
+    }
+    $string .= "\n";
+    $string .= "  # NORMAL\n";
+    if (BOOST_CACHE_HTML) {
+      $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html -s\n";
+      $string .= "  RewriteRule .* $cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html [L,T=text/html]\n";
+    }
+    if (BOOST_CACHE_XML) {
+      $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml -s\n";
+      $string .= "  RewriteRule .* $cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml [L,T=text/xml]\n";
+    }
+    if (BOOST_CACHE_JSON) {
+      $string .= "  RewriteCond $document_root$drupal_subdir/$cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json -s\n";
+      $string .= "  RewriteRule .* $cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json [L,T=text/javascript]\n";
+    }
+  }
+  $string .= "\n";
+  $string .= "  ### BOOST END ###\n";
 
-  # GZIP - Cached css & js files
-  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]
-  RewriteCond %{HTTP:Accept-encoding} !gzip
-  RewriteRule .* - [S=2]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$css$gz -s
-  RewriteRule .* $cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$css$gz [L,QSA,T=text/css]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$js$gz -s
-  RewriteRule .* $cache_dir$permanent_dir_gzip/$server_name%{REQUEST_URI}$permanent_char$js$gz [L,QSA,T=text/javascript]
-
-  # NORMAL - Cached css & js files
-  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$css -s
-  RewriteRule .* $cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$css [L,QSA,T=text/css]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$js -s
-  RewriteRule .* $cache_dir$permanent_dir/$server_name%{REQUEST_URI}$permanent_char$js [L,QSA,T=text/javascript]
-
-  # Caching for anonymous users
-  # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR https request
-  RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
-  RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|cache|misc|modules|sites|system|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]
-  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]
-  RewriteCond %{HTTPS} on
-  RewriteRule .* - [S=7]
-
-  # GZIP
-  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]
-  RewriteCond %{HTTP:Accept-encoding} !gzip
-  RewriteRule .* - [S=3]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz -s
-  RewriteRule .* $cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz [L,T=text/html]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz -s
-  RewriteRule .* $cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz [L,T=text/xml]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json$gz -s
-  RewriteRule .* $cache_dir$gzip_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json$gz [L,T=text/javascript]
-
-  # NORMAL
-  RewriteCond $document_root$drupal_subdir/$cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html -s
-  RewriteRule .* $cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html [L,T=text/html]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml -s
-  RewriteRule .* $cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml [L,T=text/xml]
-  RewriteCond $document_root$drupal_subdir/$cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json -s
-  RewriteRule .* $cache_dir$normal_dir/$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json [L,T=text/javascript]
-
-  ### BOOST END ###
-ETO;
-
-return $string;
+  return $string;
 }
 
 /**
