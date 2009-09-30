@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.45 2009/09/27 06:44:12 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.46 2009/09/30 00:08:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -687,4 +687,13 @@ function boost_update_6109() {
   _boost_change_extension('.js', '.json');
   drupal_set_message(t('Be sure to update your htaccess rules.'), BOOST_CACHE_JSON ? 'warning' : 'status');
   return array(array('success' => TRUE, 'query' => '.js extension changed to .json.'));
+}
+
+/**
+* Update 6110 - Flush core caches
+*/
+function boost_update_6110() {
+  // Flush caches, needed since the menus where changed around.
+  drupal_flush_all_caches();
+  return array(array('success' => TRUE, 'query' => 'Core Caches Flushed.'));
 }
