@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.150 2009/09/27 06:47:55 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.151 2009/09/30 00:02:12 mikeytown2 Exp $
 
 /**
  * @file
@@ -2282,6 +2282,40 @@ function _boost_gzip_test_inject_iframe($data) {
  return str_replace('</body>', '<iframe src="/boost-gzip-cookie-test.html" style="width:0px; height:0px; border: 0px"></iframe>' . "\n" . '</body>', $data);
 }
 
+/**
+ * Attempts to set the PHP maximum execution time.
+ * See http://api.drupal.org/api/function/drupal_set_time_limit/7
+ *
+ * This function is a wrapper around the PHP function set_time_limit().
+ * When called, set_time_limit() restarts the timeout counter from zero.
+ * In other words, if the timeout is the default 30 seconds, and 25 seconds
+ * into script execution a call such as set_time_limit(20) is made, the
+ * script will run for a total of 45 seconds before timing out.
+ *
+ * It also means that it is possible to decrease the total time limit if
+ * the sum of the new time limit and the current time spent running the
+ * script is inferior to the original time limit. It is inherent to the way
+ * set_time_limit() works, it should rather be called with an appropriate
+ * value every time you need to allocate a certain amount of time
+ * to execute a task than only once at the beginning of the script.
+ *
+ * Before calling set_time_limit(), we check if this function is available
+ * because it could be disabled by the server administrator. We also hide all
+ * the errors that could occur when calling set_time_limit(), because it is
+ * not possible to reliably ensure that PHP or a security extension will
+ * not issue a warning/error if they prevent the use of this function.
+ *
+ * @param $time_limit
+ *   An integer specifying the new time limit, in seconds. A value of 0
+ *   indicates unlimited execution time.
+ */
+function _boost_set_time_limit($time_limit) {
+  if (function_exists('set_time_limit')) {
+    @set_time_limit($time_limit);
+  }
+}
+
+
 //////////////////////////////////////////////////////////////////////////////
 // PHP 4.x compatibility
 
@@ -2380,7 +2414,7 @@ function boost_crawler_run() {
       }
       $i = BOOST_CRAWLER_BATCH_SIZE;
       while ($i > 0) {
-        set_time_limit(0);
+        _boost_set_time_limit(0);
         sleep(2 * BOOST_CRAWLER_THREADS);
         $i--;
       }
@@ -2426,7 +2460,7 @@ function boost_crawler_run() {
         if (BOOST_VERBOSE >= 5) {
             watchdog('boost', 'Crawler - Thread @num of @total started', array('@num' => $threads, '@total' => _boost_variable_get('boost_crawler_number_of_threads')));
         }
-        set_time_limit(0);
+        _boost_set_time_limit(0);
       }
       db_unlock_tables();
       $threads--;
@@ -2507,14 +2541,14 @@ function boost_crawler_run() {
       if (BOOST_CRAWLER_THROTTLE) {
         usleep(BOOST_CRAWLER_THROTTLE);
       }
-      set_time_limit(0);
+      _boost_set_time_limit(0);
     }
     while ($url = db_result($results)) {
       drupal_http_request($url);
       if (BOOST_CRAWLER_THROTTLE) {
         usleep(BOOST_CRAWLER_THROTTLE);
       }
-      set_time_limit(0);
+      _boost_set_time_limit(0);
     }
     // Crawler for this round done, call self and exit
     boost_async_call_crawler($self, $this_thread, _boost_variable_get('boost_crawler_number_of_threads'));
