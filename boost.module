@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.156 2009/09/30 00:13:48 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.157 2009/09/30 00:15:04 mikeytown2 Exp $
 
 /**
  * @file
@@ -2214,13 +2214,19 @@ function _boost_get_menu_router() {
  *   The top-level directory that will be recursively created.
  * @param $recursive
  *   Operate in a recursive manner.
+ * @param $recursive
+ *   How deep the recursion is.
  */
-function _boost_mkdir_p($pathname, $recursive = TRUE) {
+function _boost_mkdir_p($pathname, $recursive = TRUE, $depth = 0) {
+  $depth++;
   $mode = is_numeric(BOOST_PERMISSIONS_DIR) ? octdec(BOOST_PERMISSIONS_DIR) : 0775;
   if (is_dir($pathname)) {
     return TRUE;
   }
-  if ($recursive && !_boost_mkdir_p(dirname($pathname))) {
+  if ($depth > BOOST_MAX_PATH_DEPTH) {
+    return FALSE;
+  }
+  if ($recursive && !_boost_mkdir_p(dirname($pathname), TRUE, $depth)) {
     return FALSE;
   }
   if ($result = @mkdir($pathname, $mode)) {
