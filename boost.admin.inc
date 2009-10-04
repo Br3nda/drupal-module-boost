@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.79 2009/09/30 09:17:31 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.80 2009/10/04 07:18:41 mikeytown2 Exp $
 
 /**
  * @file
@@ -41,7 +41,7 @@ function boost_admin_performance_page_submit($form, &$form_state) {
       drupal_set_message(t('Boost: Static page cache cleared.'));
     }
   }
-  else if ($boost_ignore_flush == 0 && (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE)) {
+  elseif ($boost_ignore_flush == 0 && (variable_get('preprocess_css', FALSE)==TRUE || variable_get('preprocess_js', FALSE)==TRUE)) {
     if (boost_cache_clear_all()) {
       drupal_set_message(t('Boost: Static page cache cleared.'), 'warning');
     }
@@ -361,7 +361,7 @@ function boost_admin_boost_performance_page() {
     '#options'       => array(
       0 => t('Disabled'),
       1 => t('Enabled'),
-     ),
+      ),
     '#description'   => t('Caution - If disabled you will need some other method of clearing cached pages. If Disabled, files have to be manually deleted from server or cleared using the administrative interface (<a href="@blocks">Enable</a> the <a href="@status">Boost: Pages cache status</a> block).', array('@blocks' => url('admin/build/block'), '@status' => url('admin/build/block/configure/boost/status'))),
   );
   $form['advanced']['boost_check_before_cron_expire'] = array(
@@ -486,7 +486,7 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Do not flush expired content on cron run, instead recrawl and overwrite it.'),
     '#default_value' => BOOST_LOOPBACK_BYPASS,
-    '#description'   => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') :!BOOST_OVERWRITE_FILE ? t('The "Overwrite the cached file if it already exits" must be turnned on inorder to enable this') : t('Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh.'),
+    '#description'   => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') :!BOOST_OVERWRITE_FILE ? t('The "Overwrite the cached file if it already exits" must be turned on in order to enable this') : t('Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh.'),
     '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_OVERWRITE_FILE,
   );
   $form['crawler']['boost_push_html'] = array(
@@ -587,7 +587,7 @@ function boost_admin_boost_performance_page() {
   $form['htaccess'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Boost Apache .htaccess settings generation'),
-    '#description'   => t('<a href="!link">Explanation of .htaccess variables</a> <br><br> <strong>Be sure to save the configuration and then go to the <a href="!rules">htaccess rules generation page</a> and copy the rules.</strong>', array('!link' => url('http://www.askapache.com/htaccess/mod_rewrite-variables-cheatsheet.html'), '!rules' => url('admin/settings/performance/boost-rules'))),
+    '#description'   => t('<a href="!link">Explanation of .htaccess variables</a> <br /><br /> <strong>Be sure to save the configuration and then go to the <a href="!rules">htaccess rules generation page</a> and copy the rules.</strong>', array('!link' => url('http://www.askapache.com/htaccess/mod_rewrite-variables-cheatsheet.html'), '!rules' => url('admin/settings/performance/boost-rules'))),
   );
   $form['htaccess']['boost_server_name_http_host'] = array(
     '#type'          => 'radios',
@@ -610,7 +610,7 @@ function boost_admin_boost_performance_page() {
   $rejects = array('SCRIPT_FILENAME', 'DOCUMENT_ROOT'); // values to ignore
   $output = boost_array_find($document_root, $_SERVER, $rejects); //search for values that match getcwd
   if (!empty($output)) {
-    foreach ($output as $key=>$value) {
+    foreach ($output as $key => $value) {
       $temp = '%{ENV:' . $key . '}';
       $options[$temp] = $temp; // adding values to options
       if ($value == $document_root) {
@@ -621,7 +621,7 @@ function boost_admin_boost_performance_page() {
   if ($_SERVER['DOCUMENT_ROOT'] == $document_root) {
     $best = '%{DOCUMENT_ROOT}';
   }
-  $description = t("Value of $best is recommended for this server.");
+  $description = t('Value of %best is recommended for this server.', array('%best' => $best));
   if (!isset($best)) {
     $best = $document_root;
     $description .= t(' Please open an boost issue on drupal.org, since apache and php are not configured correctly.');
@@ -944,7 +944,7 @@ function boost_count_core_db($all = FALSE) {
 /**
  * Flushes boost page cache
  */
-function boost_clear_cache_submit () {
+function boost_clear_cache_submit() {
   if (boost_cache_clear_all()) {
     drupal_set_message(t('Boost: Static page cache cleared.'));
   }
@@ -957,19 +957,19 @@ function boost_clear_cache_submit () {
 /**
  * Flushes all expired pages from database
  */
-function boost_clear_expired_cache_submit () {
+function boost_clear_expired_cache_submit() {
   if (boost_cache_db_expire()) {
     drupal_set_message(t('Boost: Expired stale files from static page cache.'));
   }
   else {
-   drupal_set_message(t('Boost: Set "Ignore cache flushing:" to \'Disabled\' OR \'Only Ignore Complete Flushes\' in the <a href="@link">boost advanced settings</a> & try again.', array('@link' => url('admin/settings/performance/boost', array('fragment' => 'edit-boost-ignore-flush-0-wrapper')))), 'warning');
+    drupal_set_message(t('Boost: Set "Ignore cache flushing:" to \'Disabled\' OR \'Only Ignore Complete Flushes\' in the <a href="@link">boost advanced settings</a> & try again.', array('@link' => url('admin/settings/performance/boost', array('fragment' => 'edit-boost-ignore-flush-0-wrapper')))), 'warning');
   }
 }
 
 /**
  * Flushes core page cache
  */
-function boost_clear_core_page_cache_submit () {
+function boost_clear_core_page_cache_submit() {
   cache_clear_all('*', 'cache_page', TRUE);
   drupal_set_message(t('Core page cache cleared.'));
 }
@@ -977,7 +977,7 @@ function boost_clear_core_page_cache_submit () {
 /**
  * Resets boost database & cache
  */
-function boost_reset_database_submit () {
+function boost_reset_database_submit() {
   if (boost_cache_clear_all()) {
     db_query("TRUNCATE {boost_cache}");
     db_query("TRUNCATE {boost_cache_settings}");
@@ -1020,10 +1020,10 @@ function boost_reset_crawler_submit() {
  */
 function boost_array_find($needle, $haystack, $a_not = array()) {
   $out = array();
-  foreach($haystack as $key=>$value) {
+  foreach ($haystack as $key => $value) {
     if ($value == $needle) {
       $good = TRUE;
-      foreach($a_not as $not) {
+      foreach ($a_not as $not) {
         if (strpos($key, $not) !== FALSE) {
           $good = FALSE;
         }

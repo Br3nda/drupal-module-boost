@@ -1,5 +1,10 @@
 <?php
-// $Id: boost_stats.php,v 1.1.2.11 2009/09/12 23:03:58 mikeytown2 Exp $
+// $Id: boost_stats.php,v 1.1.2.12 2009/10/04 07:18:41 mikeytown2 Exp $
+
+/**
+ * @file
+ * Place in webroot, for faster stats if needed.
+ */
 
 if (!isset($_GET['js'])) {
   // stats not called via JS, send image out & close connection.

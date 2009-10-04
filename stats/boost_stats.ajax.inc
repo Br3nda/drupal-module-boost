@@ -1,5 +1,10 @@
 <?php
-// $Id: boost_stats.ajax.inc,v 1.1.2.5 2009/09/24 10:35:24 mikeytown2 Exp $
+// $Id: boost_stats.ajax.inc,v 1.1.2.6 2009/10/04 07:18:41 mikeytown2 Exp $
+
+/**
+ * @file
+ * Boost & core stats logic
+ */
 
 /**
  * AJAX Menu Callback.
@@ -7,7 +12,7 @@
 function boost_stats_ajax_callback() {
   if (!isset($_GET['js'])) {
     // stats not called via JS, send image out & close connection.
-    boost_async_opp('1px image', TRUE, 'image/gif');
+    boost_async_opp("\x47\x49\x46\x38\x39\x61\x1\x0\x1\x0\x80\xff\x0\xc0\xc0\xc0\x0\x0\x0\x21\xf9\x4\x1\x0\x0\x0\x0\x2c\x0\x0\x0\x0\x1\x0\x1\x0\x0\x2\x2\x44\x1\x0\x3b", TRUE, 'image/gif', 43);
   }
 
   // Exit if nothing was passed to this.

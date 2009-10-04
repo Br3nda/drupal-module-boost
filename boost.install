@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.48 2009/09/30 09:17:31 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.49 2009/10/04 07:18:41 mikeytown2 Exp $
 
 /**
  * @file
@@ -81,7 +81,7 @@ function boost_requirements($phase) {
         $crawler_response = drupal_http_request(BOOST_CRAWLER_SELF . '&test=1');
         $crawler_response = $crawler_response->code;
       }
-      foreach($cache_directories as $cache_directory) {
+      foreach ($cache_directories as $cache_directory) {
         _boost_mkdir_p($cache_directory);
         $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
         if (!is_dir($cache_directory)) {
@@ -120,7 +120,7 @@ function boost_requirements($phase) {
       if (!boost_chk_module_versions()) {
         $requirements['boost_other_modules'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('You need to get a newer version of <a href="@url">poormanscron</a>, most likely the latest dev.', array('@url' => "http://drupal.org/project/poormanscron")),
+          'description' => $t('You need to get a newer version of <a href="@url">poormanscron</a>, most likely the latest dev, or the 2.0 branch.', array('@url' => "http://drupal.org/project/poormanscron")),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('poormanscron is the wrong version'),
         );
@@ -128,13 +128,7 @@ function boost_requirements($phase) {
       if (variable_get('language_negotiation', LANGUAGE_NEGOTIATION_NONE) == LANGUAGE_NEGOTIATION_PATH) {
         $requirements['boost_language'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('Boost is not compatible with '.
-            '<a href="!url">language negotiation</a> set to "language '.
-            'fallback".  An anonymous user with their browser set to a '.
-            "language other than the site's default language will navigate ".
-            "to a non-cached page.  The page will be displayed in the user's ".
-            'browser language.  Boost will cache the non-default-language '.
-            'page. ', array('!url' => url('admin/settings/language/configure'))),
+          'description' => $t('Boost is not compatible with <a href="!url">language negotiation</a> set to "language fallback".  An anonymous user with their browser set to a language other than the site\'s default language will navigate to a non-cached page.  The page will be displayed in the user\'s browser language.  Boost will cache the non-default-language page. ', array('!url' => url('admin/settings/language/configure'))),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('Cannot use "language fallback" language negotiation'),
         );
@@ -694,8 +688,8 @@ function boost_update_6109() {
 }
 
 /**
-* Update 6110 - Flush core caches
-*/
+ * Update 6110 - Flush core caches
+ */
 function boost_update_6110() {
   // Flush caches, needed since the menus where changed around.
   drupal_flush_all_caches();
