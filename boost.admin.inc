@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.80 2009/10/04 07:18:41 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.81 2009/10/04 07:24:50 mikeytown2 Exp $
 
 /**
  * @file
@@ -393,6 +393,12 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Clear all empty folders from cache.'),
     '#default_value' => BOOST_FLUSH_DIR,
     '#description'   => t('Disable this if you have to set settings for each dir/subdir, due to the way your server operates (permissions, etc...).'),
+  );
+  $form['advanced']['boost_flush_cck_references'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Clear all cached pages referenced via CCK with a node on insert/update/delete'),
+    '#default_value' => BOOST_FLUSH_CCK_REFERENCES,
+    '#description'   => t('The <a href="@url">Node Referrer</a> module is recommended.', array('@url' => 'http://drupal.org/project/nodereferrer')),
   );
   $form['advanced']['boost_flush_node_terms'] = array(
     '#type'          => 'checkbox',

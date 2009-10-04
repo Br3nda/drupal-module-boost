@@ -1,5 +1,6 @@
-; $Id: boost.info,v 1.1.2.1.2.3.2.1 2008/10/24 23:10:23 arto Exp $
+; $Id: boost.info,v 1.1.2.1.2.3.2.2 2009/10/04 07:24:50 mikeytown2 Exp $
 name = Boost
-description = Provides a performance and scalability boost through caching Drupal pages as static HTML files.
+description = Caches text (html, ajax, xml) outputted by Drupal as static files for performance and scalability purposes.
+recommends[] = nodereferrer
 package = Caching
 core = 6.x
