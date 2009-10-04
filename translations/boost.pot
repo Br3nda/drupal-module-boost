@@ -1,18 +1,18 @@
-# $Id: boost.pot,v 1.1.2.2 2009/10/04 07:18:41 mikeytown2 Exp $
+# $Id: boost.pot,v 1.1.2.3 2009/10/04 08:27:48 mikeytown2 Exp $
 #
 # LANGUAGE translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
 # Generated from files:
-#  boost.admin.inc,v 1.1.2.1.2.3.2.79 2009/09/30 09:17:31 mikeytown2
-#  boost.module,v 1.3.2.2.2.5.2.162 2009/09/30 19:57:36 mikeytown2
-#  boost.install,v 1.2.2.1.2.3.2.48 2009/09/30 09:17:31 mikeytown2
+#  boost.admin.inc,v 1.1.2.1.2.3.2.81 2009/10/04 07:24:50 mikeytown2
+#  boost.module,v 1.3.2.2.2.5.2.165 2009/10/04 07:24:50 mikeytown2
+#  boost.install,v 1.2.2.1.2.3.2.49 2009/10/04 07:18:41 mikeytown2
 #  boost.info,v 1.1.2.1.2.3.2.1 2008/10/24 23:10:23 arto
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2009-10-01 02:38-0700\n"
+"POT-Creation-Date: 2009-10-04 01:25-0700\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -37,7 +37,7 @@ msgstr ""
 msgid "Clear core page cached data: !count pages"
 msgstr ""
 
-#: boost.admin.inc:41;46;683;692;700;949
+#: boost.admin.inc:41;46;689;698;706;955
 msgid "Boost: Static page cache cleared."
 msgstr ""
 
@@ -53,7 +53,7 @@ msgstr ""
 msgid "All other caches cleared."
 msgstr ""
 
-#: boost.admin.inc:75 boost.module:659
+#: boost.admin.inc:75 boost.module:697
 msgid "none"
 msgstr ""
 
@@ -65,7 +65,7 @@ msgstr ""
 msgid "Boost - Static page cache"
 msgstr ""
 
-#: boost.admin.inc:86;96;362;456
+#: boost.admin.inc:86;96;362;462
 msgid "Disabled"
 msgstr ""
 
@@ -201,7 +201,7 @@ msgstr ""
 msgid "Cache Dir"
 msgstr ""
 
-#: boost.admin.inc:207 boost.module:120
+#: boost.admin.inc:207 boost.module:129
 msgid ""
 msgstr ""
 
@@ -346,514 +346,522 @@ msgid "Disable this if you have to set settings for each dir/subdir, due to the 
 msgstr ""
 
 #: boost.admin.inc:399
-msgid "Clear all cached terms pages associated with a node on insert/update/delete"
+msgid "Clear all cached pages referenced via CCK with a node on insert/update/delete"
 msgstr ""
 
 #: boost.admin.inc:401
-msgid "Works with view's taxonomy/term/% path as well as core."
+msgid "The <a href=\"@url\">Node Referrer</a> module is recommended."
 msgstr ""
 
 #: boost.admin.inc:405
-msgid "Clear Boosts cache when site goes offline"
+msgid "Clear all cached terms pages associated with a node on insert/update/delete"
 msgstr ""
 
 #: boost.admin.inc:407
-msgid "Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off."
+msgid "Works with view's taxonomy/term/% path as well as core."
 msgstr ""
 
 #: boost.admin.inc:411
-msgid "Overwrite the cached file if it already exits"
+msgid "Clear Boosts cache when site goes offline"
 msgstr ""
 
 #: boost.admin.inc:413
-msgid "This is useful if crawling a site before it goes live."
+msgid "Under site maintenance when the status is set to offline, boost clears its cache. If you do not want this to happen, clear this checkbox. Pages that are not cached will still send out a Site off-line message, so be smart if turning this off."
 msgstr ""
 
 #: boost.admin.inc:417
-msgid "Do not cache if php error on page"
+msgid "Overwrite the cached file if it already exits"
 msgstr ""
 
 #: boost.admin.inc:419
-msgid "Selected - Do not cache the page if there are PHP errors. Not Selected - Cache pages even if it might contain errors."
+msgid "This is useful if crawling a site before it goes live."
 msgstr ""
 
 #: boost.admin.inc:423
-msgid "Do not cache if a message is on the page"
+msgid "Do not cache if php error on page"
 msgstr ""
 
 #: boost.admin.inc:425
-msgid "Selected - Do not cache the page if there are drupal messages. Not Selected - Cache pages even if it might contain a drupal message."
+msgid "Selected - Do not cache the page if there are PHP errors. Not Selected - Cache pages even if it might contain errors."
 msgstr ""
 
 #: boost.admin.inc:429
-msgid "Turn off clean url's for logged in users"
+msgid "Do not cache if a message is on the page"
 msgstr ""
 
 #: boost.admin.inc:431
-msgid "Drupal will output non clean url's for non anonymous users. This allows for the browser to cache the page and still have logging in work. This is more on the extreme side of tweaks."
+msgid "Selected - Do not cache the page if there are drupal messages. Not Selected - Cache pages even if it might contain a drupal message."
 msgstr ""
 
 #: boost.admin.inc:435
-msgid "Aggressive Gzip: Deliver gzipped content independent of the request header."
+msgid "Turn off clean url's for logged in users"
 msgstr ""
 
 #: boost.admin.inc:437
-msgid "In order to deliver gzipped content independent of the header, this will test for gzip compression in a small iframe by sending it compressed content. This compressed content is javascript which creates a cookie with a note of gzip support. On the server side it checks for the cookie and then sends out gzipped content accordingly. See <a href=\"@url\">Website Performance - Activate Gzip</a>. In short some firewalls/proxies mangle the gzip header; this gets around that. iframe is on non compressed version of the frontpage only."
+msgid "Drupal will output non clean url's for non anonymous users. This allows for the browser to cache the page and still have logging in work. This is more on the extreme side of tweaks."
 msgstr ""
 
 #: boost.admin.inc:441
-msgid "Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664"
+msgid "Aggressive Gzip: Deliver gzipped content independent of the request header."
 msgstr ""
 
-#: boost.admin.inc:441;447
-msgid "chmod()"
-msgstr ""
-
-#: boost.admin.inc:443;449
-msgid "Sometimes because of funky servers you need it use a different file mode then the default."
+#: boost.admin.inc:443
+msgid "In order to deliver gzipped content independent of the header, this will test for gzip compression in a small iframe by sending it compressed content. This compressed content is javascript which creates a cookie with a note of gzip support. On the server side it checks for the cookie and then sends out gzipped content accordingly. See <a href=\"@url\">Website Performance - Activate Gzip</a>. In short some firewalls/proxies mangle the gzip header; this gets around that. iframe is on non compressed version of the frontpage only."
 msgstr ""
 
 #: boost.admin.inc:447
-msgid "Directories: Enter in a 4 digit number (octal) that will be used by !link. Example 0775"
+msgid "Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664"
+msgstr ""
+
+#: boost.admin.inc:447;453
+msgid "chmod()"
+msgstr ""
+
+#: boost.admin.inc:449;455
+msgid "Sometimes because of funky servers you need it use a different file mode then the default."
 msgstr ""
 
 #: boost.admin.inc:453
-msgid "Ignore cache flushing"
-msgstr ""
-
-#: boost.admin.inc:457
-msgid "Only Ignore Clear Entire Cache Commands (Recommended if caching css/js files)"
-msgstr ""
-
-#: boost.admin.inc:458
-msgid "Ignore Clear Entire Cache Commands & Cron Expiration"
+msgid "Directories: Enter in a 4 digit number (octal) that will be used by !link. Example 0775"
 msgstr ""
 
 #: boost.admin.inc:459
-msgid "Ignore All Delete Commands (Not Recommended)"
+msgid "Ignore cache flushing"
 msgstr ""
 
-#: boost.admin.inc:461
-msgid "Make a selection to put your site into a static cached state. Recommend turning on CSS & JS caching if enabled."
+#: boost.admin.inc:463
+msgid "Only Ignore Clear Entire Cache Commands (Recommended if caching css/js files)"
+msgstr ""
+
+#: boost.admin.inc:464
+msgid "Ignore Clear Entire Cache Commands & Cron Expiration"
 msgstr ""
 
 #: boost.admin.inc:465
+msgid "Ignore All Delete Commands (Not Recommended)"
+msgstr ""
+
+#: boost.admin.inc:467
+msgid "Make a selection to put your site into a static cached state. Recommend turning on CSS & JS caching if enabled."
+msgstr ""
+
+#: boost.admin.inc:471
 msgid "Watchdog Verbose Setting"
 msgstr ""
 
-#: boost.admin.inc:468
+#: boost.admin.inc:474
 msgid "1 Record almost no errors"
 msgstr ""
 
-#: boost.admin.inc:469
+#: boost.admin.inc:475
 msgid "3"
 msgstr ""
 
-#: boost.admin.inc:470
+#: boost.admin.inc:476
 msgid "5 Record all errors to the db log (watchdog)"
 msgstr ""
 
-#: boost.admin.inc:477
+#: boost.admin.inc:483
 msgid "Boost crawler"
 msgstr ""
 
-#: boost.admin.inc:481
+#: boost.admin.inc:487
 msgid "Enable the cron crawler"
 msgstr ""
 
-#: boost.admin.inc:483
+#: boost.admin.inc:489
 msgid "Pre-cache boosted URL's so they get cached before anyone accesses them. Enable the crawler first and save settings to use Preemptive Cache settings."
 msgstr ""
 
-#: boost.admin.inc:487
+#: boost.admin.inc:493
 msgid "Do not flush expired content on cron run, instead recrawl and overwrite it."
 msgstr ""
 
-#: boost.admin.inc:489;496;503;510;517
+#: boost.admin.inc:495;502;509;516;523
 msgid "Enable the crawler first to enable this checkbox."
 msgstr ""
 
-#: boost.admin.inc:489
+#: boost.admin.inc:495
 msgid "The \"Overwrite the cached file if it already exits\" must be turned on in order to enable this"
 msgstr ""
 
-#: boost.admin.inc:489
+#: boost.admin.inc:495
 msgid "Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh."
 msgstr ""
 
-#: boost.admin.inc:494
+#: boost.admin.inc:500
 msgid "Preemptive Cache HTML"
 msgstr ""
 
-#: boost.admin.inc:496;503;510
+#: boost.admin.inc:502;509;516
 msgid "Enable the caching of this content type to enable this checkbox"
 msgstr ""
 
-#: boost.admin.inc:496;503;510
+#: boost.admin.inc:502;509;516
 msgid "Crawl Site after cron runs, so the cache is primed."
 msgstr ""
 
-#: boost.admin.inc:501
+#: boost.admin.inc:507
 msgid "Preemptive Cache XML"
 msgstr ""
 
-#: boost.admin.inc:508
+#: boost.admin.inc:514
 msgid "Preemptive Cache AJAX/JSON"
 msgstr ""
 
-#: boost.admin.inc:515
+#: boost.admin.inc:521
 msgid "Crawl All URL's in the url_alias table"
 msgstr ""
 
-#: boost.admin.inc:517
+#: boost.admin.inc:523
 msgid "Preemptively cache all urls found in the Drupal url_alias table. This will crawl that page even if it is not expired. Enable & run cron to get the boost cache loaded."
 msgstr ""
 
-#: boost.admin.inc:522
+#: boost.admin.inc:528
 msgid "Crawler Throttle"
 msgstr ""
 
-#: boost.admin.inc:524
+#: boost.admin.inc:530
 msgid "Wait X micro seconds in between hitting each url. 1000000 is 1 second."
 msgstr ""
 
-#: boost.admin.inc:528
+#: boost.admin.inc:534
 msgid "Crawler Batch Size"
 msgstr ""
 
-#: boost.admin.inc:530
+#: boost.admin.inc:536
 msgid "Number of URL's each thread grabs per database operation."
 msgstr ""
 
-#: boost.admin.inc:535
+#: boost.admin.inc:541
 msgid "Number Of Threads"
 msgstr ""
 
-#: boost.admin.inc:547
+#: boost.admin.inc:553
 msgid "Be careful when choosing more then 2 threads."
 msgstr ""
 
-#: boost.admin.inc:556
+#: boost.admin.inc:562
 msgid "Boost crawler - Live info"
 msgstr ""
 
-#: boost.admin.inc:560
+#: boost.admin.inc:566
 msgid "Crawl Rate - Seconds Per Node (highly inaccurate)"
 msgstr ""
 
-#: boost.admin.inc:566
+#: boost.admin.inc:572
 msgid "Crawl ETA - highly inaccurate"
 msgstr ""
 
-#: boost.admin.inc:572
+#: boost.admin.inc:578
 msgid "Stop Crawler. !count URL's left."
 msgstr ""
 
-#: boost.admin.inc:579
+#: boost.admin.inc:585
 msgid "Reset Crawler & Cron Semaphore"
 msgstr ""
 
-#: boost.admin.inc:589
+#: boost.admin.inc:595
 msgid "Boost Apache .htaccess settings generation"
 msgstr ""
 
-#: boost.admin.inc:590
+#: boost.admin.inc:596
 msgid "<a href=\"!link\">Explanation of .htaccess variables</a> <br /><br /> <strong>Be sure to save the configuration and then go to the <a href=\"!rules\">htaccess rules generation page</a> and copy the rules.</strong>"
 msgstr ""
 
-#: boost.admin.inc:594
+#: boost.admin.inc:600
 msgid "Servers URL or Name"
 msgstr ""
 
-#: boost.admin.inc:602
+#: boost.admin.inc:608
 msgid "Best to leave these as %{}, only try the last option(s) if boost is still not working."
 msgstr ""
 
-#: boost.admin.inc:624
+#: boost.admin.inc:630
 msgid "Value of %best is recommended for this server."
 msgstr ""
 
-#: boost.admin.inc:627
+#: boost.admin.inc:633
 msgid " Please open an boost issue on drupal.org, since apache and php are not configured correctly."
 msgstr ""
 
-#: boost.admin.inc:631
+#: boost.admin.inc:637
 msgid "Document Root"
 msgstr ""
 
-#: boost.admin.inc:640
+#: boost.admin.inc:646
 msgid "Clear Boost's Database"
 msgstr ""
 
-#: boost.admin.inc:641
+#: boost.admin.inc:647
 msgid "Warning: This gives you a clean slate for the boost database, use with caution. If you change the directories or file extensions (in \"Boost directories and file extensions\"), then clearing the database would be a good idea, but not required."
 msgstr ""
 
-#: boost.admin.inc:645
+#: boost.admin.inc:651
 msgid "Reset boost database: !records records"
 msgstr ""
 
-#: boost.admin.inc:675
+#: boost.admin.inc:681
 msgid "Pre-process function %function() does not exist."
 msgstr ""
 
-#: boost.admin.inc:715
+#: boost.admin.inc:721
 msgid "Generated Rules"
 msgstr ""
 
-#: boost.admin.inc:719
+#: boost.admin.inc:725
 msgid "Copy this into your .htaccess file below <pre><tt>  # RewriteBase / </tt></pre> and above <pre><tt>  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'</tt></pre>"
 msgstr ""
 
-#: boost.admin.inc:952;987
+#: boost.admin.inc:958;993
 msgid "Boost: Set \"Ignore cache flushing:\" to 'Disabled' in the <a href=\"!link\">boost advanced settings</a> & try again."
 msgstr ""
 
-#: boost.admin.inc:962
+#: boost.admin.inc:968
 msgid "Boost: Expired stale files from static page cache."
 msgstr ""
 
-#: boost.admin.inc:965
+#: boost.admin.inc:971
 msgid "Boost: Set \"Ignore cache flushing:\" to 'Disabled' OR 'Only Ignore Complete Flushes' in the <a href=\"@link\">boost advanced settings</a> & try again."
 msgstr ""
 
-#: boost.admin.inc:974
+#: boost.admin.inc:980
 msgid "Core page cache cleared."
 msgstr ""
 
-#: boost.admin.inc:984
+#: boost.admin.inc:990
 msgid "Boost: Static page cache & database cleared."
 msgstr ""
 
-#: boost.admin.inc:997
+#: boost.admin.inc:1003
 msgid "Boost: Stop crawler signal given; all crawler threads should be stopped in less then %time"
 msgstr ""
 
-#: boost.admin.inc:1008
+#: boost.admin.inc:1014
 msgid "Boost: Crawler variables reset & cron semaphore cleared (cron reset)"
 msgstr ""
 
-#: boost.module:313
+#: boost.module:322
 msgid "Boost: Static page cache cleared. See <a href=\"http://drupal.org/node/276615\">http://drupal.org/node/276615</a> for reason why (core bug that is fixed in 6.14+)."
 msgstr ""
 
-#: boost.module:529
+#: boost.module:567
 msgid "Boost: Pages cache status"
 msgstr ""
 
-#: boost.module:535
+#: boost.module:573
 msgid "Boost: Pages cache configuration"
 msgstr ""
 
-#: boost.module:541
+#: boost.module:579
 msgid "Boost: AJAX core statistics"
 msgstr ""
 
-#: boost.module:551
+#: boost.module:589
 msgid "Display Statistics."
 msgstr ""
 
-#: boost.module:553
+#: boost.module:591
 msgid "If false, uses Javascript to hide the block via \"parent().parent().hide()\"."
 msgstr ""
 
-#: boost.module:557
+#: boost.module:595
 msgid "Cache Statistics Block"
 msgstr ""
 
-#: boost.module:574
+#: boost.module:612
 msgid "This page is being served <strong>live</strong> to anonymous visitors, as it is not currently in the static page cache."
 msgstr ""
 
-#: boost.module:578
+#: boost.module:616
 msgid "This page is being served to anonymous visitors from the static page cache."
 msgstr ""
 
-#: boost.module:579
+#: boost.module:617
 msgid "<strong>The cached copy expired %interval ago.</strong>"
 msgstr ""
 
-#: boost.module:579
+#: boost.module:617
 msgid "The cached copy will expire in %interval."
 msgstr ""
 
-#: boost.module:589
+#: boost.module:627
 msgid "There are <strong>php errors</strong> or <strong>drupal messages</strong> on this page, preventing boost from caching."
 msgstr ""
 
-#: boost.module:591
+#: boost.module:629
 msgid " ERROR: <pre>%error</pre> !link <br /> !performance"
 msgstr ""
 
-#: boost.module:591;880
+#: boost.module:629;918
 msgid "Lookup Error Type"
 msgstr ""
 
-#: boost.module:591;594;880;889
+#: boost.module:629;632;918;927
 msgid "Turn Off Error Checking"
 msgstr ""
 
-#: boost.module:594
+#: boost.module:632
 msgid " MESSAGES: %msg <br /> !performance"
 msgstr ""
 
-#: boost.module:646
+#: boost.module:684
 msgid "Flush Page"
 msgstr ""
 
-#: boost.module:660
+#: boost.module:698
 msgid "default"
 msgstr ""
 
-#: boost.module:679
+#: boost.module:717
 msgid "Minimum cache lifetime"
 msgstr ""
 
-#: boost.module:682
+#: boost.module:720
 msgid "Default: %default"
 msgstr ""
 
-#: boost.module:686
+#: boost.module:724
 msgid "Preemptive Cache"
 msgstr ""
 
-#: boost.module:696
+#: boost.module:734
 msgid "Scope"
 msgstr ""
 
-#: boost.module:706
+#: boost.module:744
 msgid "Set Configuration"
 msgstr ""
 
-#: boost.module:712
+#: boost.module:750
 msgid "Page ID"
 msgstr ""
 
-#: boost.module:719
+#: boost.module:757
 msgid "id_value"
 msgstr ""
 
-#: boost.module:725
+#: boost.module:763
 msgid "Content Type"
 msgstr ""
 
-#: boost.module:732
+#: boost.module:770
 msgid "type_value"
 msgstr ""
 
-#: boost.module:738
+#: boost.module:776
 msgid "Content Container"
 msgstr ""
 
-#: boost.module:745
+#: boost.module:783
 msgid "container_value"
 msgstr ""
 
-#: boost.module:751
+#: boost.module:789
 msgid "Delete Configuration"
 msgstr ""
 
-#: boost.module:753
+#: boost.module:791
 msgid "Check the box to delete it"
 msgstr ""
 
-#: boost.module:2639
+#: boost.module:2677
 msgid "Boost: Crawler is already running. Attempt to start crawler failed."
 msgstr ""
 
-#: boost.module:334;880;889;1127;1654;1660;1675;1696;2437;2447;2471;2488;2523;2536;2551;2564;2597;2607;2637;2648
+#: boost.module:343;918;927;1165;1692;1698;1713;1734;2475;2485;2509;2526;2561;2574;2589;2602;2635;2645;2675;2686
 msgid "boost"
 msgstr ""
 
-#: boost.module:334
+#: boost.module:343
 msgid "Expired stale files from static page cache."
 msgstr ""
 
-#: boost.module:880
+#: boost.module:918
 msgid "There are <strong>php errors</strong> on this page, preventing boost from caching. ERROR: <pre>%error</pre> !link <br /> !performance"
 msgstr ""
 
-#: boost.module:889
+#: boost.module:927
 msgid "There are <strong>drupal messages</strong> on this page, preventing boost from caching. MESSAGES: %msg <br /> !performance"
 msgstr ""
 
-#: boost.module:1127
+#: boost.module:1165
 msgid "Flushed ALL files from static page cache."
 msgstr ""
 
-#: boost.module:1654
+#: boost.module:1692
 msgid "Unable to create directory: %dir<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />"
 msgstr ""
 
-#: boost.module:1660
+#: boost.module:1698
 msgid "Unable to write temp file: %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />"
 msgstr ""
 
-#: boost.module:1675
+#: boost.module:1713
 msgid "Unable to rename file: %temp  to  %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />"
 msgstr ""
 
-#: boost.module:1696
+#: boost.module:1734
 msgid "base_url is not set in your settings.php file. Please read #7 in boosts INSTALL.txt file."
 msgstr ""
 
-#: boost.module:2437
+#: boost.module:2475
 msgid "Crawler - Thread %num stopped."
 msgstr ""
 
-#: boost.module:2447
+#: boost.module:2485
 msgid "Crawler - Rogue thread killed."
 msgstr ""
 
-#: boost.module:2471
+#: boost.module:2509
 msgid "Crawler Sleep for 15 seconds"
 msgstr ""
 
-#: boost.module:2488
+#: boost.module:2526
 msgid "Crawler sleeping for @x seconds, do to forced shutdown."
 msgstr ""
 
-#: boost.module:2523;2536
+#: boost.module:2561;2574
 msgid "Crawler - Thread @num of @total started"
 msgstr ""
 
-#: boost.module:2551
+#: boost.module:2589
 msgid "Crawler - Thread %num of %total Killed."
 msgstr ""
 
-#: boost.module:2564;2607
+#: boost.module:2602;2645
 msgid "Crawler - Restarting with 1 thread, to try & get the stubborn urls cached."
 msgstr ""
 
-#: boost.module:2597
+#: boost.module:2635
 msgid "Crawler - Thread %num of %total Done."
 msgstr ""
 
-#: boost.module:2637
+#: boost.module:2675
 msgid "Crawler already running"
 msgstr ""
 
-#: boost.module:2648
+#: boost.module:2686
 msgid "Crawler Start %self"
 msgstr ""
 
-#: boost.module:226
+#: boost.module:235
 msgid "Performance"
 msgstr ""
 
-#: boost.module:231
+#: boost.module:240
 msgid "Boost Settings"
 msgstr ""
 
-#: boost.module:232
+#: boost.module:241
 msgid "Advanced boost configuration."
 msgstr ""
 
-#: boost.module:241
+#: boost.module:250
 msgid "Boost htaccess rules generation"
 msgstr ""
 
-#: boost.module:242
+#: boost.module:251
 msgid "htaccess boost rules."
 msgstr ""
 
@@ -970,7 +978,7 @@ msgid "Boost Disabled"
 msgstr ""
 
 #: boost.info:0
-msgid "Provides a performance and scalability boost through caching Drupal pages as static HTML files."
+msgid "Caches text (html, ajax, xml) outputted by Drupal as static files for performance and scalability purposes."
 msgstr ""
 
 #: boost.info:0
