@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.50 2009/10/06 19:44:16 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.51 2009/10/06 22:05:07 mikeytown2 Exp $
 
 /**
  * @file
@@ -811,3 +811,39 @@ function boost_update_6115() {
   return $ret;
 }
 
+/**
+ * Update 6116 - Update page_callback column so views_page is now view
+ */
+function boost_update_6116() {
+  $ret = array();
+  $ret[] = update_sql("UPDATE {boost_cache} SET page_callback = 'view' WHERE page_callback = 'views_page'");
+  $ret[] = update_sql("UPDATE {boost_cache_settings} SET page_callback = 'view' WHERE page_callback = 'views_page'");
+  return $ret;
+}
+
+/**
+ * Update 6117 - Update page_id column so it uses varchar - Fix for views
+ */
+function boost_update_6117() {
+  $ret = array();
+  // Edit filename column & set PK
+  $result = db_query("SELECT * FROM {boost_cache_settings} WHERE page_callback = 'view' AND page_id <> 0");
+  while ($old = db_fetch_array($result)) {
+    drupal_set_message(t('Due to a bug in Boost, this view\'s scope was not set correctly. It has been deleted, and needs to be re-set.<br /><br /> Base Dir: %dir<br /> View Name: %args<br /> Cache Lifetime: %time', array('%dir' => $old['base_dir'], '%args' => $old['page_arguments'], '%time' => format_interval($old['lifetime'], 1))), 'warning');
+    $ret[] = update_sql('DELETE FROM {boost_cache_settings} WHERE csid = %d', $old['csid']);
+  }
+
+  db_change_field($ret, 'boost_cache', 'page_id', 'page_id', array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => ''
+      ));
+  db_change_field($ret, 'boost_cache_settings', 'page_id', 'page_id', array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => ''
+      ));
+  return $ret;
+}

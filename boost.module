@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.166 2009/10/06 19:44:16 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.167 2009/10/06 22:05:07 mikeytown2 Exp $
 
 /**
  * @file
@@ -1494,9 +1494,9 @@ function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer
   $url = $base_root . request_uri();
   $hash = md5($filename);
   $hash_url = md5($url);
-  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = %d, extension = '%s', url = '%s', filename = '%s', hash_url = '%s' WHERE hash = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url, $filename, $hash_url, $hash);
+  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = '%s', extension = '%s', url = '%s', filename = '%s', hash_url = '%s' WHERE hash = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url, $filename, $hash_url, $hash);
   if (!db_affected_rows()) {
-    db_query("INSERT INTO {boost_cache} (hash, hash_url, filename, expire, lifetime, push, page_callback, page_arguments, timer, timer_average, base_dir, page_id, extension, url) VALUES ('%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', %d, '%s', '%s')", $hash, $hash_url, $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url);
+    db_query("INSERT INTO {boost_cache} (hash, hash_url, filename, expire, lifetime, push, page_callback, page_arguments, timer, timer_average, base_dir, page_id, extension, url) VALUES ('%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', '%s', '%s', '%s')", $hash, $hash_url, $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url);
   }
 }
 
@@ -1528,21 +1528,21 @@ function boost_remove_db($filename) {
 function boost_put_settings_db($lifetime, $push, $router_item, $scope) {
   switch ($scope) {
     case 0:
-      db_query("UPDATE {boost_cache_settings} SET lifetime = %d, push = %d WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, $router_item['page_id']);
+      db_query("UPDATE {boost_cache_settings} SET lifetime = %d, push = %d WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = '%s'", $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, $router_item['page_id']);
       if (!db_affected_rows()) {
-        @db_query("INSERT INTO {boost_cache_settings} (csid, lifetime, push, page_callback, page_arguments, base_dir, page_id) VALUES (NULL, %d, %d, '%s', '%s', '%s', %d)", $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, $router_item['page_id']);
+        @db_query("INSERT INTO {boost_cache_settings} (csid, lifetime, push, page_callback, page_arguments, base_dir, page_id) VALUES (NULL, %d, %d, '%s', '%s', '%s', '%s')", $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, $router_item['page_id']);
       }
       break;
     case 1:
-      db_query("UPDATE {boost_cache_settings} SET lifetime = %d, push = %d WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = 0", $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH);
+      db_query("UPDATE {boost_cache_settings} SET lifetime = %d, push = %d WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = '0'", $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH);
       if (!db_affected_rows()) {
-        @db_query("INSERT INTO {boost_cache_settings} (csid, lifetime, push, page_callback, page_arguments, base_dir, page_id) VALUES (NULL, %d, %d, '%s', '%s', '%s', %d)", $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, 0);
+        @db_query("INSERT INTO {boost_cache_settings} (csid, lifetime, push, page_callback, page_arguments, base_dir, page_id) VALUES (NULL, %d, %d, '%s', '%s', '%s', '%s')", $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, 0);
       }
       break;
     case 2:
-      db_query("UPDATE {boost_cache_settings} SET lifetime = %d, push = %d WHERE page_callback = '%s' AND page_arguments = '0' AND base_dir = '%s' AND page_id = 0", $lifetime, $push, $router_item['page_callback'], BOOST_FILE_PATH);
+      db_query("UPDATE {boost_cache_settings} SET lifetime = %d, push = %d WHERE page_callback = '%s' AND page_arguments = '0' AND base_dir = '%s' AND page_id = '0'", $lifetime, $push, $router_item['page_callback'], BOOST_FILE_PATH);
       if (!db_affected_rows()) {
-        @db_query("INSERT INTO {boost_cache_settings} (csid, lifetime, push, page_callback, page_arguments, base_dir, page_id) VALUES (NULL, %d, %d, '%s', '%s', '%s', %d)", $lifetime, $push, $router_item['page_callback'], '0', BOOST_FILE_PATH, 0);
+        @db_query("INSERT INTO {boost_cache_settings} (csid, lifetime, push, page_callback, page_arguments, base_dir, page_id) VALUES (NULL, %d, %d, '%s', '%s', '%s', '%s')", $lifetime, $push, $router_item['page_callback'], '0', BOOST_FILE_PATH, 0);
       }
       break;
   }
@@ -1611,13 +1611,13 @@ function boost_get_db($filename) {
 function boost_get_settings_db($router_item) {
   $settings = array();
   // Get a more exact match first
-  $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, $router_item['page_id'], 0, 1));
+  $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = '%s'", $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, $router_item['page_id'], 0, 1));
 
   // Get for the content type
-  $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, 0, 0, 1));
+  $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = '%s'", $router_item['page_callback'], $router_item['page_arguments'], BOOST_FILE_PATH, 0, 0, 1));
 
   // Finally get the content container (node, view, term, ect...)
-  $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = %d", $router_item['page_callback'], 0, BOOST_FILE_PATH, 0, 0, 1));
+  $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_arguments = '%s' AND base_dir = '%s' AND page_id = '%s'", $router_item['page_callback'], 0, BOOST_FILE_PATH, 0, 0, 1));
 
   return $settings;
 }
@@ -1627,7 +1627,7 @@ function boost_get_settings_db($router_item) {
  */
 function boost_get_db_term($term) {
   $filenames = array();
-  $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE expire > 0 AND page_id = %d AND page_callback = 'taxonomy'", $term);
+  $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE expire > 0 AND page_id = '%s' AND page_callback = 'taxonomy'", $term);
   while ($filename = db_fetch_array($result)) {
     $filenames[] = $filename;
   }
@@ -2185,6 +2185,7 @@ function _boost_copy_file_get_domains($dest) {
  * Gets page_callback & page_arguments from menu_router table
  *
  * Allows for any content type to have it's own cache expiration.
+ * TODO Better support of panels.
  */
 function _boost_get_menu_router() {
   $original_map = arg(NULL, $_GET['q']);
@@ -2198,24 +2199,34 @@ function _boost_get_menu_router() {
     $router_item['page_arguments'] = $node->type;
     $router_item['page_callback'] = 'node';
     $router_item['page_id'] = arg(1);
-
+    return $router_item;
   }
   // Handle taxonomy
-  elseif (arg(0) == 'taxonomy' && is_numeric(arg(2))) {
+  if (arg(0) == 'taxonomy' && is_numeric(arg(2))) {
     $term = taxonomy_get_term(arg(2));
     $vocab = taxonomy_vocabulary_load($term->vid);
     $router_item['page_arguments'] = $vocab->name;
     $router_item['page_callback'] = 'taxonomy';
     $router_item['page_id'] = arg(2);
+    return $router_item;
   }
   // Handle users
   if (arg(0) == 'user' && is_numeric(arg(1))) {
     $router_item['page_arguments'] = implode(', ', user_load(array('uid' => arg(1)))->roles);
     $router_item['page_callback'] = 'user';
     $router_item['page_id'] = arg(1);
+    return $router_item;
   }
+  // Handle views
+  if ($router_item['page_callback'] == 'views_page') {
+    $router_item['page_callback'] = 'view';
+    $router_item['page_id'] = isset($router_item['page_arguments'][1]) ? $router_item['page_arguments'][1] : 0;
+    $router_item['page_arguments'] = $router_item['page_arguments'][0];
+    return $router_item;
+  }
+
   // Try to handle everything else
-  elseif (is_array($router_item['page_arguments'])) {
+  if (is_array($router_item['page_arguments'])) {
     foreach ($router_item['page_arguments'] as $string) {
       if (is_string($string)) {
         $router_item['page_arguments'] = $string;
@@ -2231,29 +2242,16 @@ function _boost_get_menu_router() {
   if (is_array($router_item['page_arguments'])) {
     $router_item['page_arguments'] = (string)$router_item['page_arguments'][0];
   }
-
-  // Handle Views
-  if ($router_item['page_callback'] == 'views_page') {
-    $vid = db_fetch_array(db_query_range("SELECT vid FROM {views_view} WHERE name = '%s'", $router_item['page_arguments'], 0, 1));
-    $router_item['page_id'] = $vid['vid'];
-  }
-
-  // Handle Panels
+  // Handle panels
   if (strstr($router_item['page_callback'], 'page_execute')) {
-    if (db_fetch_array(db_query("SHOW TABLES LIKE 'delegator_pages'"))) {
+    if (db_table_exists('delegator_pages')) {
       $pid = db_fetch_array(db_query_range("SELECT pid FROM {delegator_pages} WHERE name = '%s'", $router_item['page_arguments'], 0, 1));
     }
-    elseif (db_fetch_array(db_query("SHOW TABLES LIKE 'page_manager_pages'"))) {
+    elseif (db_table_exists('page_manager_pages')) {
       $pid = db_fetch_array(db_query_range("SELECT pid FROM {page_manager_pages} WHERE name = '%s'", $router_item['page_arguments'], 0, 1));
     }
-    if ($pid) {
-      $router_item['page_id'] = $pid['pid'];
-    }
-    else {
-      $router_item['page_id'] = 0;
-    }
+    $router_item['page_id'] = $pid ? $pid['pid'] : 0;
   }
-
   return $router_item;
 }
 
