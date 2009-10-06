@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.49 2009/10/04 07:18:41 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.50 2009/10/06 19:44:16 mikeytown2 Exp $
 
 /**
  * @file
@@ -195,10 +195,17 @@ function boost_schema() {
   $schema['boost_cache'] = array(
     'description' => t('List of the cached page'),
     'fields' => array(
+      'hash' => array(
+        'description' => 'MD5 hash of filename',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'filename' => array(
         'description' => 'Path of the cached file relative to Drupal webroot.',
-        'type' => 'varchar',
-        'length' => 255,
+        'type' => 'text',
+        'size' => 'normal',
         'not null' => TRUE,
         'default' => '',
       ),
@@ -270,10 +277,17 @@ function boost_schema() {
         'default' => 0,
         'description' => 'Average time in milliseconds that the page took to be generated.',
       ),
+      'hash_url' => array(
+        'description' => 'MD5 hash of url',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'url' => array(
         'description' => 'URL of cached page',
-        'type' => 'varchar',
-        'length' => 255,
+        'type' => 'text',
+        'size' => 'normal',
         'not null' => TRUE,
         'default' => '',
       ),
@@ -289,7 +303,7 @@ function boost_schema() {
       'page_arguments' => array('page_arguments'),
       'extension' => array('extension'),
     ),
-    'primary key' => array('filename'),
+    'primary key' => array('hash'),
   );
   $schema['boost_cache_settings'] = array(
     'description' => t('Boost cache settings'),
@@ -367,17 +381,24 @@ function boost_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE
       ),
+      'hash' => array(
+        'description' => 'MD5 hash of url',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'url' => array(
         'description' => 'URL of page',
-        'type' => 'varchar',
-        'length' => 255,
+        'type' => 'text',
+        'size' => 'normal',
         'not null' => TRUE,
         'default' => '',
       ),
     ),
     'primary key' => array('id'),
     'unique keys' => array(
-      'url' => array('url'),
+      'hash' => array('hash'),
     ),
   );
   return $schema;
@@ -695,3 +716,98 @@ function boost_update_6110() {
   drupal_flush_all_caches();
   return array(array('success' => TRUE, 'query' => 'Core Caches Flushed.'));
 }
+
+/**
+ * Update 6111 - Use MD5 hash for DB Keys, allowing for long URL's to be cached
+ */
+function boost_update_6111() {
+  $ret = array();
+  // Add in hash & hash_url columns to boost_cache
+  db_add_field($ret, 'boost_cache', 'hash', array(
+        'description' => 'MD5 hash of filename',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ));
+  db_add_field($ret, 'boost_cache', 'hash_url', array(
+        'description' => 'MD5 hash of url',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ));
+
+  // Add in hash columns to boost_crawler
+  db_add_field($ret, 'boost_crawler', 'hash', array(
+        'description' => 'MD5 hash of url',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ));
+  return $ret;
+}
+
+/**
+ * Update 6112 - Calculate filename MD5 for boost_cache table
+ */
+function boost_update_6112() {
+  $result = db_query("SELECT filename FROM {boost_cache} WHERE hash = ''");
+  while ($filename = db_result($result)) {
+    $hash = md5($filename);
+    db_query("UPDATE {boost_cache} SET hash = '%s' WHERE filename = '%s'", $hash, $filename);
+  }
+  return array(array('success' => TRUE, 'query' => 'Filenames hashed'));
+}
+
+/**
+ * Update 6113 - Calculate url MD5 for boost_cache table
+ */
+function boost_update_6113() {
+  $result = db_query("SELECT url FROM {boost_cache} WHERE hash_url = ''");
+  while ($url = db_result($result)) {
+    $hash = md5($url);
+    db_query("UPDATE {boost_cache} SET hash_url = '%s' WHERE url = '%s'", $hash, $url);
+  }
+  return array(array('success' => TRUE, 'query' => 'URLs hashed'));
+}
+
+/**
+ * Update 6114 - Calculate url MD5 for boost_crawler table
+ */
+function boost_update_6114() {
+  $result = db_query("SELECT url FROM {boost_crawler} WHERE hash = ''");
+  while ($url = db_result($result)) {
+    $hash = md5($url);
+    db_query("UPDATE {boost_crawler} SET hash = '%s' WHERE url = '%s'", $hash, $url);
+  }
+  return array(array('success' => TRUE, 'query' => 'URLs hashed'));
+}
+
+/**
+ * Update 6115 - Change PK
+ */
+function boost_update_6115() {
+  $ret = array();
+  // Edit filename column & set PK
+  db_drop_primary_key($ret, 'boost_cache');
+  db_change_field($ret, 'boost_cache', 'filename', 'filename', array(
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => ''
+      ));
+  db_add_primary_key($ret, 'boost_cache', array('hash'));
+  // Edit URL column & set unique key
+  db_drop_unique_key($ret, 'boost_crawler', 'url');
+  db_change_field($ret, 'boost_crawler', 'url', 'url', array(
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => ''
+      ));
+  db_add_unique_key($ret, 'boost_crawler', 'hash', array('hash'));
+  return $ret;
+}
+

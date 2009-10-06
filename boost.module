@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.165 2009/10/04 07:24:50 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.166 2009/10/06 19:44:16 mikeytown2 Exp $
 
 /**
  * @file
@@ -462,7 +462,7 @@ function boost_expire_node($node) {
       $filenames = array_merge($filenames, boost_get_db_term($tid));
     }
     foreach ($filenames as $filename) {
-      boost_cache_kill($filename);
+      boost_cache_kill($filename['filename'], $filename['hash']);
     }
   }
 
@@ -1295,17 +1295,24 @@ function boost_cache_expire($path, $wildcard = FALSE) {
  * Deletes cached page from file system
  *
  * @param $filename
- *   Name of cached file; primary key in database
+ *   Name of cached file.
+ * @param $hash
+ *   Primary key in database; filename hash
  */
-function boost_cache_kill($filename) {
+function boost_cache_kill($filename, $hash = '') {
   if (BOOST_IGNORE_FLUSH < 3 && strstr($filename, BOOST_FILE_PATH)) {
-    db_query("UPDATE {boost_cache} SET expire = 0 WHERE filename = '%s'", $filename);
-    if (file_exists($filename)) {
-      @unlink($filename);
+    if ($hash == '') {
+      $hash = md5($filename);
     }
-    $gz_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename) . BOOST_GZIP_EXTENSION;
-    if (file_exists($gz_filename)) {
-      @unlink($gz_filename);
+    if ($hash != '') {
+      db_query("UPDATE {boost_cache} SET expire = 0 WHERE hash = '%s'", $hash);
+      if (file_exists($filename)) {
+        @unlink($filename);
+      }
+      $gz_filename = str_replace(BOOST_FILE_PATH, BOOST_GZIP_FILE_PATH, $filename) . BOOST_GZIP_EXTENSION;
+      if (file_exists($gz_filename)) {
+        @unlink($gz_filename);
+      }
     }
   }
 }
@@ -1317,9 +1324,9 @@ function boost_cache_kill($filename) {
  */
 function boost_cache_db_expire() {
   if (BOOST_IGNORE_FLUSH < 2) {
-    $result = db_query('SELECT filename FROM {boost_cache} WHERE expire BETWEEN 1 AND %d', BOOST_TIME);
+    $result = db_query('SELECT filename, hash FROM {boost_cache} WHERE expire BETWEEN 1 AND %d', BOOST_TIME);
     while ($boost = db_fetch_array($result)) {
-      boost_cache_kill($boost['filename']);
+      boost_cache_kill($boost['filename'], $boost['hash']);
     }
     if (BOOST_FLUSH_DIR) {
       // TO-DO: del empty dirs.
@@ -1466,7 +1473,7 @@ function boost_db_prep($filename, $extension, $expire) {
  * Puts boost info into database.
  *
  * @param $filename
- *   Name of cached file; primary key in database
+ *   Name of cached file; hash of this is primary key in database
  * @param $expire
  *   Expiration time
  * @param $lifetime
@@ -1485,9 +1492,11 @@ function boost_db_prep($filename, $extension, $expire) {
 function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension) {
   global $base_root;
   $url = $base_root . request_uri();
-  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = %d, extension = '%s', url = '%s' WHERE filename = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url, $filename);
+  $hash = md5($filename);
+  $hash_url = md5($url);
+  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_arguments = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = %d, extension = '%s', url = '%s', filename = '%s', hash_url = '%s' WHERE hash = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url, $filename, $hash_url, $hash);
   if (!db_affected_rows()) {
-    db_query("INSERT INTO {boost_cache} (filename, expire, lifetime, push, page_callback, page_arguments, timer, timer_average, base_dir, page_id, extension, url) VALUES ('%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', %d, '%s', '%s')", $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url);
+    db_query("INSERT INTO {boost_cache} (hash, hash_url, filename, expire, lifetime, push, page_callback, page_arguments, timer, timer_average, base_dir, page_id, extension, url) VALUES ('%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', %d, '%s', '%s')", $hash, $hash_url, $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_arguments'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url);
   }
 }
 
@@ -1495,19 +1504,18 @@ function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer
  * Removes info from database. Use on 404 or 403.
  *
  * @param $filename
- *   Name of cached file; primary key in database
+ *   Name of cached file; hash of this is primary key in database
  */
 function boost_remove_db($filename) {
   if (strstr($filename, BOOST_FILE_PATH)) {
-    db_query("DELETE FROM {boost_cache} WHERE filename = '%s'", $filename);
+    $hash = md5($filename);
+    db_query("DELETE FROM {boost_cache} WHERE hash = '%s'", $hash);
   }
 }
 
 /**
  * Puts boost info into database.
  *
- * @param $filename
- *   Name of cached file; primary key in database
  * @param $expire
  *   Expiration time
  * @param $lifetime
@@ -1543,16 +1551,8 @@ function boost_put_settings_db($lifetime, $push, $router_item, $scope) {
 /**
  * Removes info from boost database.
  *
- * @param $filename
- *   Name of cached file; primary key in database
- * @param $expire
- *   Expiration time
- * @param $lifetime
- *   Default lifetime
- * @param $push
- *   Pre-cache this file
- * @param $router_item
- *   Array containing page_callback, page_arguments & page_id.
+ * @param $csid
+ *   Cache Settings primary ID
  */
 function boost_remove_settings_db($csid) {
   db_query("DELETE FROM {boost_cache_settings} WHERE csid = %d", $csid);
@@ -1565,6 +1565,8 @@ function boost_remove_settings_db($csid) {
  *   Default lifetime
  * @param $push
  *   Pre-cache this file
+ * @param $scope
+ *   At what level does this effect cache expiration
  */
 function boost_set_db_page_settings($lifetime, $push, $scope) {
   $router_item = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
@@ -1596,7 +1598,8 @@ function boost_set_db_page_settings($lifetime, $push, $scope) {
  *   Filename to be looked up in the database
  */
 function boost_get_db($filename) {
-  return db_fetch_array(db_query_range("SELECT * FROM {boost_cache} WHERE filename = '%s'", $filename, 0, 1));
+  $hash = md5($filename);
+  return db_fetch_array(db_query("SELECT * FROM {boost_cache} WHERE hash = '%s'", $hash));
 }
 
 /**
@@ -1624,9 +1627,9 @@ function boost_get_settings_db($router_item) {
  */
 function boost_get_db_term($term) {
   $filenames = array();
-  $result = db_query("SELECT filename FROM {boost_cache} WHERE expire > 0 AND page_id = %d AND page_callback = 'taxonomy'", $term);
+  $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE expire > 0 AND page_id = %d AND page_callback = 'taxonomy'", $term);
   while ($filename = db_fetch_array($result)) {
-    $filenames[] = $filename['filename'];
+    $filenames[] = $filename;
   }
   return $filenames;
 }
@@ -2005,12 +2008,13 @@ function _boost_change_extension($old, $new) {
   // make sure we are in the webroot
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
 
-  $result = db_query("SELECT filename FROM {boost_cache} WHERE extension = '%s'", $old);
-  while ($filename = db_result($result)) {
+  $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE extension = '%s'", $old);
+  while ($filename = db_fetch_array($result)) {
     // change extension
-    $new_filename = _boost_kill_file_extension($filename) . $new;
+    $new_filename = _boost_kill_file_extension($filename['filename']) . $new;
+    $hash = md5($new_filename);
     // update database
-    db_query("UPDATE {boost_cache} SET filename = '%s', extension = '%s' WHERE filename = '%s'", $new_filename, $new, $filename);
+    db_query("UPDATE {boost_cache} SET filename = '%s', extension = '%s', hash = '%s' WHERE hash = '%s'", $new_filename, $new, $hash, $filename['hash']);
 
     // update files, normal & gzip
     if (file_exists($filename)) {
@@ -2785,18 +2789,18 @@ function boost_crawler_add_to_table($push_setting, $extension, $expire) {
   if ($total > $loaded) {
     if ($push_setting) {
       if ($expire && BOOST_LOOPBACK_BYPASS) {
-        db_query_range("INSERT INTO {boost_crawler} (url) SELECT url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
+        db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
       }
       else {
-        db_query_range("INSERT INTO {boost_crawler} (url) SELECT url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
+        db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
       }
     }
     else {
       if ($expire && BOOST_LOOPBACK_BYPASS) {
-        db_query_range("INSERT INTO {boost_crawler} (url) SELECT url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
+        db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
       }
       else {
-        db_query_range("INSERT INTO {boost_crawler} (url) SELECT url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
+        db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
       }
     }
     variable_set('boost_crawler_loaded_count' . $extension, $loaded + $count);
@@ -2866,12 +2870,14 @@ function boost_crawler_add_alias_to_table() {
     return TRUE;
   }
   $count = 1000;
-  $total = db_query("SELECT COUNT(*) FROM {url_alias}");
+  $total = db_result(db_query("SELECT COUNT(*) FROM {url_alias}"));
   $loaded = variable_get('boost_crawler_loaded_count_alias', 0);
   if ($total > $loaded) {
     $list = db_query_range("SELECT dst FROM {url_alias}", $loaded, $count);
     while ($url = db_result($list)) {
-      @db_query("INSERT INTO {boost_crawler} (url) VALUES ('%s')", $base_url . '/' . $url);
+      $url = $base_url . '/' . $url;
+      $hash = md5($url);
+      @db_query("INSERT INTO {boost_crawler} (url, hash) VALUES ('%s', '%s')", $url, $hash);
     }
     variable_set('boost_crawler_loaded_count_alias', $loaded + $count);
     return FALSE;
@@ -2896,16 +2902,16 @@ function boost_crawler_total_count() {
  */
 function boost_crawler_verify($expire) {
   if ($expire && BOOST_LOOPBACK_BYPASS) {
-    $list = db_query("SELECT bcrawler.url FROM {boost_cache} bcache INNER JOIN {boost_crawler} bcrawler ON bcache.url=bcrawler.url WHERE bcache.expire BETWEEN 0 AND %d", BOOST_TIME);
+    $list = db_query("SELECT bcrawler.url, bcrawler.hash FROM {boost_cache} bcache INNER JOIN {boost_crawler} bcrawler ON bcache.hash_url=bcrawler.hash WHERE bcache.expire BETWEEN 0 AND %d", BOOST_TIME);
   }
   else {
-    $list = db_query("SELECT bcrawler.url FROM {boost_cache} bcache INNER JOIN {boost_crawler} bcrawler ON bcache.url=bcrawler.url WHERE bcache.expire = 0");
+    $list = db_query("SELECT bcrawler.url, bcrawler.hash FROM {boost_cache} bcache INNER JOIN {boost_crawler} bcrawler ON bcache.hash_url=bcrawler.hash WHERE bcache.expire = 0");
   }
   db_query('TRUNCATE {boost_crawler}');
   variable_set('boost_crawler_position', 0);
   $recrawl = FALSE;
-  while ($url = db_result($list)) {
-    db_query("INSERT INTO {boost_crawler} (url) VALUES ('%s')", $url);
+  while ($url = db_fetch_array($list)) {
+    db_query("INSERT INTO {boost_crawler} (url, hash) VALUES ('%s', '%s')", $url['url'], $url['hash']);
     $recrawl = TRUE;
   }
   return $recrawl;
