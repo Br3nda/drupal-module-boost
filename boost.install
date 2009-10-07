@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.51 2009/10/06 22:05:07 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.52 2009/10/07 03:28:52 mikeytown2 Exp $
 
 /**
  * @file
@@ -252,10 +252,10 @@ function boost_schema() {
       ),
       'page_id' => array(
         'description' => 'The ID of the page.',
-        'type' => 'int',
-        'unsigned' => TRUE,
+        'type' => 'varchar',
+        'length' => 64,
         'not null' => TRUE,
-        'default' => 0,
+        'default' => ''
       ),
       'extension' => array(
         'description' => 'File Extension/Mime content type of this page.',
@@ -337,10 +337,10 @@ function boost_schema() {
       ),
       'page_id' => array(
         'description' => 'The ID of the page.',
-        'type' => 'int',
-        'unsigned' => TRUE,
+        'type' => 'varchar',
+        'length' => 64,
         'not null' => TRUE,
-        'default' => 0,
+        'default' => ''
       ),
       'extension' => array(
         'description' => 'File Extension/Mime content type of this page.',
