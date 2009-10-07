@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.171 2009/10/07 21:04:57 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.172 2009/10/07 22:34:10 mikeytown2 Exp $
 
 /**
  * @file
@@ -675,9 +675,18 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
 }
 
 function boost_block_flush_form() {
-  $form['boost_clear']['path'] = array(
+  $router_item = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
+  $form['boost_clear']['page_callback'] = array(
     '#type' => 'hidden',
-    '#value' => $GLOBALS['_boost_path'],
+    '#value' => $router_item['page_callback'],
+  );
+  $form['boost_clear']['page_arguments'] = array(
+    '#type' => 'hidden',
+    '#value' => $router_item['page_arguments'],
+  );
+  $form['boost_clear']['page_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $router_item['page_id'],
   );
   $form['boost_cache']['clear'] = array(
     '#type' => 'submit',
@@ -688,7 +697,9 @@ function boost_block_flush_form() {
 }
 
 function boost_block_form_flush_submit(&$form_state, $form) {
-  boost_cache_expire_derivative($form['values']['path']);
+  $data = array();
+  $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $form['values']['page_callback'], 'page_arguments' => $form['values']['page_arguments'], 'page_id' => $form['values']['page_id']);
+  boost_cache_expire_router($data);
 }
 
 function boost_block_db_settings_form() {
@@ -806,15 +817,21 @@ function boost_block_db_settings_form_submit(&$form_state, $form) {
  * Sets page specific settings in the boost cache database.
  */
 function boost_block_db_rm_settings_form_submit(&$form_state, $form) {
-  if ($form['values']['id']) {
+  $router_item = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
+  $data = array();
+  if (is_int($form['values']['id'])) {
     boost_remove_settings_db($form['values']['id_value']);
+    $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_arguments' => $router_item['page_arguments'], 'page_id' => $router_item['page_id']);
   }
-  if ($form['values']['type']) {
+  if (is_int($form['values']['type'])) {
     boost_remove_settings_db($form['values']['type_value']);
+    $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_arguments' => $router_item['page_arguments']);
   }
-  if ($form['values']['container']) {
+  if (is_int($form['values']['container'])) {
     boost_remove_settings_db($form['values']['container_value']);
+    $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback']);
   }
+  boost_cache_expire_router($data);
 }
 
 
@@ -1293,6 +1310,7 @@ function boost_cache_expire($paths) {
  *     ['page_callback']
  *     ['page_arguments']
  *     ['page_id']
+ *     ['base_dir']
  */
 function boost_cache_expire_router($router_items) {
   // Get filenames & hash from db
@@ -1300,18 +1318,35 @@ function boost_cache_expire_router($router_items) {
     return FALSE;
   }
   $count = 0;
+
   foreach ($router_items as $dblookup) {
-    if (isset($dblookup['page_id'])) {
-      $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_arguments = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_arguments'], $dblookup['page_id']);
-    }
-    elseif (isset($dblookup['page_arguments'])) {
-      $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_arguments = '%s'", $dblookup['page_callback'], $dblookup['page_arguments']);
-    }
-    elseif (isset($dblookup['page_callback'])) {
-      $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s'", $dblookup['page_callback']);
+    if (isset($dblookup['base_dir'])) {
+      if (isset($dblookup['page_id'])) {
+        $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = '%s' AND page_arguments = '%s' AND page_id = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_arguments'], $dblookup['page_id']);
+      }
+      elseif (isset($dblookup['page_arguments'])) {
+        $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = '%s' AND page_arguments = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_arguments']);
+      }
+      elseif (isset($dblookup['page_callback'])) {
+        $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = '%s'", $dblookup['base_dir'], $dblookup['page_callback']);
+      }
+      else {
+        continue;
+      }
     }
     else {
-      continue;
+      if (isset($dblookup['page_id'])) {
+        $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_arguments = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_arguments'], $dblookup['page_id']);
+      }
+      elseif (isset($dblookup['page_arguments'])) {
+        $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_arguments = '%s'", $dblookup['page_callback'], $dblookup['page_arguments']);
+      }
+      elseif (isset($dblookup['page_callback'])) {
+        $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s'", $dblookup['page_callback']);
+      }
+      else {
+        continue;
+      }
     }
 
     while ($info = db_fetch_array($result)) {
@@ -1649,7 +1684,19 @@ function boost_set_db_page_settings($lifetime, $push, $scope) {
   }
 
   // Clear old files so they acquire the new settings.
-  boost_cache_expire_derivative($GLOBALS['_boost_path']);
+  $data = array();
+  switch ($scope) {
+    case 0:
+      $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_arguments' => $router_item['page_arguments'], 'page_id' => $router_item['page_id']);
+      break;
+    case 1:
+      $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_arguments' => $router_item['page_arguments']);
+      break;
+    case 2:
+      $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback']);
+      break;
+  }
+  boost_cache_expire_router($data);
   //boost_put_db($filename, $info['expire'], $lifetime, $push, $router_item);
   boost_put_settings_db($lifetime, $push, $router_item, $scope);
 }
