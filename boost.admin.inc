@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.81 2009/10/04 07:24:50 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.82 2009/10/07 19:12:13 mikeytown2 Exp $
 
 /**
  * @file
@@ -849,7 +849,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
       $skip = BOOST_CACHE_CSS && BOOST_CACHE_JS ? 2 : 1;
       $string .= "\n";
       $string .= "  # GZIP - Cached css & js files\n";
-      $string .= BOOST_AGGRESSIVE_GZIP ? "  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]\n" : '';
+      $string .= BOOST_AGGRESSIVE_GZIP ? "  RewriteCond %{HTTP_COOKIE} !(boost-gzip)\n" : '';
       $string .= "  RewriteCond %{HTTP:Accept-encoding} !gzip\n";
       $string .= "  RewriteRule .* - [S=$skip]\n";
       if (BOOST_CACHE_CSS) {
@@ -888,7 +888,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
       $skip = (int)BOOST_CACHE_HTML + (int)BOOST_CACHE_XML + (int)BOOST_CACHE_JSON;
       $string .= "\n";
       $string .= "  # GZIP\n";
-      $string .= BOOST_AGGRESSIVE_GZIP ? "  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]\n" : '';
+      $string .= BOOST_AGGRESSIVE_GZIP ? "  RewriteCond %{HTTP_COOKIE} !(boost-gzip)\n" : '';
       $string .= "  RewriteCond %{HTTP:Accept-encoding} !gzip\n";
       $string .= "  RewriteRule .* - [S=$skip]\n";
       if (BOOST_CACHE_HTML) {

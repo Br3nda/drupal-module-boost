@@ -33,7 +33,7 @@
   RewriteRule boost-gzip-cookie-test\.html  cache/gz/boost-gzip-cookie-test\.html\.gz [L,T=text/html]
 
   # GZIP - Cached css & js files
-  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]
+  RewriteCond %{HTTP_COOKIE} !(boost-gzip)
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=2]
   RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}_\.css\.gz -s
@@ -56,7 +56,7 @@
   RewriteRule .* - [S=7]
 
   # GZIP
-  RewriteCond %{HTTP_COOKIE} !(boost-gzip) [OR]
+  RewriteCond %{HTTP_COOKIE} !(boost-gzip)
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=3]
   RewriteCond %{DOCUMENT_ROOT}/cache/gz/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz -s
@@ -76,4 +76,4 @@
 
   ### BOOST END ###
 
-# $Id: boosted1.txt,v 1.1.2.14 2009/09/07 08:02:59 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.15 2009/10/07 19:12:13 mikeytown2 Exp $
