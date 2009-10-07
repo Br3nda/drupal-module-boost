@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.170 2009/10/07 19:41:10 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.171 2009/10/07 21:04:57 mikeytown2 Exp $
 
 /**
  * @file
@@ -1281,14 +1281,46 @@ function boost_cache_expire($paths) {
     $data[$hash] = $info;
   }
 
+  // Expire all files that match up
+  boost_cache_expire_router($data);
+}
+
+/**
+ * Expires the static file cache for the given paths
+ *
+ * @param $router_items
+ *   Array of $router_item array "objects"
+ *     ['page_callback']
+ *     ['page_arguments']
+ *     ['page_id']
+ */
+function boost_cache_expire_router($router_items) {
   // Get filenames & hash from db
-  foreach ($data as $dblookup) {
-    $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_arguments = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_arguments'], $dblookup['page_id']);
+  if (!is_array($router_items)) {
+    return FALSE;
+  }
+  $count = 0;
+  foreach ($router_items as $dblookup) {
+    if (isset($dblookup['page_id'])) {
+      $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_arguments = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_arguments'], $dblookup['page_id']);
+    }
+    elseif (isset($dblookup['page_arguments'])) {
+      $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_arguments = '%s'", $dblookup['page_callback'], $dblookup['page_arguments']);
+    }
+    elseif (isset($dblookup['page_callback'])) {
+      $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s'", $dblookup['page_callback']);
+    }
+    else {
+      continue;
+    }
+
     while ($info = db_fetch_array($result)) {
       // Flush expired files
       boost_cache_kill($info['filename'], $info['hash']);
+      $count++;
     }
   }
+  return $count;
 }
 
 /**
