@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.169 2009/10/07 19:13:37 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.170 2009/10/07 19:41:10 mikeytown2 Exp $
 
 /**
  * @file
@@ -1281,7 +1281,7 @@ function boost_cache_expire($paths) {
     $data[$hash] = $info;
   }
 
-  // Get filesnames & hash from db
+  // Get filenames & hash from db
   foreach ($data as $dblookup) {
     $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_arguments = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_arguments'], $dblookup['page_id']);
     while ($info = db_fetch_array($result)) {
@@ -1352,6 +1352,26 @@ function boost_cache_get($path) {
   return NULL;
 }
 
+/**
+ * Edit document before it is put into the boost cache.
+ *
+ * This hook is run at right before the page is cached by boost.
+ *
+ * $GLOBALS['_boost_cache_this'] and $GLOBALS['_boost_router_item'] are useful.
+ * set $GLOBALS['_boost_cache_this'] = FALSE if you wish to not cache this page.
+ *
+ * @param $path
+ *   URL path of the document
+ * @param $data
+ *   String containing the data
+ * @param $extension
+ *   file extension type. Use to detect what type of document your operating on.
+ * @return
+ *   $data string containing the document
+ */
+function hook_boost_preprocess($path, $data, $extension) {
+  return $data;
+}
 
 /**
  * Replaces/Sets the cached contents of the specified page, if stale.
@@ -1363,55 +1383,66 @@ function boost_cache_get($path) {
  * @param $extension
  *   File extension for this mime type
  */
-function boost_cache_set($path, $data = '', $extension = BOOST_FILE_EXTENSION) {
+function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
+  if (empty($data)) {
+    return FALSE;
+  }
+  $cached_at = date('Y-m-d H:i:s', BOOST_TIME);
   // Code commenting style based on what is being cached.
+  // Append the Boost footer with the relevant timestamps
   switch ($extension) {
     case BOOST_FILE_EXTENSION:
       $comment_start = '<!-- ';
       $comment_end = " -->\n";
       $expire = BOOST_CACHE_LIFETIME;
+      $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
+      $comment = $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
+      //$data = _boost_inject_code(rtrim($data), "\n" . $comment);
+      $data = rtrim($data) . "\n" . $comment;
       break;
     case BOOST_XML_EXTENSION:
       $comment_start = '<!-- ';
       $comment_end = " -->\n";
       $expire = BOOST_CACHE_XML_LIFETIME;
+      $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
+      $comment = $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
+      $data = rtrim($data) . "\n" . $comment;
       break;
     case BOOST_JSON_EXTENSION:
       $comment_start = '/* ';
       $comment_end = " */\n";
       $expire = BOOST_CACHE_JSON_LIFETIME;
+      $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
+      $comment = $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
+      $data = rtrim($data) . "\n" . $comment;
       break;
   }
-  // Append the Boost footer with the relevant timestamps
-  $cached_at = date('Y-m-d H:i:s', BOOST_TIME);
-  $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
-  $data = rtrim($data) . "\n" . $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
 
-  // Invoke hook_boost_preprocess($path, $data)
+  // Invoke hook_boost_preprocess($path, $data, $extension)
   foreach (module_implements('boost_preprocess') as $module) {
-    if (($result = module_invoke($module, 'boost_preprocess', $data)) != NULL) {
+    if (($result = module_invoke($module, 'boost_preprocess', $path, $data, $extension)) != NULL) {
       $data = $result;
     }
   }
 
   // Execute the pre-process function if one has been defined
   if (function_exists(BOOST_PRE_PROCESS_FUNCTION)) {
-    $data = call_user_func(BOOST_PRE_PROCESS_FUNCTION, $data);
+    $data = call_user_func(BOOST_PRE_PROCESS_FUNCTION, $path, $data, $extension);
   }
   db_set_active();
 
   // Final check, make sure this page should be cached. Allow for the preprocess
   // function to have a final say in if this page should be cached.
-  if (!$GLOBALS['_boost_cache_this']) {
+  if (!$GLOBALS['_boost_cache_this'] || empty($data)) {
     return FALSE;
   }
 
   // Create or update the static files as needed
   if (($filename = boost_file_path($path, TRUE, $extension)) && (BOOST_OVERWRITE_FILE || !file_exists($filename) || boost_db_is_expired($filename))) {
     // Special handling of the front page for aggressive gzip test
-    if ($path == '' && BOOST_AGGRESSIVE_GZIP) {
-      _boost_generate_gzip_test();
-      boost_cache_write($filename, _boost_gzip_test_inject_iframe($data));
+    if ($path == '' && BOOST_AGGRESSIVE_GZIP && $extension == BOOST_FILE_EXTENSION) {
+      _boost_generate_gzip_test_file();
+      boost_cache_write($filename, _boost_inject_code($data, '<iframe src="/boost-gzip-cookie-test.html" style="width:0px; height:0px; border: 0px"></iframe>' . "\n"));
     }
     else {
       boost_cache_write($filename, $data);
@@ -2354,9 +2385,9 @@ function _boost_variable_set($name, $value) {
 }
 
 /**
- * Generate iframe gzip cookie test html.
+ * Generate iframe gzip cookie test html file.
  */
-function _boost_generate_gzip_test() {
+function _boost_generate_gzip_test_file() {
   $filename = BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_GZ_DIR . '/boost-gzip-cookie-test.html.gz';
   if (!file_exists($filename)) {
     $string = <<<ETO
@@ -2379,10 +2410,17 @@ ETO;
 }
 
 /**
- * Inject iframe gzip cookie test.
+ * Inject code into document.
+ *
+ * @param $document
+ *  string containing html document.
+ * @param $html_code
+ *  string containing html snippet.
+ * @param $point
+ *  string of the insertion point
  */
-function _boost_gzip_test_inject_iframe($data) {
-  return str_replace('</body>', '<iframe src="/boost-gzip-cookie-test.html" style="width:0px; height:0px; border: 0px"></iframe>' . "\n" . '</body>', $data);
+function _boost_inject_code($document, $html_code, $point = '</body>') {
+  return str_replace($point, $html_code . $point, $document);
 }
 
 /**
