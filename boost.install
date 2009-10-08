@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.53 2009/10/07 21:03:07 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.54 2009/10/08 18:59:51 mikeytown2 Exp $
 
 /**
  * @file
@@ -76,7 +76,6 @@ function boost_requirements($phase) {
       }
       $cache_directories = array_unique($cache_directories);
       $htaccess = stristr($_SERVER["SERVER_SOFTWARE"], 'apache') ? file_get_contents('.htaccess') : FALSE;
-      $char = BOOST_CHAR;
       if (BOOST_CRAWL_ON_CRON) {
         $crawler_response = drupal_http_request(BOOST_CRAWLER_SELF . '&test=1');
         $crawler_response = $crawler_response->code;
@@ -109,10 +108,10 @@ function boost_requirements($phase) {
             'value'       => $t('Cache path'),
           );
         }
-      if ($htaccess && count(explode("%{REQUEST_URI}$char%{QUERY_STRING}\.html", $htaccess)) < 3) {
+      if ($htaccess && !boost_chk_htaccess_doc($htaccess)) {
         $requirements['boost_htaccess'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('.htaccess file does not contain the boost specific rewrite rules, or the rewrite rules have changed and they need to be updated. Get rules: <a href="@url">Boost Apache .htaccess settings generation</a>.', array('@url' => url('admin/settings/performance/boost#edit-boost-verbose'))),
+          'description' => $t('.htaccess file does not contain or match the boost specific rewrite rules, or the rewrite rules have changed, due to new settings, and they need to be updated. Get the rules: <a href="@url">Boost Apache .htaccess settings generation</a>.', array('@url' => url('admin/settings/performance/boost-rules'))),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('.htaccess file'),
         );
@@ -186,6 +185,42 @@ function boost_chk_module_versions() {
   else {
     return TRUE;
   }
+}
+
+/**
+ * Check htaccess file for given rules.
+ */
+function boost_chk_htaccess_doc($htaccess) {
+  $char = BOOST_CHAR;
+  if (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON) {
+    $rules = (int)BOOST_CACHE_HTML + (int)BOOST_CACHE_XML + (int)BOOST_CACHE_JSON;
+    $rules = BOOST_GZIP ? $rules*4+1 : $rules*2+1;
+    if (count(explode("%{REQUEST_URI}$char%{QUERY_STRING}\.", $htaccess)) < $rules) {
+      return FALSE;
+    }
+  }
+  if (BOOST_CACHE_CSS || BOOST_CACHE_JS) {
+    $rules = BOOST_CACHE_CSS && BOOST_CACHE_JS ? 2 : 1;
+    $rules = BOOST_GZIP ? $rules*4+1 : $rules*2+1;
+    if (count(explode("%{REQUEST_URI}$char\.", $htaccess)) < $rules) {
+      return FALSE;
+    }
+  }
+  if (BOOST_GZIP && BOOST_AGGRESSIVE_GZIP) {
+    if (!strstr($htaccess, "RewriteRule boost-gzip-cookie-test\.")) {
+      return FALSE;
+    }
+    $rules = 1;
+    $rules = (BOOST_CACHE_CSS || BOOST_CACHE_JS) ? $rules+1 : $rules;
+    $rules = (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON) ? $rules+1 : $rules;
+    if (count(explode("RewriteCond %{HTTP_COOKIE} !(boost-gzip)", $htaccess)) < $rules) {
+      return FALSE;
+    }
+  }
+  if (!(BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_CSS || BOOST_CACHE_JS || BOOST_CACHE_JSON)) {
+      return FALSE;
+  }
+  return TRUE;
 }
 
 /**
