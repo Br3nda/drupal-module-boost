@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.54 2009/10/08 18:59:51 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.55 2009/10/08 19:01:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -154,6 +154,14 @@ function boost_requirements($phase) {
             'description' => $t('Boost is disabled. <a href="@performance">Enable</a> it.', array('@performance' => url('admin/settings/performance/boost'))),
             'severity'    => REQUIREMENT_WARNING,
             'value'       => $t('Boost Disabled'),
+          );
+        }
+      if (BOOST_CRAWL_URL_ALIAS && BOOST_LOOPBACK_BYPASS) {
+          $requirements['boost_is_enabled'] = array(
+            'title'       => $t('Boost'),
+            'description' => $t('Crawler settings are inefficent. You probably want to disable the "Crawl All URL\'s in the url_alias table" <a href="@performance">setting</a>.', array('@performance' => url('admin/settings/performance/boost#edit-boost-crawl-on-cron-wrapper'))),
+            'severity'    => REQUIREMENT_WARNING,
+            'value'       => $t('Boost crawler does not have efficient settings.'),
           );
         }
       if (empty($requirements)) {
