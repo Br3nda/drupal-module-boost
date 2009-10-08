@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.55 2009/10/08 19:01:31 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.56 2009/10/08 19:03:45 mikeytown2 Exp $
 
 /**
  * @file
@@ -286,7 +286,7 @@ function boost_schema() {
         'not null' => TRUE,
         'default' => ''
       ),
-      'page_arguments' => array(
+      'page_type' => array(
         'description' => 'The name of the content type.',
         'type' => 'varchar',
         'length' => 255,
@@ -343,7 +343,7 @@ function boost_schema() {
       'timer' => array('timer'),
       'timer_average' => array('timer_average'),
       'page_callback' => array('page_callback'),
-      'page_arguments' => array('page_arguments'),
+      'page_type' => array('page_type'),
       'extension' => array('extension'),
     ),
     'primary key' => array('hash'),
@@ -371,7 +371,7 @@ function boost_schema() {
         'not null' => TRUE,
         'default' => ''
       ),
-      'page_arguments' => array(
+      'page_type' => array(
         'description' => 'The name of the content type.',
         'type' => 'varchar',
         'length' => 255,
@@ -408,7 +408,7 @@ function boost_schema() {
     ),
     'indexes' => array(
       'page_callback' => array('page_callback'),
-      'page_arguments' => array('page_arguments'),
+      'page_type' => array('page_type'),
       'base_dir' => array('base_dir'),
       'page_id' => array('page_id'),
       'extension' => array('extension'),
@@ -780,6 +780,7 @@ function boost_update_6111() {
         'not null' => TRUE,
         'default' => '',
       ));
+  db_add_index($ret, 'boost_cache', 'hash_url', array('hash_url'));
 
   // Add in hash columns to boost_crawler
   db_add_field($ret, 'boost_crawler', 'hash', array(
@@ -836,6 +837,7 @@ function boost_update_6115() {
   // Edit filename column & set PK
   db_drop_primary_key($ret, 'boost_cache');
   db_change_field($ret, 'boost_cache', 'filename', 'filename', array(
+        'description' => 'URL of cached page',
         'type' => 'text',
         'size' => 'normal',
         'not null' => TRUE,
@@ -845,6 +847,7 @@ function boost_update_6115() {
   // Edit URL column & set unique key
   db_drop_unique_key($ret, 'boost_crawler', 'url');
   db_change_field($ret, 'boost_crawler', 'url', 'url', array(
+        'description' => 'URL of cached page',
         'type' => 'text',
         'size' => 'normal',
         'not null' => TRUE,
@@ -877,17 +880,51 @@ function boost_update_6117() {
     $ret[] = array('success' => TRUE, 'query' => t('This setting needs to be re-set.<br /><br /> Base Dir: %dir<br /> View Name: %args<br /> Cache Lifetime: %time', array('%dir' => $old['base_dir'], '%args' => $old['page_arguments'], '%time' => format_interval($old['lifetime'], 1))));
   }
 
+  db_drop_index($ret, 'boost_cache', 'page_id');
   db_change_field($ret, 'boost_cache', 'page_id', 'page_id', array(
+        'description' => 'The ID of the page.',
         'type' => 'varchar',
         'length' => 64,
         'not null' => TRUE,
         'default' => ''
       ));
+  db_add_index($ret, 'boost_cache', 'page_id', array('page_id'));
+
+  db_drop_index($ret, 'boost_cache_settings', 'page_id');
   db_change_field($ret, 'boost_cache_settings', 'page_id', 'page_id', array(
+        'description' => 'The ID of the page.',
         'type' => 'varchar',
         'length' => 64,
         'not null' => TRUE,
         'default' => ''
       ));
+  db_add_index($ret, 'boost_cache_settings', 'page_id', array('page_id'));
+  return $ret;
+}
+
+/**
+ * Update 6118 - Change page_arguments column to page_type
+ */
+function boost_update_6118() {
+  $ret = array();
+  db_drop_index($ret, 'boost_cache', 'page_arguments');
+  db_change_field($ret, 'boost_cache', 'page_arguments', 'page_type', array(
+        'description' => 'The name of the content type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ));
+  db_add_index($ret, 'boost_cache', 'page_type', array('page_type'));
+
+  db_drop_index($ret, 'boost_cache_settings', 'page_arguments');
+  db_change_field($ret, 'boost_cache_settings', 'page_arguments', 'page_type', array(
+        'description' => 'The name of the content type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ));
+  db_add_index($ret, 'boost_cache_settings', 'page_type', array('page_type'));
   return $ret;
 }
