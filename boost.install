@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.57 2009/10/10 05:56:07 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.58 2009/10/10 05:59:43 mikeytown2 Exp $
 
 /**
  * @file
@@ -443,6 +443,68 @@ function boost_schema() {
     'unique keys' => array(
       'hash' => array('hash'),
     ),
+  );
+  $schema['boost_cache_relationships'] = array(
+    'description' => t('Boost parent child relationships'),
+    'fields' => array(
+      'hash' => array(
+        'description' => 'MD5 hash of below items in the database',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'base_dir' => array(
+        'description' => 'Path of the cache root dir relative to Drupal webroot.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'page_callback' => array(
+        'description' => 'The name of the parent function that renders the page.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'page_type' => array(
+        'description' => 'The name of the parent content type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '0'
+      ),
+      'page_id' => array(
+        'description' => 'The ID of the parent page.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'child_page_callback' => array(
+        'description' => 'The name of the child function that renders the page.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'child_page_type' => array(
+        'description' => 'The name of the child content type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '0'
+      ),
+      'child_page_id' => array(
+        'description' => 'The ID of the child page.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+    ),
+    'primary key' => array('hash'),
   );
   return $schema;
 }
@@ -926,5 +988,78 @@ function boost_update_6118() {
         'default' => ''
       ));
   db_add_index($ret, 'boost_cache_settings', 'page_type', array('page_type'));
+  return $ret;
+}
+
+
+/**
+ * Update 6119 - Create boost_cache_relationships table
+ */
+function boost_update_6119() {
+  $schema['boost_cache_relationships'] = array(
+    'description' => t('Boost parent child relationships'),
+    'fields' => array(
+      'hash' => array(
+        'description' => 'MD5 hash of the 7 these 7 items in the database',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'base_dir' => array(
+        'description' => 'Path of the cache root dir relative to Drupal webroot.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'page_callback' => array(
+        'description' => 'The name of the parent function that renders the page.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'page_type' => array(
+        'description' => 'The name of the parent content type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '0'
+      ),
+      'page_id' => array(
+        'description' => 'The ID of the parent page.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'child_page_callback' => array(
+        'description' => 'The name of the child function that renders the page.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'child_page_type' => array(
+        'description' => 'The name of the child content type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '0'
+      ),
+      'child_page_id' => array(
+        'description' => 'The ID of the child page.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+    ),
+    'primary key' => array('hash'),
+  );
+
+  $ret = array();
+  db_create_table($ret, 'boost_cache_relationships', $schema['boost_cache_relationships']);
   return $ret;
 }
