@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.83 2009/10/10 05:59:43 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.84 2009/10/10 06:34:07 mikeytown2 Exp $
 
 /**
  * @file
@@ -465,6 +465,12 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Directories: Enter in a 4 digit number (octal) that will be used by !link. Example 0775', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
     '#default_value' => BOOST_PERMISSIONS_DIR,
     '#description'   => t('Sometimes because of funky servers you need it use a different file mode then the default.'),
+  );
+  $form['advanced']['boost_expire_no_flush'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Expire content in DB, do not flush file.'),
+    '#default_value' => BOOST_EXPIRE_NO_FLUSH,
+    '#description'   => t('Instead of flushing the file ASAP this will set the database entry to expired. File will be flushed on next cron run. This is more on the extreme side of tweaks.'),
   );
   $form['advanced']['boost_ignore_flush'] = array(
     '#type'          => 'radios',
