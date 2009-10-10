@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.173 2009/10/08 19:03:45 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.174 2009/10/10 05:55:05 mikeytown2 Exp $
 
 /**
  * @file
@@ -932,7 +932,7 @@ function _boost_ob_handler() {
         break;
       default: //Do not cache page on all other errors
         if (BOOST_VERBOSE >= 3) {
-          watchdog('boost', 'There are <strong>php errors</strong> on this page, preventing boost from caching. ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => boost_print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')), WATCHDOG_WARNING);
+          watchdog('boost', 'There are <strong>php errors</strong> on this page, preventing boost from caching. ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => boost_print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')), WATCHDOG_WARNING);
         }
         echo $buffer;
         return FALSE;
@@ -941,58 +941,73 @@ function _boost_ob_handler() {
   }
   if (BOOST_HALT_ON_MESSAGES && $GLOBALS['_boost_message_count'] != 0) {
     if (BOOST_VERBOSE >= 3) {
-      watchdog('boost', 'There are <strong>drupal messages</strong> on this page, preventing boost from caching. MESSAGES: %msg <br /> !performance', array('%msg' => $GLOBALS['_boost_message_count'], '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')), WATCHDOG_WARNING);
+      watchdog('boost', 'There are <strong>drupal messages</strong> on this page, preventing boost from caching. MESSAGES: %msg <br /> !performance', array('%msg' => $GLOBALS['_boost_message_count'], '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')), WATCHDOG_WARNING);
     }
     echo $buffer;
     return FALSE;
   }
 
-
+  $output_needed = TRUE;
   // Check the currently set content type and the HTTP response code. only cache
   // 'text/*' pages that were output with a 200 OK status. If it didn't get a
   // 200 then TODO: remove that entry from the cache.
-  if ($GLOBALS['_boost_cache_this'] && !empty($buffer) > 0) {
-    switch (_boost_get_content_type()) {
+  if ($GLOBALS['_boost_cache_this'] && !empty($buffer)) {
+    $status = boost_get_http_status();
+    $type = boost_get_content_type();
+    switch ($type) {
       case 'text/html':
-        if (boost_check_http_status()) {
+        if ($status == 200) {
+          if (BOOST_ASYNCHRONOUS_OUTPUT) {
+            boost_async_opp($buffer, FALSE, 'text/html');
+            $output_needed = FALSE;
+          }
           boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_FILE_EXTENSION);
           boost_cache_css_js_files($buffer);
         }
-        else {
-//           boost_cache_expire_derivative($path);
-//           $filename = boost_file_path($path, TRUE, BOOST_FILE_EXTENSION);
-//           if ($filename) {
-//             boost_cache_kill($filename);
-//             boost_remove_db($filename);
-//           }
+        elseif ($status == 404 || $status == 403) {
+          // Kill cache entry if it exists
+          $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_FILE_EXTENSION);
+          if ($filename) {
+            $hash = md5($filename);
+            boost_cache_kill($filename, $hash);
+            boost_remove_db($filename, $hash);
+          }
         }
         break;
       case 'application/rss':
       case 'text/xml':
       case 'application/rss+xml':
-        if (boost_check_http_status()) {
+        if ($status == 200) {
+          if (BOOST_ASYNCHRONOUS_OUTPUT) {
+            boost_async_opp($buffer, FALSE, 'text/xml');
+            $output_needed = FALSE;
+          }
           boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_XML_EXTENSION);
         }
-        else {
-//           boost_cache_expire_derivative($path);
-//           $filename = boost_file_path($path, TRUE, BOOST_XML_EXTENSION);
-//           if ($filename) {
-//             boost_cache_kill($filename);
-//             boost_remove_db($filename);
-//           }
+        elseif ($status == 404 || $status == 403) {
+          $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_XML_EXTENSION);
+          if ($filename) {
+            $hash = md5($filename);
+            boost_cache_kill($filename, $hash);
+            boost_remove_db($filename, $hash);
+          }
         }
         break;
       case 'text/javascript':
-        if (boost_check_http_status()) {
+        if ($status == 200) {
+          if (BOOST_ASYNCHRONOUS_OUTPUT) {
+            boost_async_opp($buffer, FALSE, 'text/javascript');
+            $output_needed = FALSE;
+          }
           boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_JSON_EXTENSION);
         }
-        else {
-//           boost_cache_expire_derivative($path);
-//           $filename = boost_file_path($path, TRUE, BOOST_JSON_EXTENSION);
-//           if ($filename) {
-//             boost_cache_kill($filename);
-//             boost_remove_db($filename);
-//           }
+        elseif ($status == 404 || $status == 403) {
+          $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_JSON_EXTENSION);
+          if ($filename) {
+            $hash = md5($filename);
+            boost_cache_kill($filename, $hash);
+            boost_remove_db($filename, $hash);
+          }
         }
         break;
     }
@@ -1003,74 +1018,29 @@ function _boost_ob_handler() {
 }
 
 /**
- * See's if this http status was returned.
- *
- * @param $default
- *   Look for a 200 status
- */
-function boost_check_http_status($status = 200) {
-  if (_boost_get_http_status() != $status || _boost_get_pressflow_http_status() != $status) {
-    return FALSE;
-  }
-  else {
-    return TRUE;
-  }
-}
-
-/**
  * Determines the MIME content type of the current page response based on
  * the currently set Content-Type HTTP header.
  *
  * This should normally return the string 'text/html' unless another module
  * has overridden the content type.
- *
- * @param $default
- *   Return this value if it can't be found
  */
-function _boost_get_content_type($default = NULL) {
-  static $regex = '!^Content-Type:\s*([\w\d\/\-]+)!i';
-  return _boost_get_http_header($regex, $default);
+function boost_get_content_type() {
+  return array_pop(explode('content-type: ', array_shift(explode('; charset=', array_shift(explode("\n", drupal_get_headers()))))));
 }
 
 /**
  * Determines the HTTP response code that the current page request will be
  * returning by examining the HTTP headers that have been output so far.
- *
- * @param $default
- *   If none found, return 200
  */
-function _boost_get_http_status($default = 200) {
-  static $regex = '!^HTTP/1.1\s+(\d+)!';
-  return (int)_boost_get_http_header($regex, $default);
-}
-
-/**
- * Determines the HTTP response code that the current page request will be
- * returning by examining the HTTP headers that have been output so far.
- *
- * @param $default
- *   If none found, return 200
- */
-function _boost_get_pressflow_http_status($default = 200) {
-  static $regex = '!^:status:\s+(\d+)!';
-  return (int)_boost_get_http_header($regex, $default);
-}
-
-/**
- * Get HTTP header
- *
- * @param $regex
- *   Regular expression to get HTTP Header Line
- * @param $default
- *   Return this value if it can't be found
- */
-function _boost_get_http_header($regex, $default = NULL) {
-  // The last header is the one that counts:
-  $headers = preg_grep($regex, explode("\n", drupal_get_headers()));
-  if (!empty($headers) && preg_match($regex, array_pop($headers), $matches)) {
-    return $matches[1]; // found it
+function boost_get_http_status() {
+  $headers = explode("\n", drupal_get_headers());
+  if (count($headers) < 2) {
+    return 200;
   }
-  return $default; // no such luck
+  else {
+    preg_match('!^.*\s+(\d+)!', array_pop($headers), $matches);
+    return $matches[1];
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1601,14 +1571,11 @@ function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer
 /**
  * Removes info from database. Use on 404 or 403.
  *
- * @param $filename
- *   Name of cached file; hash of this is primary key in database
+ * @param $hash
+ *   md5 of filename
  */
-function boost_remove_db($filename) {
-  if (strstr($filename, BOOST_FILE_PATH)) {
-    $hash = md5($filename);
-    db_query("DELETE FROM {boost_cache} WHERE hash = '%s'", $hash);
-  }
+function boost_remove_db($hash) {
+  db_query("DELETE FROM {boost_cache} WHERE hash = '%s'", $hash);
 }
 
 /**
