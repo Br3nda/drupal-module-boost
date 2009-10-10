@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.84 2009/10/10 06:34:07 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.85 2009/10/10 07:58:35 mikeytown2 Exp $
 
 /**
  * @file
@@ -412,12 +412,12 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_FLUSH_VIEWS,
     '#description'   => t(''),
   );
-//   $form['advanced']['boost_flush_views_insert'] = array(
-//     '#type'          => 'checkbox',
-//     '#title'         => t('Clear all cached views pages associated with a node on insert'),
-//     '#default_value' => BOOST_FLUSH_VIEWS_INSERT,
-//     '#description'   => t(''),
-//   );
+  $form['advanced']['boost_flush_views_insert'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Clear all cached views pages associated with a node on insert'),
+    '#default_value' => BOOST_FLUSH_VIEWS_INSERT,
+    '#description'   => t('WARNING: This can be very slow, all views get run to find out where this node lives.'),
+  );
   $form['advanced']['boost_clear_cache_offline'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Clear Boosts cache when site goes offline'),
