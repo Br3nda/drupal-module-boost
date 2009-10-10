@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.177 2009/10/10 07:58:35 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.178 2009/10/10 21:04:55 mikeytown2 Exp $
 
 /**
  * @file
@@ -999,7 +999,6 @@ function _boost_ob_handler() {
         if (BOOST_VERBOSE >= 3) {
           watchdog('boost', 'There are <strong>php errors</strong> on this page, preventing boost from caching. ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => boost_print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')), WATCHDOG_WARNING);
         }
-        echo $buffer;
         return FALSE;
       }
     }
@@ -1008,11 +1007,9 @@ function _boost_ob_handler() {
     if (BOOST_VERBOSE >= 3) {
       watchdog('boost', 'There are <strong>drupal messages</strong> on this page, preventing boost from caching. MESSAGES: %msg <br /> !performance', array('%msg' => $GLOBALS['_boost_message_count'], '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')), WATCHDOG_WARNING);
     }
-    echo $buffer;
     return FALSE;
   }
 
-  $output_needed = TRUE;
   // Check the currently set content type and the HTTP response code. only cache
   // 'text/*' pages that were output with a 200 OK status. If it didn't get a
   // 200 then TODO: remove that entry from the cache.
@@ -1024,7 +1021,6 @@ function _boost_ob_handler() {
         if ($status == 200) {
           if (BOOST_ASYNCHRONOUS_OUTPUT) {
             boost_async_opp($buffer, FALSE, 'text/html');
-            $output_needed = FALSE;
           }
           boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_FILE_EXTENSION);
           boost_cache_css_js_files($buffer);
@@ -1045,7 +1041,6 @@ function _boost_ob_handler() {
         if ($status == 200) {
           if (BOOST_ASYNCHRONOUS_OUTPUT) {
             boost_async_opp($buffer, FALSE, 'text/xml');
-            $output_needed = FALSE;
           }
           boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_XML_EXTENSION);
         }
@@ -1062,7 +1057,6 @@ function _boost_ob_handler() {
         if ($status == 200) {
           if (BOOST_ASYNCHRONOUS_OUTPUT) {
             boost_async_opp($buffer, FALSE, 'text/javascript');
-            $output_needed = FALSE;
           }
           boost_cache_set($GLOBALS['_boost_path'], $buffer, BOOST_JSON_EXTENSION);
         }
@@ -1077,9 +1071,6 @@ function _boost_ob_handler() {
         break;
     }
   }
-  if ($output_needed) {
-    echo $buffer;
-  }
 }
 
 /**
@@ -1090,7 +1081,7 @@ function _boost_ob_handler() {
  * has overridden the content type.
  */
 function boost_get_content_type() {
-  return array_pop(explode('content-type: ', array_shift(explode('; charset=', array_shift(explode("\n", drupal_get_headers()))))));
+  return array_pop(explode('content-type: ', array_shift(explode('; charset=', array_shift(explode("\n", strtolower(drupal_get_headers())))))));
 }
 
 /**
