@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.58 2009/10/10 05:59:43 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.59 2009/10/12 06:35:46 mikeytown2 Exp $
 
 /**
  * @file
@@ -991,7 +991,6 @@ function boost_update_6118() {
   return $ret;
 }
 
-
 /**
  * Update 6119 - Create boost_cache_relationships table
  */
@@ -1061,5 +1060,28 @@ function boost_update_6119() {
 
   $ret = array();
   db_create_table($ret, 'boost_cache_relationships', $schema['boost_cache_relationships']);
+  return $ret;
+}
+
+
+/**
+ * Update 6120 - Add URL hash & timestamp to boost_cache_relationships
+ */
+function boost_update_6120() {
+  $ret = array();
+  // Add in hash_url & timestamp columns to boost_cache
+  db_add_field($ret, 'boost_cache_relationships', 'hash_url', array(
+        'description' => 'MD5 hash of url',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ));
+  db_add_field($ret, 'boost_cache_relationships', 'timestamp', array(
+        'description' => 'The Unix timestamp of late update to this field.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ));
   return $ret;
 }

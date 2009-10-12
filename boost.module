@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.178 2009/10/10 21:04:55 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.179 2009/10/12 06:35:46 mikeytown2 Exp $
 
 /**
  * @file
@@ -1351,12 +1351,21 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE) {
     if (isset($dblookup['base_dir'])) {
       if (isset($dblookup['page_id'])) {
         $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = '%s' AND page_type = '%s' AND page_id = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_type'], $dblookup['page_id']);
+        if ($dblookup['page_callback'] == 'view') {
+          db_query("DELETE FROM {boost_cache_relationships} WHERE base_dir = '%s' AND page_callback = 'view' AND page_type = '%s' AND page_id = '%s'", $dblookup['base_dir'], $dblookup['page_type'], $dblookup['page_id']);
+        }
       }
       elseif (isset($dblookup['page_type'])) {
         $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = '%s' AND page_type = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_type']);
+        if ($dblookup['page_callback'] == 'view') {
+          db_query("DELETE FROM {boost_cache_relationships} WHERE base_dir = '%s' AND page_callback = 'view' AND page_type = '%s'", $dblookup['base_dir'], $dblookup['page_type']);
+        }
       }
       elseif (isset($dblookup['page_callback'])) {
         $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = '%s'", $dblookup['base_dir'], $dblookup['page_callback']);
+        if ($dblookup['page_callback'] == 'view') {
+          db_query("DELETE FROM {boost_cache_relationships} WHERE base_dir = '%s' AND page_callback = 'view'", $dblookup['base_dir']);
+        }
       }
       else {
         continue;
@@ -1365,12 +1374,21 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE) {
     else {
       if (isset($dblookup['page_id'])) {
         $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_type = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_type'], $dblookup['page_id']);
+        if ($dblookup['page_callback'] == 'view') {
+          db_query("DELETE FROM {boost_cache_relationships} WHERE page_callback = 'view' AND page_type = '%s' AND page_id = '%s'", $dblookup['page_type'], $dblookup['page_id']);
+        }
       }
       elseif (isset($dblookup['page_type'])) {
         $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s' AND page_type = '%s'", $dblookup['page_callback'], $dblookup['page_type']);
+        if ($dblookup['page_callback'] == 'view') {
+          db_query("DELETE FROM {boost_cache_relationships} WHERE page_callback = 'view' AND page_type = '%s'", $dblookup['page_type']);
+        }
       }
       elseif (isset($dblookup['page_callback'])) {
         $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE page_callback = '%s'", $dblookup['page_callback']);
+        if ($dblookup['page_callback'] == 'view') {
+          db_query("DELETE FROM {boost_cache_relationships} WHERE page_callback = 'view'");
+        }
       }
       else {
         continue;
@@ -1579,11 +1597,15 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
  * If Optional is not set it will use values in $GLOBALS['_boost_router_item']
  */
 function boost_cache_set_node_relationships($relationships) {
+  global $base_root;
+  $url = $base_root . request_uri();
+  $hash_url = md5($url);
   $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
   $router_item = $GLOBALS['_boost_router_item'];
   if (!is_array($relationships)) {
     return FALSE;
   }
+
   foreach ($relationships as $data) {
     // If one of the required items is not set, skip this entry
     if (!isset($data['child_page_callback']) || !isset($data['child_page_type']) || !isset($data['child_page_id'])) {
@@ -1599,11 +1621,12 @@ function boost_cache_set_node_relationships($relationships) {
     $hash = md5($data['base_dir'] . $data['page_callback'] . $data['page_type'] . $data['page_id'] . $data['child_page_callback'] . $data['child_page_type'] . $data['child_page_id']);
 
     // Insert data into database
-    db_query("UPDATE {boost_cache_relationships} SET base_dir = '%s', page_callback = '%s', page_type = '%s', page_id = '%s', child_page_callback = '%s', child_page_type = '%s', child_page_id = '%s' WHERE hash = '%s'", $data['base_dir'], $data['page_callback'], $data['page_type'], $data['page_id'], $data['child_page_callback'], $data['child_page_type'], $data['child_page_id'], $hash);
+    db_query("UPDATE {boost_cache_relationships} SET base_dir = '%s', page_callback = '%s', page_type = '%s', page_id = '%s', child_page_callback = '%s', child_page_type = '%s', child_page_id = '%s', hash_url = '%s', timestamp = '%d' WHERE hash = '%s'", $data['base_dir'], $data['page_callback'], $data['page_type'], $data['page_id'], $data['child_page_callback'], $data['child_page_type'], $data['child_page_id'], $hash_url, BOOST_TIME, $hash);
     if (!db_affected_rows()) {
-      @db_query("INSERT INTO {boost_cache_relationships} (hash, base_dir, page_callback, page_type, page_id, child_page_callback, child_page_type, child_page_id) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", $hash, $data['base_dir'], $data['page_callback'], $data['page_type'], $data['page_id'], $data['child_page_callback'], $data['child_page_type'], $data['child_page_id']);
+      @db_query("INSERT INTO {boost_cache_relationships} (hash, base_dir, page_callback, page_type, page_id, child_page_callback, child_page_type, child_page_id, hash_url, timestamp) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d)", $hash, $data['base_dir'], $data['page_callback'], $data['page_type'], $data['page_id'], $data['child_page_callback'], $data['child_page_type'], $data['child_page_id'], $hash_url, BOOST_TIME);
     }
   }
+  boost_cache_prune_node_relationship($hash_url);
   unset($GLOBALS['_boost_relationships']);
   return TRUE;
 }
@@ -1638,6 +1661,24 @@ function boost_cache_get_node_relationships($relationships) {
     }
   }
   return $results;
+}
+
+/**
+ * Given hash of url delete any old relationships.
+ *
+ * @param $hash_url
+ */
+function boost_cache_prune_node_relationship($hash_url) {
+  // Grab all entires related to this URL; find ones that don't match the latest
+  // timestamp and remove them.
+  $records = array();
+  $result = db_query("SELECT hash, timestamp FROM {boost_cache_relationships} WHERE hash_url = '%s' ORDER BY timestamp DESC", $hash_url);
+  while ($info = db_fetch_array($result)) {
+    if ($info['timestamp'] < BOOST_TIME) {
+      db_query("DELETE FROM {boost_cache_relationships} WHERE hash = '%s'", $info['hash']);
+    }
+  }
+  return $records;
 }
 
 /**
