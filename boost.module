@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.183 2009/10/12 06:44:13 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.184 2009/10/12 06:46:14 mikeytown2 Exp $
 
 /**
  * @file
@@ -3074,18 +3074,18 @@ function boost_crawler_add_to_table($push_setting, $extension, $expire) {
   if ($total > $loaded) {
     if ($push_setting) {
       if ($expire && BOOST_LOOPBACK_BYPASS) {
-        db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
+        @db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
       }
       else {
-        db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
+        @db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push != 0 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
       }
     }
     else {
       if ($expire && BOOST_LOOPBACK_BYPASS) {
-        db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
+        @db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire BETWEEN 0 AND %d", $extension, BOOST_TIME, $loaded, $count);
       }
       else {
-        db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
+        @db_query_range("INSERT INTO {boost_crawler} (url, hash) SELECT url, hash_url FROM {boost_cache} WHERE push = 1 AND extension = '%s' AND expire = 0", $extension, $loaded, $count);
       }
     }
     variable_set('boost_crawler_loaded_count' . $extension, $loaded + $count);
