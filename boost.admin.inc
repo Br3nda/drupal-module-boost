@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.86 2009/10/14 03:15:32 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.87 2009/10/14 08:56:36 mikeytown2 Exp $
 
 /**
  * @file
@@ -813,6 +813,9 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
 
   // Generate the rules
   $string  = "  ### BOOST START ###\n";
+  if (BOOST_CACHE_HTML) {
+    $string .= "  AddDefaultCharset utf-8\n";
+  }
   if (!BOOST_DISABLE_CLEAN_URL && (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON)) {
     $files = '';
     if (BOOST_CACHE_HTML) {
