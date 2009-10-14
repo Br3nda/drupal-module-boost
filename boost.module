@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.187 2009/10/14 00:23:56 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.188 2009/10/14 00:25:06 mikeytown2 Exp $
 
 /**
  * @file
@@ -994,29 +994,30 @@ function _boost_ob_handler() {
       //case E_USER_DEPRECATED: //Ignore user-generated notice message
         break;
       default: //Do not cache page on all other errors
+        $GLOBALS['_boost_cache_this'] = FALSE;
         if (BOOST_VERBOSE >= 3) {
           watchdog('boost', 'There are <strong>php errors</strong> on this page, preventing boost from caching. ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => boost_print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')), WATCHDOG_WARNING);
         }
-        return FALSE;
+        break;
       }
     }
   }
   if (BOOST_HALT_ON_MESSAGES && $GLOBALS['_boost_message_count'] != 0) {
+    $GLOBALS['_boost_cache_this'] = FALSE;
     if (BOOST_VERBOSE >= 3) {
       watchdog('boost', 'There are <strong>drupal messages</strong> on this page, preventing boost from caching. MESSAGES: %msg <br /> !performance', array('%msg' => $GLOBALS['_boost_message_count'], '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')), WATCHDOG_WARNING);
     }
-    return FALSE;
   }
 
   // Check the currently set content type and the HTTP response code. only cache
   // 'text/*' pages that were output with a 200 OK status. If it didn't get a
   // 200 then TODO: remove that entry from the cache.
-  if ($GLOBALS['_boost_cache_this'] && !empty($buffer)) {
+  if (!empty($buffer)) {
     $status = boost_get_http_status();
     $type = boost_get_content_type();
     switch ($type) {
       case 'text/html':
-        if ($status == 200) {
+        if ($status == 200 && $GLOBALS['_boost_cache_this']) {
           if (BOOST_ASYNCHRONOUS_OUTPUT) {
             boost_async_opp($buffer, FALSE, 'text/html');
           }
@@ -1036,7 +1037,7 @@ function _boost_ob_handler() {
       case 'application/rss':
       case 'text/xml':
       case 'application/rss+xml':
-        if ($status == 200) {
+        if ($status == 200 && $GLOBALS['_boost_cache_this']) {
           if (BOOST_ASYNCHRONOUS_OUTPUT) {
             boost_async_opp($buffer, FALSE, 'text/xml');
           }
@@ -1052,7 +1053,7 @@ function _boost_ob_handler() {
         }
         break;
       case 'text/javascript':
-        if ($status == 200) {
+        if ($status == 200 & $GLOBALS['_boost_cache_this']) {
           if (BOOST_ASYNCHRONOUS_OUTPUT) {
             boost_async_opp($buffer, FALSE, 'text/javascript');
           }
