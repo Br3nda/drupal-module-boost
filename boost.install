@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.59 2009/10/12 06:35:46 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.60 2009/10/15 08:58:08 mikeytown2 Exp $
 
 /**
  * @file
@@ -502,6 +502,19 @@ function boost_schema() {
         'length' => 64,
         'not null' => TRUE,
         'default' => ''
+      ),
+      'hash_url' => array(
+        'description' => 'MD5 hash of url',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'timestamp' => array(
+        'description' => 'The Unix timestamp of late update to this field.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
       ),
     ),
     'primary key' => array('hash'),

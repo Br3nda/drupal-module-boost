@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.87 2009/10/14 08:56:36 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.88 2009/10/15 08:58:08 mikeytown2 Exp $
 
 /**
  * @file
@@ -1027,7 +1027,9 @@ function boost_reset_database_submit() {
   if (boost_cache_clear_all()) {
     db_query("TRUNCATE {boost_cache}");
     db_query("TRUNCATE {boost_cache_settings}");
-    drupal_set_message(t('Boost: Static page cache & database cleared.'));
+    db_query("TRUNCATE {boost_cache_relationships}");
+    db_query("TRUNCATE {boost_crawler}");
+    drupal_set_message(t('Boost: Static page cache & 4 database tables cleared.'));
   }
   else {
     drupal_set_message(t('Boost: Set "Ignore cache flushing:" to \'Disabled\' in the <a href="!link">boost advanced settings</a> & try again.', array('!link' => url('admin/settings/performance/boost', array('fragment' => 'edit-boost-ignore-flush-0-wrapper')))), 'warning');
