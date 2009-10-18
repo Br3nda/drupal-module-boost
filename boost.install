@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.60 2009/10/15 08:58:08 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.61 2009/10/18 08:20:39 mikeytown2 Exp $
 
 /**
  * @file
@@ -116,6 +116,14 @@ function boost_requirements($phase) {
           'value'       => $t('.htaccess file'),
         );
       }
+      if ($htaccess && !boost_chk_htaccess_doc_subdir($htaccess)) {
+        $requirements['boost_htaccess_subdir'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('Drupal is installed in a subdirectory but the htaccess rules are not set for a subdirectory install. Get rules specific to your setup here: <a href="@url">Boost Apache .htaccess settings generation</a>.', array('@url' => url('admin/settings/performance/boost-rules'))),
+          'severity'    => REQUIREMENT_ERROR,
+          'value'       => $t('.htaccess file'),
+        );
+      }
       if (!boost_chk_module_versions()) {
         $requirements['boost_other_modules'] = array(
           'title'       => $t('Boost'),
@@ -157,7 +165,7 @@ function boost_requirements($phase) {
           );
         }
       if (BOOST_CRAWL_URL_ALIAS && BOOST_LOOPBACK_BYPASS) {
-          $requirements['boost_is_enabled'] = array(
+          $requirements['boost_crawler'] = array(
             'title'       => $t('Boost'),
             'description' => $t('Crawler settings are inefficient. You probably want to disable the "Crawl All URL\'s in the url_alias table" <a href="@performance">setting</a>.', array('@performance' => url('admin/settings/performance/boost#edit-boost-crawl-on-cron-wrapper'))),
             'severity'    => REQUIREMENT_WARNING,
@@ -193,6 +201,25 @@ function boost_chk_module_versions() {
   else {
     return TRUE;
   }
+}
+
+/**
+ * Check htaccess file if needed subdir references are in it.
+ */
+function boost_chk_htaccess_doc_subdir($htaccess) {
+  Global $base_path;
+  $drupal_subdir = rtrim($base_path, '/');
+  if (strlen($drupal_subdir) > 0) {
+    $rules = (int)BOOST_CACHE_HTML + (int)BOOST_CACHE_XML + (int)BOOST_CACHE_JSON + (int)BOOST_CACHE_CSS + (int)BOOST_CACHE_JS;
+    $rules = BOOST_GZIP ? $rules*2+1 : $rules+1;
+    if (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON) {
+      $rules++;
+    }
+    if (count(explode($drupal_subdir, $htaccess)) < $rules) {
+      return FALSE;
+    }
+  }
+  return TRUE;
 }
 
 /**
