@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.90 2009/10/18 08:17:51 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.91 2009/10/18 08:49:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -83,7 +83,7 @@ function boost_admin_boost_performance_page() {
   $form['boost']['boost_enabled'] = array(
     '#type'          => 'radios',
     '#title'         => t('Boost - Static page cache'),
-    '#default_value' => variable_get('boost_enabled', CACHE_DISABLED),
+    '#default_value' => BOOST_ENABLED,
     '#options'       => array(
       CACHE_DISABLED => t('Disabled'),
       CACHE_NORMAL => t('Enabled'),
@@ -482,7 +482,7 @@ function boost_admin_boost_performance_page() {
   $form['advanced']['boost_ignore_flush'] = array(
     '#type'          => 'radios',
     '#title'         => t('Ignore cache flushing'),
-    '#default_value' => variable_get('boost_ignore_flush', 0),
+    '#default_value' => variable_get('boost_ignore_flush', 1),
     '#options'       => array(
       0 => t('Disabled'),
       1 => t('Only Ignore Clear Entire Cache Commands (Recommended if caching css/js files)'),
@@ -513,32 +513,68 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_CRAWL_ON_CRON,
     '#description'   => t('Pre-cache boosted URL\'s so they get cached before anyone accesses them. Enable the crawler first and save settings to use Preemptive Cache settings.'),
   );
+  if (BOOST_CRAWL_ON_CRON && BOOST_OVERWRITE_FILE) {
+    $description = t('Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh.');
+  }
+  elseif(!BOOST_CRAWL_ON_CRON) {
+    $description = t('Enable the crawler first to enable this checkbox.');
+  }
+  elseif(!BOOST_OVERWRITE_FILE) {
+    $description = t('The "Overwrite the cached file if it already exits" must be turned on in order to enable this.');
+  }
   $form['crawler']['boost_loopback_bypass'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Do not flush expired content on cron run, instead recrawl and overwrite it.'),
     '#default_value' => BOOST_LOOPBACK_BYPASS,
-    '#description'   => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') :!BOOST_OVERWRITE_FILE ? t('The "Overwrite the cached file if it already exits" must be turned on in order to enable this') : t('Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh.'),
+    '#description'   => $description,
     '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_OVERWRITE_FILE,
   );
+  if (BOOST_CRAWL_ON_CRON && BOOST_CACHE_HTML) {
+    $description = t('Crawl Site after cron runs, so the cache is primed.');
+  }
+  elseif(!BOOST_CRAWL_ON_CRON) {
+    $description = t('Enable the crawler first to enable this checkbox.');
+  }
+  elseif(!BOOST_CACHE_HTML) {
+    $description = t('Enable the caching of this content type to enable this checkbox');
+  }
   $form['crawler']['boost_push_html'] = array(
     '#type' => 'checkbox',
     '#title' => t('Preemptive Cache HTML'),
     '#default_value' => BOOST_PUSH_HTML,
-    '#description' => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') : !BOOST_CACHE_HTML ? t('Enable the caching of this content type to enable this checkbox') : t('Crawl Site after cron runs, so the cache is primed.'),
+    '#description' => $description,
     '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_CACHE_HTML,
   );
+  if (BOOST_CRAWL_ON_CRON && BOOST_CACHE_XML) {
+    $description = t('Crawl Site after cron runs, so the cache is primed.');
+  }
+  elseif(!BOOST_CRAWL_ON_CRON) {
+    $description = t('Enable the crawler first to enable this checkbox.');
+  }
+  elseif(!BOOST_CACHE_XML) {
+    $description = t('Enable the caching of this content type to enable this checkbox');
+  }
   $form['crawler']['boost_push_xml'] = array(
     '#type' => 'checkbox',
     '#title' => t('Preemptive Cache XML'),
     '#default_value' => BOOST_PUSH_XML,
-    '#description' => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') : !BOOST_CACHE_XML ? t('Enable the caching of this content type to enable this checkbox') : t('Crawl Site after cron runs, so the cache is primed.'),
+    '#description' => $description,
     '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_CACHE_XML,
   );
+  if (BOOST_CRAWL_ON_CRON && BOOST_CACHE_JSON) {
+    $description = t('Crawl Site after cron runs, so the cache is primed.');
+  }
+  elseif(!BOOST_CRAWL_ON_CRON) {
+    $description = t('Enable the crawler first to enable this checkbox.');
+  }
+  elseif(!BOOST_CACHE_JSON) {
+    $description = t('Enable the caching of this content type to enable this checkbox');
+  }
   $form['crawler']['boost_push_json'] = array(
     '#type' => 'checkbox',
     '#title' => t('Preemptive Cache AJAX/JSON'),
     '#default_value' => BOOST_PUSH_JSON,
-    '#description' => !BOOST_CRAWL_ON_CRON ? t('Enable the crawler first to enable this checkbox.') : !BOOST_CACHE_JSON ? t('Enable the caching of this content type to enable this checkbox') : t('Crawl Site after cron runs, so the cache is primed.'),
+    '#description' => $description,
     '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_CACHE_JSON,
   );
   $form['crawler']['boost_crawl_url_alias'] = array(

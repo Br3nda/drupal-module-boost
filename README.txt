@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.2.2.1.2.5.2.7 2009/09/08 07:22:48 mikeytown2 Exp $
+// $Id: README.txt,v 1.2.2.1.2.5.2.8 2009/10/18 08:49:44 mikeytown2 Exp $
 
 DESCRIPTION
 -----------
@@ -60,7 +60,6 @@ INSTALLATION
      need to create the folder for this; the default is of the format
      cache/gz/www.example.com
 
-     On the [Administer >> Site configuration >> Performance] Page is the
      Default minimum cache lifetime setting. As cached pages are created, they
      are given an expire by date and time, which is the current date and time
      plus the minimum cache lifetime. These dates and times are checked on each
@@ -77,11 +76,10 @@ INSTALLATION
      boosted1.txt is found in the sites/all/modules/boost/htaccess/ directory.
      The default.txt file shows you the exact placement of where the rules go,
      in case your not sure. If you fail to do this step, static page caching
-     will NOT work! Rules from boosted1.txt can also be found on the Boost
-     Settings page (admin/settings/performance/boost) in the expandable field
-     group called "Boost Apache .htaccess settings generation.". If Drupal is
-     installed in a subdirectory, you have to get the rules from the Boost
-     Settings page.
+     will NOT work! Generated rules can also be found on the Boost Settings page
+     [Administer >> Site configuration >> Performance >> Boost >> Rules]. If
+     Drupal is installed in a subdirectory, you have to get the rules from this
+     page.
 
      Should you have any trouble getting static pages served using the
      boosted1.txt configuration, try the boosted2.txt file before posting a
@@ -114,6 +112,27 @@ INSTALLATION
      errors or notices.
 
 
+CONFIGURATION TIPS
+------------------
+i18n, Domain module:
+  Enable
+  [x] Do not store the cache file path in the database
+  [x] Flush all sites caches in this database (singe db, multisite)
+  Disable
+  [ ] Only allow ASCII characters in path
+
+Enable XML & AJAX/JSON caches
+  Enable
+  [x] Cache .xml & /feed
+  [x] Cache ajax/json
+
+Use Cron Crawler
+  Enable
+  [x] Overwrite the cached file if it already exits
+  [x] Expire content in DB, do not flush file.
+  [x] Enable the cron crawler
+
+
 HOW IT WORKS
 ------------
 Once Boost has been installed and enabled, page requests by anonymous
@@ -137,16 +156,16 @@ Drupal installation directory. The Drupal pages' URL paths are translated
 into file system names in the following manner:
 
   http://mysite.com/
-  => cache/mysite.com/index.html
+  => cache/mysite.com/_.html
 
   http://mysite.com/about
-  => cache/mysite.com/about.html
+  => cache/mysite.com/about_.html
 
   http://mysite.com/about/staff
-  => cache/mysite.com/about/staff.html
+  => cache/mysite.com/about/staff_.html
 
   http://mysite.com/node/42
-  => cache/mysite.com/node/42.html
+  => cache/mysite.com/node/42_.html
 
 You'll note that the directory path includes the Drupal site name, enabling
 support for multi-site Drupal installations.
@@ -209,7 +228,6 @@ LIMITATIONS
   server has not been specifically tested by the author, it may, in fact,
   work, since they claim to support .htaccess files and to have mod_rewrite
   compatibility. Feedback on this would be appreciated.)
-* At the moment, Windows is untested. It *should* work, but it's untested ATM.
 
 
 BUG REPORTS
