@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.92 2009/10/21 01:20:42 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.93 2009/10/21 01:27:53 mikeytown2 Exp $
 
 /**
  * @file
@@ -705,6 +705,18 @@ function boost_admin_boost_performance_page() {
     '#options'       => $options,
     '#description'   => $description,
   );
+  $form['htaccess']['boost_apache_etag'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('ETag Settings'),
+    '#default_value' => variable_get('boost_apache_etag', 0),
+    '#options'       => array(
+      0 => 'Do Nothing',
+      1 => "Set FileETag 'None' - Do not send an etag",
+      2 => "Set FileETag 'All' - Default if enabled",
+      3 => "Set FileETag 'MTime Size' - Useful in server clusters",
+    ),
+    '#description'   => t('Uses <a href="!link">FileETag Directive</a> to set <a href="!about">ETags</a> for the files cached by Boost. <a href="!stack">More info on this subject</a>', array('!link' => url('http://httpd.apache.org/docs/trunk/mod/core.html#fileetag'), '!about' => url('http://en.wikipedia.org/wiki/HTTP_ETag'), '!stack' => url('http://stackoverflow.com/questions/tagged?tagnames=etag&sort=votes&pagesize=50'))),
+  );
 
   // Clear database button
   $form['clear'] = array(
@@ -892,6 +904,19 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= "      Header set Expires \"Sun, 19 Nov 1978 05:00:00 GMT\"\n";
     $string .= "      Header set Cache-Control \"no-store, no-cache, must-revalidate, post-check=0, pre-check=0\"\n";
     $string .= "    </IfModule>\n";
+    switch (variable_get('boost_apache_etag', 0)) {
+      case 0:
+        break;
+      case 1:
+        $string .= "    FileETag None\n";
+        break;
+      case 2:
+        $string .= "    FileETag All\n";
+        break;
+      case 3:
+        $string .= "    FileETag MTime Size\n";
+        break;
+    }
     $string .= "  </FilesMatch>\n";
   }
   if (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_CSS || BOOST_CACHE_JS || BOOST_CACHE_JSON) {
