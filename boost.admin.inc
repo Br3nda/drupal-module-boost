@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.91 2009/10/18 08:49:44 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.92 2009/10/21 01:20:42 mikeytown2 Exp $
 
 /**
  * @file
@@ -516,10 +516,10 @@ function boost_admin_boost_performance_page() {
   if (BOOST_CRAWL_ON_CRON && BOOST_OVERWRITE_FILE) {
     $description = t('Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh.');
   }
-  elseif(!BOOST_CRAWL_ON_CRON) {
+  elseif (!BOOST_CRAWL_ON_CRON) {
     $description = t('Enable the crawler first to enable this checkbox.');
   }
-  elseif(!BOOST_OVERWRITE_FILE) {
+  elseif (!BOOST_OVERWRITE_FILE) {
     $description = t('The "Overwrite the cached file if it already exits" must be turned on in order to enable this.');
   }
   $form['crawler']['boost_loopback_bypass'] = array(
@@ -532,10 +532,10 @@ function boost_admin_boost_performance_page() {
   if (BOOST_CRAWL_ON_CRON && BOOST_CACHE_HTML) {
     $description = t('Crawl Site after cron runs, so the cache is primed.');
   }
-  elseif(!BOOST_CRAWL_ON_CRON) {
+  elseif (!BOOST_CRAWL_ON_CRON) {
     $description = t('Enable the crawler first to enable this checkbox.');
   }
-  elseif(!BOOST_CACHE_HTML) {
+  elseif (!BOOST_CACHE_HTML) {
     $description = t('Enable the caching of this content type to enable this checkbox');
   }
   $form['crawler']['boost_push_html'] = array(
@@ -548,10 +548,10 @@ function boost_admin_boost_performance_page() {
   if (BOOST_CRAWL_ON_CRON && BOOST_CACHE_XML) {
     $description = t('Crawl Site after cron runs, so the cache is primed.');
   }
-  elseif(!BOOST_CRAWL_ON_CRON) {
+  elseif (!BOOST_CRAWL_ON_CRON) {
     $description = t('Enable the crawler first to enable this checkbox.');
   }
-  elseif(!BOOST_CACHE_XML) {
+  elseif (!BOOST_CACHE_XML) {
     $description = t('Enable the caching of this content type to enable this checkbox');
   }
   $form['crawler']['boost_push_xml'] = array(
@@ -564,10 +564,10 @@ function boost_admin_boost_performance_page() {
   if (BOOST_CRAWL_ON_CRON && BOOST_CACHE_JSON) {
     $description = t('Crawl Site after cron runs, so the cache is primed.');
   }
-  elseif(!BOOST_CRAWL_ON_CRON) {
+  elseif (!BOOST_CRAWL_ON_CRON) {
     $description = t('Enable the crawler first to enable this checkbox.');
   }
-  elseif(!BOOST_CACHE_JSON) {
+  elseif (!BOOST_CACHE_JSON) {
     $description = t('Enable the caching of this content type to enable this checkbox');
   }
   $form['crawler']['boost_push_json'] = array(
@@ -693,10 +693,10 @@ function boost_admin_boost_performance_page() {
   if ($_SERVER['DOCUMENT_ROOT'] == $document_root) {
     $best = '%{DOCUMENT_ROOT}';
   }
-  $description = t('Value of %best is recommended for this server.', array('%best' => $best));
+  $description = t('Value of %best is recommended for this server.', array('%best' => $best)) . ' ';
   if (!isset($best)) {
     $best = $document_root;
-    $description .= t(' Please open an boost issue on drupal.org, since apache and php are not configured correctly.');
+    $description .= t('Please open an boost issue on drupal.org, since apache and php are not configured correctly.');
   }
   $form['htaccess']['boost_document_root'] = array(
     '#type'          => 'radios',
