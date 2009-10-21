@@ -1,5 +1,5 @@
 <?php
-// $Id: boost_stats.php,v 1.1.2.12 2009/10/04 07:18:41 mikeytown2 Exp $
+// $Id: boost_stats.php,v 1.1.2.13 2009/10/21 19:57:38 mikeytown2 Exp $
 
 /**
  * @file
@@ -92,7 +92,7 @@ function boost_stats_init() {
   $nid = (isset($_GET['nid']) && is_numeric($_GET['nid'])) ? $_GET['nid'] : NULL;
   $title = (isset($_GET['title']) && $_GET['title'] != 'NULL') ? urldecode($_GET['title']) : NULL;
   $q = (isset($_GET['qq']) && $_GET['qq'] != 'NULL') ? $_GET['qq'] : NULL;
-  $q = (isset($_GET['q']) && $_GET['q'] != 'NULL') ? $_GET['q'] : NULL;
+  //$q = (isset($_GET['q']) && $_GET['q'] != 'NULL') ? $_GET['q'] : NULL;
   $referer = isset($_GET['referer']) ? $_GET['referer'] : NULL;
 
   // $session_id only goes in the access log; only used for stats, not creds.
