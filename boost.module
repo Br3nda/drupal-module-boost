@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.200 2009/10/21 02:22:26 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.201 2009/10/21 03:42:09 mikeytown2 Exp $
 
 /**
  * @file
@@ -756,6 +756,10 @@ function boost_block_flush_form() {
     '#type' => 'hidden',
     '#value' => $router_item['page_id'],
   );
+  $form['boost_clear']['path'] = array(
+    '#type' => 'hidden',
+    '#value' => $GLOBALS['_boost_path'],
+  );
   $form['boost_cache']['clear'] = array(
     '#type' => 'submit',
     '#value' => t('Flush Page'),
@@ -772,7 +776,7 @@ function boost_block_form_flush_submit(&$form_state, $form) {
   }
   $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $form['values']['page_callback'], 'page_type' => $form['values']['page_type'], 'page_id' => $form['values']['page_id']);
   boost_cache_expire_router($data, TRUE);
-
+  boost_cache_expire_derivative($form['values']['path'], FALSE);
 }
 
 function boost_block_db_settings_form() {
@@ -1311,8 +1315,10 @@ function boost_cache_delete($flush = FALSE) {
  *
  * @param $path
  *   Current URL
+ * @param $db
+ *   Expire by database lookup
  */
-function boost_cache_expire_derivative($path) {
+function boost_cache_expire_derivative($path, $db = TRUE) {
   global $base_path;
   $paths = array();
 
@@ -1340,11 +1346,17 @@ function boost_cache_expire_derivative($path) {
       }
     }
   }
-  boost_cache_expire($paths);
+  $paths = array_unique($paths);
+  if ($db) {
+    boost_cache_expire($paths);
+  }
+  else {
+    boost_cache_expire_by_filename($paths);
+  }
 }
 
 /**
- * Expires the static file cache for the given paths
+ * Expires the static file cache for the given paths via database.
  *
  * @param $paths
  *   Array of URL's
@@ -1352,7 +1364,7 @@ function boost_cache_expire_derivative($path) {
 function boost_cache_expire($paths) {
   $hashes = array();
   // Get all cache files directly associated with this path
-  foreach (array_unique($paths) as $path) {
+  foreach ($paths as $path) {
     // With URL Variables
     $html = boost_file_path($path, TRUE, BOOST_FILE_EXTENSION);
     if ($html === FALSE) {
@@ -1387,6 +1399,51 @@ function boost_cache_expire($paths) {
 
   // Expire all files that match up
   boost_cache_expire_router($data);
+}
+
+
+/**
+ * Expires the static file cache for paths matching a wildcard via filesystem.
+ *
+ * @param $path
+ *   Array of URLs
+ * @param $wildcard
+ *   If true get all chached files that start with this path.
+ */
+function boost_cache_expire_by_filename($paths, $wildcard = TRUE) {
+  $filenames = array();
+
+  foreach ($paths as $path) {
+    // Sanity check
+    if (boost_file_path($path, FALSE) === FALSE) {
+      continue;
+    }
+
+    // Get list of related files
+    $html = glob(boost_file_path($path, FALSE, NULL) . (($wildcard) ? '*' : '') . BOOST_FILE_EXTENSION, GLOB_NOSORT);
+    $xml  = glob(boost_file_path($path, FALSE, NULL) . (($wildcard) ? '*' : '') . BOOST_XML_EXTENSION,  GLOB_NOSORT);
+    $json = glob(boost_file_path($path, FALSE, NULL) . (($wildcard) ? '*' : '') . BOOST_JSON_EXTENSION, GLOB_NOSORT);
+
+    // Make sure something is in the arrays
+    $html[] = '';
+    $xml[] = '';
+    $json[] = '';
+
+    // Merge arrays
+    $filenames = array_filter(array_merge($filenames, $html, $xml, $json));
+  }
+
+  // Flush expired files
+  if ($filenames) {
+    $filenames = array_unique($filenames);
+    foreach ($filenames as $filename) {
+      boost_cache_kill($filename);
+    }
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
 }
 
 /**
