@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.rules.inc,v 1.1.2.1 2009/10/21 01:20:42 mikeytown2 Exp $
+// $Id: boost.rules.inc,v 1.1.2.2 2009/10/21 01:32:48 mikeytown2 Exp $
 
 /**
  * @file
@@ -30,7 +30,7 @@ function boost_rules_action_clear_page($page, $settings) {
   if (boost_is_cached($path)) {
     boost_cache_expire_derivative($page);
     if (BOOST_VERBOSE >= 5) {
-      watchdog('boost', 'Rules flushed !page from static page cache.', array('!page', $page));
+      watchdog('boost', 'Rules flushed !page from static page cache.', array('!page' => $page));
     }
   }
 }
