@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.63 2009/10/23 02:52:21 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.64 2009/10/23 23:19:56 mikeytown2 Exp $
 
 /**
  * @file
@@ -148,12 +148,26 @@ function boost_requirements($phase) {
           'value'       => $t('Boost Crawler Key Not Found.'),
         );
       }
-      elseif (isset($crawler_response) && $crawler_response != 200 && !variable_get('site_offline', 0)) {
+      elseif (isset($crawler_response) && $crawler_response != 200) {
+        switch ($crawler_response) {
+          case 503:
+            $description = t('Your site is in maintenance mode, crawler will not work with your site in this state. Take site out of maintenance mode if you wish to use the crawler. Running cron if your site is not in maintenance mode might make this error eventually clear.');
+            $severity = REQUIREMENT_WARNING;
+            break;
+          case 403:
+            $description = t('Menu item for crawler is not there. You need to "Clear cached data" at the bottom of the <a href="!url">performance page</a>', array('!url' => url('admin/settings/performance')));
+            $severity = REQUIREMENT_ERROR;
+            break;
+          default:
+            $description = t('<a href="!url">Clear cached data</a> & run cron; if error priests <a href="@link">open an issue</a> on the Boost issue queue.', array('!url' => url('admin/settings/performance'), '@link' => 'http://drupal.org/node/add/project-issue/boost'));
+            $severity = REQUIREMENT_ERROR;
+            break;
+        }
         $requirements['boost_crawler'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('@number returned. Crawler URL (@url) is not available, please <a href="@link">report this issue</a>', array('@number' => $crawler_response, '@url' => array_shift(explode('?', BOOST_CRAWLER_SELF)), '@link' => 'http://drupal.org/node/add/project-issue/boost')),
-          'severity'    => REQUIREMENT_ERROR,
-          'value'       => $t('Boost crawler did not get a 200 response.'),
+          'description' => $description,
+          'severity'    => $severity,
+          'value'       => $t('Boost crawler did not get a 200 response; @number returned instead.', array('@number' => $crawler_response)),
         );
       }
       if (!BOOST_ENABLED) {
