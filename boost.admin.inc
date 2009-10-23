@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.94 2009/10/23 02:52:20 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.95 2009/10/23 02:56:20 mikeytown2 Exp $
 
 /**
  * @file
@@ -726,6 +726,18 @@ function boost_admin_boost_performance_page() {
     ),
     '#description'   => t('Uses <a href="!link">FileETag Directive</a> to set <a href="!about">ETags</a> for the files cached by Boost. <a href="!stack">More info on this subject</a>', array('!link' => url('http://httpd.apache.org/docs/trunk/mod/core.html#fileetag'), '!about' => url('http://en.wikipedia.org/wiki/HTTP_ETag'), '!stack' => url('http://stackoverflow.com/questions/tagged?tagnames=etag&sort=votes&pagesize=50'))),
   );
+  $form['advanced']['no_db'] = array(
+    '#type'          => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+    '#title'         => t('Boost Retro Mode (no database)'),
+  );
+  $form['advanced']['no_db']['boost_no_database'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('NOT RECOMMENDED. Do not use the database at all.'),
+    '#default_value' => BOOST_NO_DATABASE,
+    '#description'   => t('Go old school and don\'t use the database. Very extreme tweak & support for features in this mode is pretty much non existent.'),
+  );
 
   // Clear database button
   $form['clear'] = array(
@@ -1093,7 +1105,7 @@ function boost_clear_cache_submit() {
 function boost_clear_expired_cache_submit() {
   $ignore = variable_get('boost_ignore_flush', 0);
   $GLOBALS['conf']['boost_ignore_flush'] = 0;
-  if (boost_cache_db_expire()) {
+  if (boost_cache_expire_all()) {
     drupal_set_message(t('Boost: Expired stale files from static page cache.'));
   }
   else {
