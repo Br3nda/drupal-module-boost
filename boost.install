@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.62 2009/10/21 01:26:22 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.63 2009/10/23 02:52:21 mikeytown2 Exp $
 
 /**
  * @file
@@ -101,13 +101,13 @@ function boost_requirements($phase) {
         }
       }
       if (BOOST_FILE_PATH != boost_cache_directory(NULL, FALSE)) {
-          $requirements['boost_dir_exists'] = array(
-            'title'       => $t('Boost'),
-            'description' => $t('<a href="@url">Cache file path</a>: is not set to the default(!default). ', array('@url' => url('admin/settings/performance/boost#edit-boost-file-path'), '!default'    => boost_cache_directory(NULL, FALSE))),
-            'severity'    => REQUIREMENT_WARNING,
-            'value'       => $t('Cache path'),
-          );
-        }
+        $requirements['boost_dir_exists'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('<a href="@url">Cache file path</a>: is not set to the default(!default). ', array('@url' => url('admin/settings/performance/boost#edit-boost-file-path'), '!default'    => boost_cache_directory(NULL, FALSE))),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('Cache path'),
+        );
+      }
       if ($htaccess && !boost_chk_htaccess_doc($htaccess)) {
         $requirements['boost_htaccess'] = array(
           'title'       => $t('Boost'),
@@ -157,21 +157,29 @@ function boost_requirements($phase) {
         );
       }
       if (!BOOST_ENABLED) {
-          $requirements['boost_is_enabled'] = array(
-            'title'       => $t('Boost'),
-            'description' => $t('Boost is disabled. <a href="@performance">Enable</a> it.', array('@performance' => url('admin/settings/performance/boost'))),
-            'severity'    => REQUIREMENT_WARNING,
-            'value'       => $t('Boost Disabled'),
-          );
-        }
+        $requirements['boost_is_enabled'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('Boost is disabled. <a href="@performance">Enable</a> it.', array('@performance' => url('admin/settings/performance/boost'))),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('Boost Disabled'),
+        );
+       }
+      if (ini_get('safe_mode') && !BOOST_IGNORE_SAFE_WARNING) {
+        $requirements['boost_safemode'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('Boost does not work very well if PHP is in safe mode. Some functionality may not work correctly.'),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('Boost & PHP running in Safe Mode is not a good idea.'),
+        );
+      }
       if (BOOST_CRAWL_URL_ALIAS && BOOST_LOOPBACK_BYPASS) {
-          $requirements['boost_crawler'] = array(
-            'title'       => $t('Boost'),
-            'description' => $t('Crawler settings are inefficient. You probably want to disable the "Crawl All URL\'s in the url_alias table" <a href="@performance">setting</a>.', array('@performance' => url('admin/settings/performance/boost#edit-boost-crawl-on-cron-wrapper'))),
-            'severity'    => REQUIREMENT_WARNING,
-            'value'       => $t('Boost crawler does not have efficient settings.'),
-          );
-        }
+        $requirements['boost_crawler'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('Crawler settings are inefficient. You probably want to disable the "Crawl All URL\'s in the url_alias table" <a href="@performance">setting</a>.', array('@performance' => url('admin/settings/performance/boost#edit-boost-crawl-on-cron-wrapper'))),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('Boost crawler does not have efficient settings.'),
+        );
+      }
       if (empty($requirements)) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
@@ -179,7 +187,7 @@ function boost_requirements($phase) {
           'value'       => t('Boost Installed correctly, should be working if properly <a href="@settings">configured</a>.', array('@settings' => url('admin/settings/performance/boost'))),
         );
       }
-    break;
+      break;
   }
   return $requirements;
 }

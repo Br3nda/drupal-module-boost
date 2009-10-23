@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.93 2009/10/21 01:27:53 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.94 2009/10/23 02:52:20 mikeytown2 Exp $
 
 /**
  * @file
@@ -501,6 +501,15 @@ function boost_admin_boost_performance_page() {
       5 => t('5 Record all errors to the db log (watchdog)'),
     ),
   );
+  if (ini_get('safe_mode')) {
+    $form['advanced']['boost_ignore_safe_warning'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Disable warnings about php safe mode'),
+      '#default_value' => BOOST_IGNORE_SAFE_WARNING,
+      '#description'   => t('Disable the warning on the status page about running boost in safe mode.'),
+    );
+  }
+
 
   // Crawler
   $form['crawler'] = array(
