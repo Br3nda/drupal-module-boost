@@ -1,0 +1,18 @@
+<a name="top"></a><img src="&path&rocket.png" align="right">
+<p>1. Log out from Drupal (or use another browser) to browse around your site<br>
+as the anonymous user. Ensure that static files are indeed being<br>
+generated into the Boost cache directory you specified above (#4); and if<br>
+you opt to use gzip, likewise check gzipped files are being generated in<br>
+the directory you specified for this.<br>
+The Administer > Performance > Boost settings page shows how many pages<br>
+are cached by Boost.</p>
+  
+<p>2. Check the Drupal status page [Administer > Reports > Status report]<br>
+for any errors or notices.</p>
+
+<p>3. To check whether you have a cached or dynamic version of a page,<br>
+look at the very end of the page's HTML source. You have the cached<br>
+version if the last line looks like this:<br>
+ <code><--Page cached by Boost @ 2009-08-11 06:19:58,expires @ 2009-08-11 09:19:58--></code>
+</p>
+<p><a href="#top">Back to top</a><br></p>

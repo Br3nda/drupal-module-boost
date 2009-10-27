@@ -1,0 +1,29 @@
+<a name="top"></a><img src="&path&rocket.png" align="right">
+<p>Boost is designed for Drupal 6.x served by Apache on any platform.</p>
+
+<p>Drupal's clean URLs MUST be enabled and working properly.</p>
+
+<p>If the cached files and pages must be cleared at their expired time,<br>
+the cron run for Drupal must be correctly setup to execute more often than,<br>
+or as often as the cache lifetime you specify in the settings.</p>
+
+<p>Since the static page caching is implemented with mod_rewrite directives,<br>
+Apache version 1.3 or 2.x with mod_rewrite enabled is required (if Drupal's<br>
+clean URLs work for you, you're fine; if not, get them working first).</p>
+
+<p>Other web servers, such as Lighttpd, are NOT officially supported at present.<br>
+ &bull; <a href="http://drupal.org/node/150909">Lighttpd</a> &bull; <a href="http://drupal.org/node/244072">Nginx</a></p>
+
+<p><br><a href name="rm"></a><a href="#top">Back to top</a></p>
+<h3>RECOMMENDED MODULES</h3>
+<p>Path (Drupal Core)</p>
+<p><a href="http://drupal.org/project/globalredirect">Global Redirect</a></p>
+<p><a href="http://drupal.org/project/transliteration">Transliteration</a></p>
+<p><a href="http://drupal.org/project/pathauto">Pathauto</a></p>
+<p><a href="http://drupal.org/project/token">Token</a></p>
+<p><a href="http://drupal.org/project/poormanscron">Poormanscron -dev</a> if cron configuration is not available on your server.<br>
+</p> 
+<p>If enabled [x] Clear all cached pages referenced via CCK with a node...<br>
+The <a href="http://drupal.org/project/nodereferrer">Node Referrer</a> module is recommended.<br>
+</p>
+<p><a href="#top">Back to top</a><br></p>
