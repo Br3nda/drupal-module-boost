@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.64 2009/10/23 23:19:56 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.65 2009/10/28 04:21:32 mikeytown2 Exp $
 
 /**
  * @file
@@ -707,7 +707,7 @@ function boost_update_6102() {
 function boost_update_6103() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $ret = array();
   // Add in base_dir column
   db_add_field($ret, 'boost_cache', 'base_dir', array(
@@ -782,7 +782,7 @@ function boost_update_6103() {
 function boost_update_6104() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $ret = array();
   // Add in extension column
   db_add_field($ret, 'boost_cache', 'extension', array(
@@ -801,7 +801,7 @@ function boost_update_6104() {
       ));
   db_add_index($ret, 'boost_cache', 'extension', array('extension'));
   db_add_index($ret, 'boost_cache_settings', 'extension', array('extension'));
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
 
   return $ret;
@@ -814,7 +814,7 @@ function boost_update_6104() {
 function boost_update_6105() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $ret = array();
   db_add_field($ret, 'boost_cache', 'url', array(
         'description' => 'URL of cached page',
@@ -823,7 +823,7 @@ function boost_update_6105() {
         'not null' => TRUE,
         'default' => '',
       ));
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return $ret;
 }
@@ -883,13 +883,13 @@ function boost_update_6108() {
 function boost_update_6109() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   // _boost_change_extension() is located in the module file, make sure thats loaded.
   drupal_load('module', 'boost');
   variable_set('boost_json_extension', '.json');
   _boost_change_extension('.js', '.json');
   drupal_set_message(t('Be sure to update your htaccess rules.'), BOOST_CACHE_JSON ? 'warning' : 'status');
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return array(array('success' => TRUE, 'query' => '.js extension changed to .json.'));
 }
@@ -909,7 +909,7 @@ function boost_update_6110() {
 function boost_update_6111() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $ret = array();
   // Add in hash & hash_url columns to boost_cache
   db_add_field($ret, 'boost_cache', 'hash', array(
@@ -936,7 +936,7 @@ function boost_update_6111() {
         'not null' => TRUE,
         'default' => '',
       ));
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return $ret;
 }
@@ -947,13 +947,13 @@ function boost_update_6111() {
 function boost_update_6112() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $result = db_query("SELECT filename FROM {boost_cache} WHERE hash = ''");
   while ($filename = db_result($result)) {
     $hash = md5($filename);
     db_query("UPDATE {boost_cache} SET hash = '%s' WHERE filename = '%s'", $hash, $filename);
   }
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return array(array('success' => TRUE, 'query' => 'Filenames hashed'));
 }
@@ -964,13 +964,13 @@ function boost_update_6112() {
 function boost_update_6113() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $result = db_query("SELECT url FROM {boost_cache} WHERE hash_url = ''");
   while ($url = db_result($result)) {
     $hash = md5($url);
     db_query("UPDATE {boost_cache} SET hash_url = '%s' WHERE url = '%s'", $hash, $url);
   }
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return array(array('success' => TRUE, 'query' => 'URLs hashed'));
 }
@@ -981,13 +981,13 @@ function boost_update_6113() {
 function boost_update_6114() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $result = db_query("SELECT url FROM {boost_crawler} WHERE hash = ''");
   while ($url = db_result($result)) {
     $hash = md5($url);
     db_query("UPDATE {boost_crawler} SET hash = '%s' WHERE url = '%s'", $hash, $url);
   }
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return array(array('success' => TRUE, 'query' => 'URLs hashed'));
 }
@@ -998,7 +998,7 @@ function boost_update_6114() {
 function boost_update_6115() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $ret = array();
   // Edit filename column & set PK
   db_drop_primary_key($ret, 'boost_cache');
@@ -1020,7 +1020,7 @@ function boost_update_6115() {
         'default' => ''
       ));
   db_add_unique_key($ret, 'boost_crawler', 'hash', array('hash'));
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return $ret;
 }
@@ -1041,7 +1041,7 @@ function boost_update_6116() {
 function boost_update_6117() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $ret = array();
   // Edit filename column & set PK
   $result = db_query("SELECT * FROM {boost_cache_settings} WHERE page_callback = 'view' AND page_id <> 0");
@@ -1070,7 +1070,7 @@ function boost_update_6117() {
         'default' => ''
       ));
   db_add_index($ret, 'boost_cache_settings', 'page_id', array('page_id'));
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return $ret;
 }
@@ -1081,7 +1081,7 @@ function boost_update_6117() {
 function boost_update_6118() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $ret = array();
   db_drop_index($ret, 'boost_cache', 'page_arguments');
   db_change_field($ret, 'boost_cache', 'page_arguments', 'page_type', array(
@@ -1102,7 +1102,7 @@ function boost_update_6118() {
         'default' => ''
       ));
   db_add_index($ret, 'boost_cache_settings', 'page_type', array('page_type'));
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return $ret;
 }
@@ -1186,7 +1186,7 @@ function boost_update_6119() {
 function boost_update_6120() {
   $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
   ini_set('max_execution_time', 10800); //3 Hours
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   $ret = array();
   // Add in hash_url & timestamp columns to boost_cache
   db_add_field($ret, 'boost_cache_relationships', 'hash_url', array(
@@ -1202,7 +1202,17 @@ function boost_update_6120() {
         'not null' => TRUE,
         'default' => 0,
       ));
-  _boost_set_time_limit(0);
+  _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
   return $ret;
+}
+
+/**
+ * Attempts to set the PHP maximum execution time.
+ * See http://api.drupal.org/api/function/drupal_set_time_limit/7
+ */
+function _boost_install_set_time_limit($time_limit) {
+  if (function_exists('set_time_limit')) {
+    @set_time_limit($time_limit);
+  }
 }
