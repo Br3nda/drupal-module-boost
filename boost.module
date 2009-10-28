@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.203 2009/10/23 02:56:20 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.204 2009/10/28 04:07:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -496,27 +496,36 @@ function boost_expire_node($node) {
   if (empty($node->nid)) {
     return FALSE;
   }
+  $data = array();
+  $paths = array();
 
   // Expire all relevant node pages from the static page cache to prevent serving stale content:
   if ($node->promote == 1) {
-    boost_cache_expire_derivative('<front>');
+    $paths[] = '<front>';
   }
-  boost_cache_expire_derivative('node/' . $node->nid);
+  if (BOOST_NO_DATABASE) {
+    $paths[] = 'node/' . $node->nid;
+  }
+  else {
+    $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $node->nid);
+  }
 
   // Get terms and flush their page
   if (module_exists('taxonomy') && BOOST_FLUSH_NODE_TERMS) {
     $tids = boost_taxonomy_node_get_tids($node->nid);
     $filenames = array();
     foreach ($tids as $tid) {
-      $filenames = array_merge($filenames, boost_get_db_term($tid));
-    }
-    foreach ($filenames as $filename) {
-      boost_cache_kill($filename['filename'], $filename['hash']);
+      if (BOOST_NO_DATABASE) {
+        $paths[] = 'taxonomy/term/' . $tid;
+      }
+      else {
+        $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'taxonomy', 'page_id' => $tid);
+      }
     }
   }
 
+  // Get CCK References and flush.
   if (BOOST_FLUSH_CCK_REFERENCES && module_exists('nodereference')) {
-    // Get CCK References and flush.
     $nids = array();
     $type = content_types($node->type);
     foreach ($type['fields'] as $field) {
@@ -530,14 +539,24 @@ function boost_expire_node($node) {
       }
     }
     foreach ($nids as $nid) {
-      boost_cache_expire_derivative('node/' . $nid);
+      if (BOOST_NO_DATABASE) {
+        $paths[] = 'node/' . $nid;
+      }
+      else {
+        $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $nid);
+      }
     }
 
     // Get CCK references pointing to this node and flush.
     if (module_exists('nodereferrer')) {
       $nids = nodereferrer_referrers($node->nid);
       foreach ($nids as $nid) {
-        boost_cache_expire_derivative('node/' . $nid['nid']);
+        if (BOOST_NO_DATABASE) {
+          $paths[] = 'node/' . $nid['nid'];
+        }
+        else {
+          $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $nid['nid']);
+        }
       }
     }
   }
@@ -545,11 +564,12 @@ function boost_expire_node($node) {
   if (BOOST_FLUSH_VIEWS && module_exists('views')) {
     $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
     $router_item = $GLOBALS['_boost_router_item'];
-    $data = array();
-    $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_type' => $router_item['page_type'], 'page_id' => $router_item['page_id']);
-    $relationships = boost_cache_get_node_relationships($data);
-    boost_cache_expire_router($relationships);
+    $relationship = array();
+    $relationship[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_type' => $router_item['page_type'], 'page_id' => $router_item['page_id']);
+    $data[] = boost_cache_get_node_relationships($relationship);
   }
+  boost_cache_expire_derivative($paths, TRUE);
+  boost_cache_expire_router($data);
 }
 
 /**
@@ -599,15 +619,18 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
     case 'logout':
       boost_set_cookie($user, BOOST_TIME - 86400);
       break;
-    case 'insert':
-      // TODO: create user-specific cache directory.
-      break;
     case 'delete':
       // Expire the relevant user page from the static page cache to prevent serving stale content:
       if (!empty($account->uid)) {
-        boost_cache_expire_derivative('user/' . $account->uid);
+        if (BOOST_NO_DATABASE) {
+          $paths[] = 'user/' . $account->uid;
+          boost_cache_expire_derivative($paths, TRUE);
+        }
+        else {
+          $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'user', 'page_id' => $account->uid);
+          boost_cache_expire_router($data);
+        }
       }
-      // TODO: recursively delete user-specific cache directory.
       break;
   }
 }
@@ -778,7 +801,7 @@ function boost_block_form_flush_submit(&$form_state, $form) {
   }
   $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $form['values']['page_callback'], 'page_type' => $form['values']['page_type'], 'page_id' => $form['values']['page_id']);
   boost_cache_expire_router($data, TRUE);
-  boost_cache_expire_derivative($form['values']['path'], FALSE);
+  boost_cache_expire_derivative(array($form['values']['path']));
 }
 
 function boost_block_db_settings_form() {
@@ -1314,45 +1337,51 @@ function boost_cache_delete($flush = FALSE) {
 /**
  * Finds all possible paths/redirects/aliases given the root path.
  *
- * @param $path
- *   Current URL
- * @param $db
- *   Expire by database lookup
+ * @param $paths
+ *   Array of current URLs
+ * @param $both
+ *   Expire database & file
  */
-function boost_cache_expire_derivative($path, $db = TRUE) {
+function boost_cache_expire_derivative($paths, $both = FALSE) {
   global $base_path;
-  $paths = array();
 
-  // Given path
-  $paths[] = $path;
+  foreach ($paths as $path) {
+    // Given path
+    $expire[] = $path;
 
-  // Special front page feed handling
-  if (BOOST_CACHE_XML && ($path = '' || $path = '<front>')) {
-    $paths[] = 'rss.xml';
-  }
+    // Special front page feed handling
+    if (BOOST_CACHE_XML && ($path = '' || $path = '<front>')) {
+      $expire[] = 'rss.xml';
+    }
 
-  // Path alias
-  $path_alias = url($path, array('absolute' => FALSE));
-  if ($base_path != '/') {
-    $path_alias = implode('/', array_diff_assoc(array_filter(explode('/', $path_alias)), array_filter(explode('/', $base_path))));
-  }
-  $paths[] = $path_alias;
+    // Path alias
+    $path_alias = url($path, array('absolute' => FALSE));
+    if ($base_path != '/') {
+      $path_alias = implode('/', array_diff_assoc(array_filter(explode('/', $path_alias)), array_filter(explode('/', $base_path))));
+    }
+    $expire[] = $path_alias;
 
-  // Path redirects
-  if (module_exists('path_redirect')) {
-    $path_redirects = boost_path_redirect_load(array('redirect' => $path));
-    if (isset($path_redirects)) {
-      foreach ($path_redirects as $path_redirect) {
-        $paths[] = $path_redirect['path'];
+    // Path redirects
+    if (module_exists('path_redirect')) {
+      $path_redirects = boost_path_redirect_load(array('redirect' => $path));
+      if (isset($path_redirects)) {
+        foreach ($path_redirects as $path_redirect) {
+          $expire[] = $path_redirect['path'];
+        }
       }
     }
   }
-  $paths = array_unique($paths);
-  if (BOOST_NO_DATABASE) {
-    boost_cache_expire_by_filename($paths);
+
+  $expire = array_unique($expire);
+  if (BOOST_NO_DATABASE ) {
+    boost_cache_expire_by_filename($expire);
+  }
+  elseif ($both && !BOOST_EXPIRE_NO_FLUSH) {
+    boost_cache_expire_by_db($expire);
+    boost_cache_expire_by_filename($expire);
   }
   else {
-    boost_cache_expire_by_db($paths);
+    boost_cache_expire_by_db($expire);
   }
 }
 
@@ -1468,11 +1497,15 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE) {
 
   foreach ($router_items as $dblookup) {
     if (isset($dblookup['base_dir'])) {
-      if (isset($dblookup['page_id'])) {
+      if (isset($dblookup['page_id']) && isset($dblookup['page_type']) && isset($dblookup['page_callback'])) {
         $result = db_query("SELECT filename, hash, base_dir FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = '%s' AND page_type = '%s' AND page_id = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_type'], $dblookup['page_id']);
         db_query("DELETE FROM {boost_cache_relationships} WHERE base_dir = '%s' AND page_callback = '%s' AND page_type = '%s' AND page_id = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_type'], $dblookup['page_id']);
       }
-      elseif (isset($dblookup['page_type'])) {
+      elseif (isset($dblookup['page_id']) && isset($dblookup['page_callback'])) {
+        $result = db_query("SELECT filename, hash, base_dir FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = '%s' AND page_id = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_id']);
+        db_query("DELETE FROM {boost_cache_relationships} WHERE base_dir = '%s' AND page_callback = '%s' AND page_id = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_id']);
+      }
+      elseif (isset($dblookup['page_type']) && isset($dblookup['page_callback'])) {
         $result = db_query("SELECT filename, hash, base_dir FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = '%s' AND page_type = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_type']);
         db_query("DELETE FROM {boost_cache_relationships} WHERE base_dir = '%s' AND page_callback = '%s' AND page_type = '%s'", $dblookup['base_dir'], $dblookup['page_callback'], $dblookup['page_type']);
       }
@@ -1485,11 +1518,15 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE) {
       }
     }
     else {
-      if (isset($dblookup['page_id'])) {
+      if (isset($dblookup['page_id']) && isset($dblookup['page_type']) && isset($dblookup['page_callback'])) {
         $result = db_query("SELECT filename, hash, base_dir FROM {boost_cache} WHERE page_callback = '%s' AND page_type = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_type'], $dblookup['page_id']);
         db_query("DELETE FROM {boost_cache_relationships} WHERE page_callback = '%s' AND page_type = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_type'], $dblookup['page_id']);
       }
-      elseif (isset($dblookup['page_type'])) {
+      elseif (isset($dblookup['page_id']) && isset($dblookup['page_callback'])) {
+        $result = db_query("SELECT filename, hash, base_dir FROM {boost_cache} WHERE page_callback = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_id']);
+        db_query("DELETE FROM {boost_cache_relationships} WHERE page_callback = '%s' AND page_id = '%s'", $dblookup['page_callback'], $dblookup['page_id']);
+      }
+      elseif (isset($dblookup['page_type']) && isset($dblookup['page_callback'])) {
         $result = db_query("SELECT filename, hash, base_dir FROM {boost_cache} WHERE page_callback = '%s' AND page_type = '%s'", $dblookup['page_callback'], $dblookup['page_type']);
         db_query("DELETE FROM {boost_cache_relationships} WHERE page_callback = '%s' AND page_type = '%s'", $dblookup['page_callback'], $dblookup['page_type']);
       }
@@ -2024,18 +2061,6 @@ function boost_get_settings_db($router_item) {
   $settings[] = db_fetch_array(db_query_range("SELECT * FROM {boost_cache_settings} WHERE page_callback = '%s' AND page_type = '%s' AND base_dir = '%s' AND page_id = '%s'", $router_item['page_callback'], 0, BOOST_FILE_PATH, 0, 0, 1));
 
   return $settings;
-}
-
-/**
- * Returns all cached pages associated with the taxonomy term.
- */
-function boost_get_db_term($term) {
-  $filenames = array();
-  $result = db_query("SELECT filename, hash FROM {boost_cache} WHERE expire > 0 AND expire <> 434966400 AND page_id = '%s' AND page_callback = 'taxonomy'", $term);
-  while ($filename = db_fetch_array($result)) {
-    $filenames[] = $filename;
-  }
-  return $filenames;
 }
 
 /**
