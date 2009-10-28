@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.95 2009/10/23 02:56:20 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.96 2009/10/28 04:25:04 mikeytown2 Exp $
 
 /**
  * @file
@@ -504,12 +504,29 @@ function boost_admin_boost_performance_page() {
   if (ini_get('safe_mode')) {
     $form['advanced']['boost_ignore_safe_warning'] = array(
       '#type'          => 'checkbox',
-      '#title'         => t('Disable warnings about php safe mode'),
+      '#title'         => t('Disable warning about php safe mode'),
       '#default_value' => BOOST_IGNORE_SAFE_WARNING,
       '#description'   => t('Disable the warning on the status page about running boost in safe mode.'),
     );
   }
-
+  $form['advanced']['boost_ignore_subdir_limit'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Disable warning about reaching the ext3 file system subdir limit.'),
+    '#default_value' => BOOST_IGNORE_SUBDIR_LIMIT,
+    '#description'   => t('Disable the warning on the status page about coming close to the file system directory limit; warning thrown when at 31,000 subdirectories. Boost will stop creating new subdirectories when 31,998 subdirectories have been created.'),
+  );
+  $form['advanced']['no_db'] = array(
+    '#type'          => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+    '#title'         => t('Boost Retro Mode (no database)'),
+  );
+  $form['advanced']['no_db']['boost_no_database'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('NOT RECOMMENDED. Do not use the database at all.'),
+    '#default_value' => BOOST_NO_DATABASE,
+    '#description'   => t('Go old school and don\'t use the database. Very extreme tweak & support for features in this mode is pretty much non existent.'),
+  );
 
   // Crawler
   $form['crawler'] = array(
@@ -725,18 +742,6 @@ function boost_admin_boost_performance_page() {
       3 => "Set FileETag 'MTime Size' - Useful in server clusters",
     ),
     '#description'   => t('Uses <a href="!link">FileETag Directive</a> to set <a href="!about">ETags</a> for the files cached by Boost. <a href="!stack">More info on this subject</a>', array('!link' => url('http://httpd.apache.org/docs/trunk/mod/core.html#fileetag'), '!about' => url('http://en.wikipedia.org/wiki/HTTP_ETag'), '!stack' => url('http://stackoverflow.com/questions/tagged?tagnames=etag&sort=votes&pagesize=50'))),
-  );
-  $form['advanced']['no_db'] = array(
-    '#type'          => 'fieldset',
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
-    '#title'         => t('Boost Retro Mode (no database)'),
-  );
-  $form['advanced']['no_db']['boost_no_database'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('NOT RECOMMENDED. Do not use the database at all.'),
-    '#default_value' => BOOST_NO_DATABASE,
-    '#description'   => t('Go old school and don\'t use the database. Very extreme tweak & support for features in this mode is pretty much non existent.'),
   );
 
   // Clear database button
@@ -1015,7 +1020,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= "  # Caching for anonymous users\n";
     $string .= "  # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR request came from this server OR https request\n";
     $string .= "  RewriteCond %{REQUEST_METHOD} !^GET$ [OR]\n";
-    $string .= "  RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|cache|misc|modules|sites|system|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
+    $string .= "  RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|$cache_dir|misc|modules|sites|system|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
     $string .= "  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]\n";
     $string .= BOOST_LOOPBACK_BYPASS ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
     $string .= "  RewriteCond %{HTTPS} on\n";

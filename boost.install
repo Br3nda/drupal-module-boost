@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.65 2009/10/28 04:21:32 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.66 2009/10/28 04:25:04 mikeytown2 Exp $
 
 /**
  * @file
@@ -66,6 +66,7 @@ function boost_requirements($phase) {
   $t = get_t();
   switch ($phase) {
     case 'runtime':
+      boost_tree_directory(BOOST_ROOT_CACHE_DIR);
       $cache_directories = array();
       $cache_directories[] = BOOST_ROOT_CACHE_DIR;
       $cache_directories[] = BOOST_FILE_PATH;
@@ -194,6 +195,22 @@ function boost_requirements($phase) {
           'value'       => $t('Boost crawler does not have efficient settings.'),
         );
       }
+      if (!BOOST_IGNORE_SUBDIR_LIMIT && isset($GLOBALS['_boost_dir_limit_warning'])) {
+        $requirements['boost_dir_limit'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('Sub directory limit about to be hit in these directories: <br /> !list <br /><br /> Change your url structure or open a new thread on the Boost issue tracker; there is a solution but it will cost you $100, since it can not be generalized & must be customized for your configuration', array('!list' => implode(" <br />\n ", $GLOBALS['_boost_dir_limit_warning']))),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('File system sub directory limit.'),
+        );
+      }
+      if (!BOOST_IGNORE_SUBDIR_LIMIT && isset($GLOBALS['_boost_dir_limit_hit'])) {
+        $requirements['boost_dir_limit'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('Sub directory has been hit in these directories: <br /> !list <br /><br /> Change your url structure or open a new thread on the Boost issue tracker; there is a solution but it will cost you $100, since it can not be generalized & must be customized for your configuration.', array('!list' => implode(" <br />\n ", $GLOBALS['_boost_dir_limit_hit']))),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('File system sub directory limit.'),
+        );
+      }
       if (empty($requirements)) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
@@ -278,6 +295,68 @@ function boost_chk_htaccess_doc($htaccess) {
       return FALSE;
   }
   return TRUE;
+}
+
+
+/**
+ * Return a tree directory structure array
+ *
+ * @param $dir
+ *  Directory name
+ * @param $limit
+ *  If there are more then this many sub directories in this directory then set
+ *  the $GLOBALS['_boost_dir_limit_hit'] variable. Default is 31,000; set to
+ *  zero to disable this functionality.
+ */
+function boost_tree_directory($dir, $limit = 31000) {
+  if (!is_dir($dir)) {
+    return FALSE;
+  }
+  // Get directories/files
+  $files = scandir($dir);
+
+  // Only keep directories
+  foreach ($files as $file) {
+    if (is_dir($dir . '/' . $file) && $file != '.' && $file != '..') {
+      $dirs[] = $file;
+    }
+  }
+
+  // Recursive operation to get subdirectories
+  if (count($dirs)) {
+    if (count($dirs) >= 31990) {
+      $GLOBALS['_boost_dir_limit_hit'][] = $dir;
+    }
+    elseif ($limit && count($dirs) > $limit) {
+      $GLOBALS['_boost_dir_limit_warning'][] = $dir;
+    }
+    foreach ($dirs as $key => $subdir) {
+      unset($dirs[$key]);
+      $dirs[$subdir] = boost_tree_directory($dir . '/' . $subdir, $limit);
+    }
+  }
+  else {
+    return NULL;
+  }
+
+  // Return Array
+  return $dirs;
+}
+
+
+/**
+ * PHP4 compatible scandir function
+ *
+ * @see http://php.net/scandir
+ */
+if (!function_exists("scandir")) {
+  function scandir($dir) {
+    $dh = opendir($dir);
+    while (FALSE !== ($filename = readdir($dh))) {
+      $files[] = $filename;
+    }
+    return($files);
+  }
 }
 
 /**
