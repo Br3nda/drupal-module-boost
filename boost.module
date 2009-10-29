@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.209 2009/10/29 10:35:25 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.210 2009/10/29 10:38:26 mikeytown2 Exp $
 
 /**
  * @file
@@ -411,7 +411,7 @@ function boost_comment($comment, $op) {
       // Expire the relevant node page from the static page cache to prevent serving stale content:
       if (!empty($comment['nid'])) {
         $node = node_load($comment['nid']);
-        boost_expire_node($node);
+        boost_expire_node($node, $comment['nid']);
       }
       break;
     case 'publish':
@@ -419,7 +419,7 @@ function boost_comment($comment, $op) {
     case 'delete':
       if (!empty($comment->nid)) {
         $node = node_load($comment->nid);
-        boost_expire_node($node);
+        boost_expire_node($node, $comment->nid);
       }
       break;
   }
@@ -489,7 +489,7 @@ function boost_votingapi_insert($votes) {
 
   foreach ($votes as $vote) {
     $node = node_load($vote['content_id']);
-    boost_expire_node($node);
+    boost_expire_node($node, $vote['content_id']);
   }
 }
 
@@ -504,7 +504,7 @@ function boost_votingapi_delete($votes) {
 
   foreach ($votes as $vote) {
     $node = node_load($vote['content_id']);
-    boost_expire_node($node);
+    boost_expire_node($node, $vote['content_id']);
   }
 }
 
@@ -513,13 +513,21 @@ function boost_votingapi_delete($votes) {
  *
  * @param $node
  *  node object
+ * @param $nid
+ *  node id
  */
-function boost_expire_node($node) {
-  if (empty($node->nid)) {
-    return FALSE;
-  }
+function boost_expire_node($node, $nid = 0) {
   $data = array();
   $paths = array();
+
+  if (empty($node->nid)) {
+    if ($nid) {
+      $node->nid = $nid;
+    }
+    else {
+      return FALSE;
+    }
+  }
 
   // Expire all relevant node pages from the static page cache to prevent serving stale content:
   if ($node->promote == 1) {
@@ -550,22 +558,24 @@ function boost_expire_node($node) {
   if (BOOST_FLUSH_CCK_REFERENCES && module_exists('nodereference')) {
     $nids = array();
     $type = content_types($node->type);
-    foreach ($type['fields'] as $field) {
-      // Add referenced nodes to nids. This will clean up nodereferrer fields
-      // when the referencing node is updated.
-      if ($field['type'] == 'nodereference') {
-        $node_field = isset($node->$field['field_name']) ? $node->$field['field_name'] : array();
-        foreach ($node_field as $delta => $item) {
-          $nids[$item['nid']] = $item['nid'];
+    if ($type) {
+      foreach ($type['fields'] as $field) {
+        // Add referenced nodes to nids. This will clean up nodereferrer fields
+        // when the referencing node is updated.
+        if ($field['type'] == 'nodereference') {
+          $node_field = isset($node->$field['field_name']) ? $node->$field['field_name'] : array();
+          foreach ($node_field as $delta => $item) {
+            $nids[$item['nid']] = $item['nid'];
+          }
         }
       }
-    }
-    foreach ($nids as $nid) {
-      if (BOOST_NO_DATABASE) {
-        $paths[] = 'node/' . $nid;
-      }
-      else {
-        $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $nid);
+      foreach ($nids as $nid) {
+        if (BOOST_NO_DATABASE) {
+          $paths[] = 'node/' . $nid;
+        }
+        else {
+          $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $nid);
+        }
       }
     }
 
