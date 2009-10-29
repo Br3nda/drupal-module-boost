@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.208 2009/10/29 10:24:02 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.209 2009/10/29 10:35:25 mikeytown2 Exp $
 
 /**
  * @file
@@ -430,6 +430,7 @@ function boost_comment($comment, $op) {
  */
 function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
   if (!BOOST_ENABLED) return;
+  $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $node->nid);
 
   switch ($op) {
     case 'insert':
@@ -437,9 +438,17 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
         $GLOBALS['_boost_nid'] = $node->nid;
         register_shutdown_function('_boost_view_insert');
       }
+      boost_expire_node($node);
+      break;
     case 'update':
+      boost_expire_node($node);
+      if (!$node->status) {
+        boost_cache_expire_router($data, TRUE, TRUE);
+      }
+      break;
     case 'delete':
       boost_expire_node($node);
+      boost_cache_expire_router($data, TRUE, TRUE);
       break;
   }
 }
@@ -641,7 +650,7 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
         }
         else {
           $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'user', 'page_id' => $account->uid);
-          boost_cache_expire_router($data);
+          boost_cache_expire_router($data, TRUE, TRUE);
         }
       }
       break;
@@ -1500,8 +1509,10 @@ function boost_cache_expire_by_filename($paths, $wildcard = TRUE) {
  *     ['base_dir']
  * @param $force_flush
  *   Override BOOST_EXPIRE_NO_FLUSH setting
+ * @param $remove_from_db
+ *   Remove this entry from the boost-cache table.
  */
-function boost_cache_expire_router($router_items, $force_flush = FALSE) {
+function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_from_db = FALSE) {
   // Get filenames & hash from db
   if (!is_array($router_items)) {
     return FALSE;
@@ -1554,7 +1565,12 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE) {
 
     while ($info = db_fetch_array($result)) {
       // Flush matching files
-      boost_cache_kill($info['filename'], $info['hash'], $force_flush, $info['base_dir']);
+      if ($remove_from_db) {
+        boost_remove_db($info['hash']);
+      }
+      else {
+        boost_cache_kill($info['filename'], $info['hash'], $force_flush, $info['base_dir']);
+      }
       $count++;
     }
   }
