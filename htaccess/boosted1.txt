@@ -51,7 +51,7 @@
   # Caching for anonymous users
   # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR https request
   RewriteCond %{REQUEST_METHOD} !^GET$ [OR]
-  RewriteCond %{REQUEST_URI} (^/(admin|cache|misc|modules|sites|system|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]
+  RewriteCond %{REQUEST_URI} (^/(admin|cache|misc|modules|sites|system|openid|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]
   RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]
   RewriteCond %{HTTPS} on
   RewriteRule .* - [S=7]
@@ -77,4 +77,4 @@
 
   ### BOOST END ###
 
-# $Id: boosted1.txt,v 1.1.2.17 2009/10/18 08:49:45 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.18 2009/10/30 15:30:48 mikeytown2 Exp $
