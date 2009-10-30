@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.66 2009/10/28 04:25:04 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.67 2009/10/30 15:24:46 mikeytown2 Exp $
 
 /**
  * @file
@@ -66,7 +66,9 @@ function boost_requirements($phase) {
   $t = get_t();
   switch ($phase) {
     case 'runtime':
-      boost_tree_directory(BOOST_ROOT_CACHE_DIR);
+      if (!BOOST_IGNORE_SUBDIR_LIMIT) {
+        boost_tree_directory(BOOST_ROOT_CACHE_DIR);
+      }
       $cache_directories = array();
       $cache_directories[] = BOOST_ROOT_CACHE_DIR;
       $cache_directories[] = BOOST_FILE_PATH;
