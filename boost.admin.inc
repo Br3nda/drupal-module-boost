@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.98 2009/10/30 15:27:01 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.99 2009/10/30 15:29:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -741,7 +741,7 @@ function boost_admin_boost_performance_page() {
       0 => 'Do Nothing',
       1 => "Set FileETag 'None' - Do not send an etag",
       2 => "Set FileETag 'All' - Default if enabled",
-      3 => "Set FileETag 'MTime Size' - Useful in server clusters",
+      3 => "Set FileETag 'MTime Size' - Useful in server clusters (Recommended)",
     ),
     '#description'   => t('Uses <a href="!link">FileETag Directive</a> to set <a href="!about">ETags</a> for the files cached by Boost. <a href="!stack">More info on this subject</a>', array('!link' => url('http://httpd.apache.org/docs/trunk/mod/core.html#fileetag'), '!about' => url('http://en.wikipedia.org/wiki/HTTP_ETag'), '!stack' => url('http://stackoverflow.com/questions/tagged?tagnames=etag&sort=votes&pagesize=50'))),
   );
@@ -906,6 +906,19 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   if (BOOST_CACHE_HTML) {
     $string .= "  AddDefaultCharset utf-8\n";
   }
+    switch (variable_get('boost_apache_etag', 0)) {
+      case 0:
+        break;
+      case 1:
+        $string .= "  FileETag None\n";
+        break;
+      case 2:
+        $string .= "  FileETag All\n";
+        break;
+      case 3:
+        $string .= "  FileETag MTime Size\n";
+        break;
+    }
   if (!BOOST_DISABLE_CLEAN_URL && (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON)) {
     $files = '';
     if (BOOST_CACHE_HTML) {
@@ -932,19 +945,6 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= "      Header set Expires \"Sun, 19 Nov 1978 05:00:00 GMT\"\n";
     $string .= "      Header set Cache-Control \"no-store, no-cache, must-revalidate, post-check=0, pre-check=0\"\n";
     $string .= "    </IfModule>\n";
-    switch (variable_get('boost_apache_etag', 0)) {
-      case 0:
-        break;
-      case 1:
-        $string .= "    FileETag None\n";
-        break;
-      case 2:
-        $string .= "    FileETag All\n";
-        break;
-      case 3:
-        $string .= "    FileETag MTime Size\n";
-        break;
-    }
     $string .= "  </FilesMatch>\n";
   }
   if (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_CSS || BOOST_CACHE_JS || BOOST_CACHE_JSON) {
