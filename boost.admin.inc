@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.97 2009/10/30 15:25:47 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.98 2009/10/30 15:27:01 mikeytown2 Exp $
 
 /**
  * @file
@@ -74,7 +74,7 @@ function boost_admin_boost_performance_page() {
   Global $base_path;
 
   $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800, 52*604800), 'format_interval');
-  $period[0] = '<' . t('none') . '>';
+  //$period[0] = '<' . t('none') . '>';
 
   $form['boost'] = array(
     '#type'          => 'fieldset',
@@ -100,26 +100,26 @@ function boost_admin_boost_performance_page() {
   );
   $form['boost']['boost_cache_lifetime'] = array(
     '#type' => 'select',
-    '#title' => t('Boost - HTML - Default minimum cache lifetime'),
+    '#title' => t('Boost - HTML - Default maximum cache lifetime'),
     '#default_value' => BOOST_CACHE_LIFETIME,
     '#options' => $period,
-    '#description' => !BOOST_CACHE_HTML ? t('Enable the caching of this content type to enable this selection box.') : t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    '#description' => !BOOST_CACHE_HTML ? t('Enable the caching of this content type to enable this selection box.') : t('The maximum cache lifetime is the maximum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs. Flushing the content before it is expired can happen like for example when a node is edited.'),
     '#disabled' => !BOOST_CACHE_HTML,
   );
   $form['boost']['boost_cache_xml_lifetime'] = array(
     '#type' => 'select',
-    '#title' => t('Boost - XML - Default minimum cache lifetime'),
+    '#title' => t('Boost - XML - Default maximum cache lifetime'),
     '#default_value' => BOOST_CACHE_XML_LIFETIME,
     '#options' => $period,
-    '#description' => !BOOST_CACHE_XML ? t('Enable the caching of this content type to enable this selection box.') : t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    '#description' => !BOOST_CACHE_XML ? t('Enable the caching of this content type to enable this selection box.') : t('The maximum cache lifetime is the maximum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs. Flushing the content before it is expired can happen like for example when a node is edited.'),
     '#disabled' => !BOOST_CACHE_XML,
   );
   $form['boost']['boost_cache_json_lifetime'] = array(
     '#type' => 'select',
-    '#title' => t('Boost - JSON - Default minimum cache lifetime'),
+    '#title' => t('Boost - JSON - Default maximum cache lifetime'),
     '#default_value' => BOOST_CACHE_JSON_LIFETIME,
     '#options' => $period,
-    '#description' => !BOOST_CACHE_JSON ? t('Enable the caching of this content type to enable this selection box.') : t('The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs.'),
+    '#description' => !BOOST_CACHE_JSON ? t('Enable the caching of this content type to enable this selection box.') : t('The maximum cache lifetime is the maximum amount of time that will elapse before the cache is emptied. Cache lifetime gets checked on cron runs. Flushing the content before it is expired can happen like for example when a node is edited.'),
     '#disabled' => !BOOST_CACHE_JSON,
   );
   $form['boost']['boost_clear'] = array(

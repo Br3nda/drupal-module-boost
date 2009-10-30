@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.2.2.1.2.5.2.10 2009/10/21 23:52:57 mikeytown2 Exp $
+// $Id: README.txt,v 1.2.2.1.2.5.2.11 2009/10/30 15:27:01 mikeytown2 Exp $
 
  BOOST MODULE FOR DRUPAL 6.x
  ---------------------------
@@ -110,9 +110,9 @@
      directory, and set the permissions so it is writeable.
 
      On the [Administer > Site configuration > Performance > Boost settings]
-     page is the Default minimum cache lifetime setting. As cached pages are
+     page is the Default maximum cache lifetime setting. As cached pages are
      created, they are given an expire by date and time, which is the current
-     date and time plus the minimum cache lifetime. These dates and times are
+     date and time plus the maximum cache lifetime. These dates and times are
      checked on each cron run; and if a page is expired, the cache is cleared,
      and a new cached version will be created the next time the page is
      called upon by an anonymous user (including bots). The page will be
@@ -182,7 +182,7 @@
 
  * Page configuration Block
    This block allows the administrator to set pages individually.
-   Including setting for minimum cache lifetime(select box), preemptive
+   Including setting for maximum cache lifetime(select box), preemptive
    cache(on or off), scope(page ID, content type or content container).
 
  * Stats Block
