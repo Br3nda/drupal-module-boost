@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.210 2009/10/29 10:38:26 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.211 2009/10/30 15:25:47 mikeytown2 Exp $
 
 /**
  * @file
@@ -462,20 +462,27 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
 function _boost_view_insert() {
   $result = db_query("SELECT * FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = 'view' AND expire > 0 AND expire <> 434966400", BOOST_FILE_PATH);
   $data = array();
+  $num_views = 0;
+  $num_hits = 0;
   while ($boost = db_fetch_array($result)) {
     $view = views_get_view($boost['page_type']);
     $view->set_display($boost['page_id']);
     $view->pre_execute();
     $view->set_items_per_page(0);
     $view->execute();
+    $number_views++;
     foreach ($view->result as $item) {
       if ($item->nid == $GLOBALS['_boost_nid']) {
-      $hash = BOOST_FILE_PATH . 'view' . $boost['page_type'] . $boost['page_id'];
-      $data[$hash] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
+        $hash = BOOST_FILE_PATH . 'view' . $boost['page_type'] . $boost['page_id'];
+        $data[$hash] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
+        $number_hits++;
       }
     }
   }
-  boost_cache_expire_router($data);
+  $flushed = boost_cache_expire_router($data);
+  if (BOOST_VERBOSE >= 7) {
+    watchdog('boost', 'Debug: _boost_view_insert() <br />!views Views Searched; !hits of them contain the new node and where thus flushed. As a result of this !flushed pages where expired from the boost cache.', array('!views' => $num_views, '!hits' => $num_hits, '!flushed' => $flushed));
+  }
 }
 
 /**
@@ -600,8 +607,13 @@ function boost_expire_node($node, $nid = 0) {
     $relationship[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_type' => $router_item['page_type'], 'page_id' => $router_item['page_id']);
     $data[] = boost_cache_get_node_relationships($relationship);
   }
-  boost_cache_expire_derivative($paths, TRUE);
-  boost_cache_expire_router($data);
+
+  $flushed = 0;
+  $flushed += boost_cache_expire_router($data);
+  $flushed += boost_cache_expire_derivative($paths, TRUE);
+  if (BOOST_VERBOSE >= 7) {
+    watchdog('boost', 'Debug: boost_expire_node() <br />Node !nid was flushed resulting in !flushed pages being expired from the cache',  array('!nid' => $node->nid, '!flushed' => $flushed));
+  }
 }
 
 /**
@@ -656,11 +668,14 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
       if (!empty($account->uid)) {
         if (BOOST_NO_DATABASE) {
           $paths[] = 'user/' . $account->uid;
-          boost_cache_expire_derivative($paths, TRUE);
+          $flushed = boost_cache_expire_derivative($paths, TRUE);
         }
         else {
           $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'user', 'page_id' => $account->uid);
-          boost_cache_expire_router($data, TRUE, TRUE);
+          $flushed = boost_cache_expire_router($data, TRUE, TRUE);
+        }
+        if (BOOST_VERBOSE >= 7) {
+          watchdog('boost', 'Debug: boost_user() <br />User !uid was deleted resulting in !flushed pages being expired from the cache',  array('!uid' => $account->uid, '!flushed' => $flushed));
         }
       }
       break;
@@ -832,8 +847,12 @@ function boost_block_form_flush_submit(&$form_state, $form) {
     $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node_feed');
   }
   $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $form['values']['page_callback'], 'page_type' => $form['values']['page_type'], 'page_id' => $form['values']['page_id']);
-  boost_cache_expire_router($data, TRUE);
-  boost_cache_expire_derivative(array($form['values']['path']));
+  $flushed = 0;
+  $flushed += boost_cache_expire_router($data, TRUE);
+  $flushed += boost_cache_expire_derivative(array($form['values']['path']));
+  if (BOOST_VERBOSE >= 7) {
+    watchdog('boost', 'Debug: boost_block_form_flush_submit() <br />Page !path was deleted resulting in !flushed pages being expired from the cache',  array('!path' => $form['values']['path'], '!flushed' => $flushed));
+  }
 }
 
 function boost_block_db_settings_form() {
@@ -945,15 +964,19 @@ function boost_block_db_settings_form() {
  * Sets page specific settings in the boost cache database.
  */
 function boost_block_db_settings_form_submit(&$form_state, $form) {
-  boost_set_db_page_settings($form['values']['lifetime'], $form['values']['push'], $form['values']['selection']);
+  $flushed = boost_set_db_page_settings($form['values']['lifetime'], $form['values']['push'], $form['values']['selection']);
+  if (BOOST_VERBOSE >= 7) {
+    watchdog('boost', 'Debug: boost_block_db_rm_settings_form_submit() <br />!flushed pages being expired from the cache in order for the new settings to take effect.',  array('!flushed' => $flushed));
+  }
 }
 
 /**
- * Sets page specific settings in the boost cache database.
+ * Removes page specific settings in the boost cache database.
  */
 function boost_block_db_rm_settings_form_submit(&$form_state, $form) {
   $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
   $router_item = $GLOBALS['_boost_router_item'];
+
   $data = array();
   if (is_int($form['values']['id'])) {
     boost_remove_settings_db($form['values']['id_value']);
@@ -967,7 +990,11 @@ function boost_block_db_rm_settings_form_submit(&$form_state, $form) {
     boost_remove_settings_db($form['values']['container_value']);
     $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback']);
   }
-  boost_cache_expire_router($data);
+
+  $flushed = boost_cache_expire_router($data);
+  if (BOOST_VERBOSE >= 7) {
+    watchdog('boost', 'Debug: boost_block_db_rm_settings_form_submit() <br />!flushed pages being expired from the cache in order for the new settings to take effect.', array('!flushed' => $flushed));
+  }
 }
 
 
@@ -1099,6 +1126,10 @@ function _boost_ob_handler() {
   if (!empty($buffer)) {
     $status = boost_get_http_status();
     $types = boost_get_content_type();
+    if (BOOST_VERBOSE >= 7) {
+      watchdog('boost', 'Debug: _boost_ob_handler() <br />HTTP Info: !status - !types <br />Path: !path <br />Content Container: !callback <br />Content Type: !type <br />ID: !id <br />Cache This: !cache.', array('!status' => $status, '!types' => implode(', ', $types), '!path' => boost_file_path($GLOBALS['_boost_path']), '!callback' => $GLOBALS['_boost_router_item']['page_callback'], '!type' => $GLOBALS['_boost_router_item']['page_type'], '!id' => $GLOBALS['_boost_router_item']['page_id'], '!cache' => $GLOBALS['_boost_cache_this'] ? 'TRUE' : 'FALSE'));
+    }
+    $types = array_pop($types);
     if (stristr($types, 'text/javascript')) {
       if ($status == 200 & $GLOBALS['_boost_cache_this']) {
         if (BOOST_ASYNCHRONOUS_OUTPUT) {
@@ -1165,7 +1196,7 @@ function boost_get_content_type() {
   foreach ($headers as $header) {
     $types[] = array_shift(explode('; charset=', array_shift(explode('\n', $header))));
   }
-  return array_pop(array_filter($types));
+  return array_filter($types);
 }
 
 /**
@@ -1404,17 +1435,19 @@ function boost_cache_expire_derivative($paths, $both = FALSE) {
     }
   }
 
+  $counter = 0;
   $expire = array_unique($expire);
   if (BOOST_NO_DATABASE ) {
-    boost_cache_expire_by_filename($expire);
+    $counter += boost_cache_expire_by_filename($expire);
   }
   elseif ($both && !BOOST_EXPIRE_NO_FLUSH) {
-    boost_cache_expire_by_db($expire);
-    boost_cache_expire_by_filename($expire);
+    $counter += boost_cache_expire_by_db($expire);
+    $counter += boost_cache_expire_by_filename($expire);
   }
   else {
-    boost_cache_expire_by_db($expire);
+    $counter += boost_cache_expire_by_db($expire);
   }
+  return $counter;
 }
 
 /**
@@ -1460,7 +1493,7 @@ function boost_cache_expire_by_db($paths) {
   }
 
   // Expire all files that match up
-  boost_cache_expire_router($data);
+  return boost_cache_expire_router($data);
 }
 
 
@@ -1495,13 +1528,17 @@ function boost_cache_expire_by_filename($paths, $wildcard = TRUE) {
     $filenames = array_filter(array_merge($filenames, $html, $xml, $json));
   }
 
+  $counter = 0;
   // Flush expired files
   if ($filenames) {
     $filenames = array_unique($filenames);
     foreach ($filenames as $filename) {
-      boost_cache_kill($filename);
+      $counter += boost_cache_kill($filename);
     }
-    return TRUE;
+    if (BOOST_VERBOSE >= 9) {
+      watchdog('boost', 'Debug: boost_cache_expire_by_filename() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $filenames)));
+    }
+    return $counter;
   }
   else {
     return FALSE;
@@ -1528,6 +1565,7 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
     return FALSE;
   }
   $count = 0;
+  $list = array();
 
   foreach ($router_items as $dblookup) {
     if (isset($dblookup['base_dir'])) {
@@ -1575,14 +1613,18 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
 
     while ($info = db_fetch_array($result)) {
       // Flush matching files
+      $counter = boost_cache_kill($info['filename'], $info['hash'], $force_flush, $info['base_dir']);
+      $count += $counter;
       if ($remove_from_db) {
         boost_remove_db($info['hash']);
       }
-      else {
-        boost_cache_kill($info['filename'], $info['hash'], $force_flush, $info['base_dir']);
+      if ($counter >= 1) {
+        $list[] = $info['filename'];
       }
-      $count++;
     }
+  }
+  if (BOOST_VERBOSE >= 9) {
+    watchdog('boost', 'Debug: boost_cache_expire_router() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $list)));
   }
   return $count;
 }
@@ -1603,6 +1645,7 @@ function boost_cache_kill($filename, $hash = '', $force_flush = FALSE, $base_dir
   // If not ignoring file removal
   // AND site is multisite and cache path matches filename
   //  OR full base url matches filename
+  $count = 0;
   if (variable_get('boost_ignore_flush', 0) < 3 && ((BOOST_FLUSH_ALL_MULTISITE && strstr($filename, BOOST_ROOT_CACHE_DIR)) || strstr($filename, BOOST_FILE_PATH))) {
     if ($hash == '') {
       $hash = md5($filename);
@@ -1610,11 +1653,15 @@ function boost_cache_kill($filename, $hash = '', $force_flush = FALSE, $base_dir
     if ($hash != '') {
       if (!$force_flush && BOOST_EXPIRE_NO_FLUSH) {
         db_query("UPDATE {boost_cache} SET expire = 434966400 WHERE hash = '%s'", $hash);
+        if (db_affected_rows()) {
+          $count++;
+        }
       }
       else {
         db_query("UPDATE {boost_cache} SET expire = 0 WHERE hash = '%s'", $hash);
         if (file_exists($filename)) {
           @unlink($filename);
+          $count++;
         }
         $base_dir = $base_dir == '' ? BOOST_FILE_PATH : $base_dir;
         $gz_filename = str_replace($base_dir, BOOST_GZIP_FILE_PATH, $filename) . BOOST_GZIP_EXTENSION;
@@ -1624,6 +1671,7 @@ function boost_cache_kill($filename, $hash = '', $force_flush = FALSE, $base_dir
       }
     }
   }
+  return $count;
 }
 
  /**
@@ -1649,6 +1697,8 @@ function boost_cache_expire_all() {
  * TODO del empty dirs if enabled
  */
 function boost_cache_expire_all_db() {
+  $list = array();
+  $count = 0;
   if (BOOST_FLUSH_ALL_MULTISITE) {
     $result = db_query("SELECT filename, hash, base_dir FROM {boost_cache} WHERE expire BETWEEN 1 AND %d", BOOST_TIME);
   }
@@ -1656,10 +1706,18 @@ function boost_cache_expire_all_db() {
     $result = db_query("SELECT filename, hash, base_dir FROM {boost_cache} WHERE base_dir = '%s' AND expire BETWEEN 1 AND %d", BOOST_FILE_PATH, BOOST_TIME);
   }
   while ($boost = db_fetch_array($result)) {
-    boost_cache_kill($boost['filename'], $boost['hash'], TRUE, $boost['base_dir']);
+    $count += boost_cache_kill($boost['filename'], $boost['hash'], TRUE, $boost['base_dir']);
+    $list[] = $boost['filename'];
   }
   if (BOOST_FLUSH_DIR) {
     // TO-DO: del empty dirs.
+  }
+
+  if (BOOST_VERBOSE >= 9) {
+    watchdog('boost', 'Debug: boost_cache_expire_all_db() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $list)));
+  }
+  if (BOOST_VERBOSE >= 7) {
+    watchdog('boost', 'Debug: boost_cache_expire_all_db() <br />!num files where flushed', array('!num' => $list));
   }
   return TRUE;
 }
@@ -1816,6 +1874,7 @@ function boost_cache_set_node_relationships($relationships) {
     return FALSE;
   }
 
+  $counter = 0;
   foreach ($relationships as $data) {
     // If one of the required items is not set, skip this entry
     if (!isset($data['child_page_callback']) || !isset($data['child_page_type']) || !isset($data['child_page_id'])) {
@@ -1840,8 +1899,15 @@ function boost_cache_set_node_relationships($relationships) {
     if (!db_affected_rows()) {
       @db_query("INSERT INTO {boost_cache_relationships} (hash, base_dir, page_callback, page_type, page_id, child_page_callback, child_page_type, child_page_id, hash_url, timestamp) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d)", $hash, $data['base_dir'], $data['page_callback'], $data['page_type'], $data['page_id'], $data['child_page_callback'], $data['child_page_type'], $data['child_page_id'], $hash_url, BOOST_TIME);
     }
+    $counter++;
   }
-  boost_cache_prune_node_relationship($hash_url);
+
+
+
+  $removed = boost_cache_prune_node_relationship($hash_url);
+  if (BOOST_VERBOSE >= 7) {
+    watchdog('boost', 'Debug: boost_cache_set_node_relationships() <br />!num of !total given entries to the boost_cache_relationships table added or updated; !removed entries removed due to them being outdated.', array('!num' => $counter, '!total' => count($GLOBALS['_boost_relationships']), '!removed' => $removed));
+  }
   unset($GLOBALS['_boost_relationships']);
   return TRUE;
 }
@@ -1886,11 +1952,12 @@ function boost_cache_get_node_relationships($relationships) {
 function boost_cache_prune_node_relationship($hash_url) {
   // Grab all entires related to this URL; find ones that don't match the latest
   // timestamp and remove them.
-  $records = array();
+  $records = 0;
   $result = db_query("SELECT hash, timestamp FROM {boost_cache_relationships} WHERE hash_url = '%s' ORDER BY timestamp DESC", $hash_url);
   while ($info = db_fetch_array($result)) {
     if ($info['timestamp'] < BOOST_TIME) {
       db_query("DELETE FROM {boost_cache_relationships} WHERE hash = '%s'", $info['hash']);
+      $records++;
     }
   }
   return $records;
@@ -2066,9 +2133,8 @@ function boost_set_db_page_settings($lifetime, $push, $scope) {
       $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback']);
       break;
   }
-  boost_cache_expire_router($data);
-  //boost_put_db($filename, $info['expire'], $lifetime, $push, $router_item);
   boost_put_settings_db($lifetime, $push, $router_item, $scope);
+  return boost_cache_expire_router($data);
 }
 
 /**

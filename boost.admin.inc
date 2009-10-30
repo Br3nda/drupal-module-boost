@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.96 2009/10/28 04:25:04 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.97 2009/10/30 15:25:47 mikeytown2 Exp $
 
 /**
  * @file
@@ -499,6 +499,8 @@ function boost_admin_boost_performance_page() {
       1 => t('1 Record almost no errors'),
       3 => t('3'),
       5 => t('5 Record all errors to the db log (watchdog)'),
+      7 => t('7 Debug Mode: Output a lot of extra info.'),
+      9 => t('9 Debug Overkill: Output what is getting expired.'),
     ),
   );
   if (ini_get('safe_mode')) {
