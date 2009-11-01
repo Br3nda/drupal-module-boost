@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.218 2009/11/01 04:55:41 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.219 2009/11/01 04:56:48 mikeytown2 Exp $
 
 /**
  * @file
@@ -753,16 +753,14 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
               $ttl = boost_db_get_ttl($filename);
               $generate = boost_get_generation_time($filename);
               $output = '';
-              if (boost_has_site_changed()) {
-                $output .= t('Globally the site has changed.') . ' ';
-              }
-              $output .= t('This page is being served to anonymous visitors from the static page cache. Took %time seconds to generate this cached page.', array('%time' => round($generate, 3))) . ' ';
+              $output .= t('Site Has Changed: %old<br />', array('%old' => boost_has_site_changed() ? 'True' : 'False'));
               if ($ttl < 0) {
-                $output .= t('<strong>The cached copy expired %interval ago.</strong>', array('%interval' => format_interval(abs($ttl))));
+                $output .= t('<strong>Expired: %interval ago</strong><br />', array('%interval' => format_interval(abs($ttl))));
               }
               else {
-                $output .= t('The cached copy will expire in %interval.', array('%interval' => format_interval(abs($ttl))));
+                $output .= t('Expire In: %interval<br />', array('%interval' => format_interval(abs($ttl))));
               }
+              $output .= t('Cache Generated: %time seconds<br />', array('%time' => round($generate, 2))) . ' ';
               $output .=  drupal_get_form('boost_block_flush_form');
             }
             $error = FALSE;
