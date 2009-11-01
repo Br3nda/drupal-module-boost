@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.100 2009/10/30 15:30:48 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.101 2009/11/01 04:55:41 mikeytown2 Exp $
 
 /**
  * @file
@@ -749,13 +749,13 @@ function boost_admin_boost_performance_page() {
   // Clear database button
   $form['clear'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Clear Boost\'s Database'),
-    '#description' => t('Warning: This gives you a clean slate for the boost database, use with caution. If you change the directories or file extensions (in "Boost directories and file extensions"), then clearing the database would be a good idea, but not required.'),
+    '#title' => t("Clear Boost's Database & File Cache"),
+    '#description' => t('Warning: This gives you a clean slate for the boost database & file system, use with caution. If you change the directories or file extensions (in "Boost directories and file extensions"), then pressing this button would be a good idea, but not required. If you changed the CSS or JavaScript and wish to push it out, you need to press this button.'),
   );
   $form['clear']['boost_reset'] = array(
     '#type' => 'submit',
-    '#value' => t('Reset boost database: !records records', array('!records' => boost_count_db(2))),
-    '#submit' => array('boost_reset_database_submit'),
+    '#value' => t('Reset Button - Database Records: !records, Files: !files', array('!records' => boost_count_db(2), '!files' => boost_count_all_files(BOOST_ROOT_CACHE_DIR))),
+    '#submit' => array('boost_reset_database_file_submit'),
   );
 
   // Form validation
@@ -1084,6 +1084,35 @@ function boost_count_db($all = 0) {
 }
 
 /**
+ * Count the number of files in a folder
+ *
+ * @param string $dir
+ *  Directory name, usually BOOST_ROOT_CACHE_DIR or /cache
+ */
+function boost_count_all_files($dirname) {
+  if (is_dir($dirname)) {
+    $dir_handle = opendir($dirname);
+  }
+  if (!$dir_handle) {
+    return 0;
+  }
+
+  $files = 0;
+  while ($file = readdir($dir_handle)) {
+    if ($file != "." && $file != "..") {
+      if (!is_dir($dirname . "/" . $file)) {
+        $files++;
+      }
+      else {
+        $files += boost_count_all_files($dirname . "/" . $file);
+      }
+    }
+  }
+  closedir($dir_handle);
+  return $files;
+}
+
+/**
  * Counts the number of pages in the core cache.
  */
 function boost_count_core_db($all = FALSE) {
@@ -1097,6 +1126,8 @@ function boost_clear_cache_submit() {
   $ignore = variable_get('boost_ignore_flush', 0);
   $GLOBALS['conf']['boost_ignore_flush'] = 0;
   if (boost_cache_clear_all()) {
+    boost_clear_cache_parallel(BOOST_PERM_FILE_PATH);
+    boost_clear_cache_parallel(BOOST_PERM_GZIP_FILE_PATH);
     drupal_set_message(t('Boost: Static page cache cleared.'));
   }
   else {
@@ -1105,6 +1136,13 @@ function boost_clear_cache_submit() {
   $GLOBALS['conf']['boost_ignore_flush'] = $ignore;
 }
 
+function boost_clear_cache_parallel($dir) {
+  $dirs = _boost_copy_file_get_domains($dir);
+  foreach ($dirs as $directory) {
+    watchdog('boost', $directory);
+    _boost_rmdir_rf($directory, TRUE, TRUE);
+  }
+}
 
 /**
  * Flushes all expired pages from database
@@ -1122,9 +1160,9 @@ function boost_clear_expired_cache_submit() {
 }
 
 /**
- * Resets boost database & cache
+ * Resets boost database & cache directory
  */
-function boost_reset_database_submit() {
+function boost_reset_database_file_submit() {
   $ignore = variable_get('boost_ignore_flush', 0);
   $GLOBALS['conf']['boost_ignore_flush'] = 0;
   if (boost_cache_clear_all()) {
@@ -1132,6 +1170,7 @@ function boost_reset_database_submit() {
     db_query("TRUNCATE {boost_cache_settings}");
     db_query("TRUNCATE {boost_cache_relationships}");
     db_query("TRUNCATE {boost_crawler}");
+    _boost_rmdir_rf(BOOST_ROOT_CACHE_DIR, TRUE, TRUE, TRUE);
     drupal_set_message(t('Boost: Static page cache & 4 database tables cleared.'));
   }
   else {

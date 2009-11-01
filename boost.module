@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.217 2009/11/01 04:54:19 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.218 2009/11/01 04:55:41 mikeytown2 Exp $
 
 /**
  * @file
@@ -1396,6 +1396,12 @@ function boost_cache_delete($flush = FALSE) {
   //add in .boost root id file
   file_put_contents(BOOST_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
   file_put_contents(BOOST_GZIP_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_GZIP_FILE_PATH);
+  foreach (_boost_copy_file_get_domains(BOOST_PERM_FILE_PATH) as $dir) {
+    file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+  }
+  foreach (_boost_copy_file_get_domains(BOOST_PERM_GZIP_FILE_PATH) as $dir) {
+    file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+  }
 
   //Flush Cache
   if (file_exists(BOOST_FILE_PATH)) {
@@ -1411,6 +1417,12 @@ function boost_cache_delete($flush = FALSE) {
   //add in .boost root id file
   file_put_contents(BOOST_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
   file_put_contents(BOOST_GZIP_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_GZIP_FILE_PATH);
+  foreach (_boost_copy_file_get_domains(BOOST_PERM_FILE_PATH) as $dir) {
+    file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+  }
+  foreach (_boost_copy_file_get_domains(BOOST_PERM_GZIP_FILE_PATH) as $dir) {
+    file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+  }
 }
 
 /**
@@ -2498,6 +2510,14 @@ function boost_cache_css_js_files($buffer) {
     }
     _boost_copy_js_files(array_filter($js_files));
   }
+  if (BOOST_CACHE_CSS || BOOST_CACHE_JS) {
+    foreach (_boost_copy_file_get_domains(BOOST_PERM_FILE_PATH) as $dir) {
+      file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+    }
+    foreach (_boost_copy_file_get_domains(BOOST_PERM_GZIP_FILE_PATH) as $dir) {
+      file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+    }
+  }
 }
 
 /**
@@ -2884,16 +2904,21 @@ function _boost_mkdir_p($pathname, $recursive = TRUE, $depth = 0) {
  *   optional nuke it all if true, otherwise kill only expired files
  * @param $first
  *   id first call to this function
+ * @param $nuke
+ *   clear it all, everything, ignore multisite restrictions
  */
-function _boost_rmdir_rf($dirname, $flush = TRUE, $first = TRUE) {
+function _boost_rmdir_rf($dirname, $flush = TRUE, $first = TRUE, $nuke = FALSE) {
+  if (empty($dirname)) {
+    return FALSE;
+  }
   $empty = TRUE; // Start with an optimistic mindset
 
-  if ($first || (!$first && !file_exists($dirname . '/' . BOOST_ROOT_FILE))) {
+  if ($first || (!$first && ($nuke || !file_exists($dirname . '/' . BOOST_ROOT_FILE)))) {
     $files = glob($dirname . '/*', GLOB_NOSORT);
     if ($files) {
       foreach ($files as $file) {
         if (is_dir($file)) {
-          if (!_boost_rmdir_rf($file, $flush, FALSE)) {
+          if (!_boost_rmdir_rf($file, $flush, FALSE, $nuke)) {
             $empty = FALSE;
           }
         }
