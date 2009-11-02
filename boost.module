@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.219 2009/11/01 04:56:48 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.220 2009/11/02 10:55:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -64,6 +64,7 @@ define('BOOST_ASYNCHRONOUS_OUTPUT',  variable_get('boost_asynchronous_output', T
 define('BOOST_FLUSH_DIR',            variable_get('boost_flush_dir', FALSE));
 define('BOOST_FLUSH_CCK_REFERENCES', variable_get('boost_flush_cck_references', TRUE));
 define('BOOST_FLUSH_NODE_TERMS',     variable_get('boost_flush_node_terms', TRUE));
+define('BOOST_FLUSH_MENU_ITEMS',     variable_get('boost_flush_menu_items', 0));
 define('BOOST_FLUSH_VIEWS',          variable_get('boost_flush_views', TRUE));
 define('BOOST_FLUSH_VIEWS_INSERT',   variable_get('boost_flush_views_insert', TRUE));
 define('BOOST_CLEAR_CACHE_OFFLINE',  variable_get('boost_clear_cache_offline', FALSE));
@@ -521,7 +522,9 @@ function boost_votingapi_delete($votes) {
 }
 
 /**
- * Expires a node from the cache.
+ * Expires a node from the cache; including related pages.
+ *
+ * Expires front page if promoted, taxonomy terms,
  *
  * @param $node
  *  node object
@@ -532,6 +535,7 @@ function boost_expire_node($node, $nid = 0) {
   $data = array();
   $paths = array();
 
+  // Check node object
   if (empty($node->nid)) {
     if ($nid) {
       $node->nid = $nid;
@@ -541,10 +545,7 @@ function boost_expire_node($node, $nid = 0) {
     }
   }
 
-  // Expire all relevant node pages from the static page cache to prevent serving stale content:
-  if ($node->promote == 1) {
-    $paths[] = '<front>';
-  }
+  // Expire this node
   if (BOOST_NO_DATABASE) {
     $paths[] = 'node/' . $node->nid;
   }
@@ -552,7 +553,12 @@ function boost_expire_node($node, $nid = 0) {
     $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $node->nid);
   }
 
-  // Get terms and flush their page
+  // If promoted to front page, expire front page
+  if ($node->promote == 1) {
+    $paths[] = '<front>';
+  }
+
+  // Get taxonomy terms and flush
   if (module_exists('taxonomy') && BOOST_FLUSH_NODE_TERMS) {
     $tids = boost_taxonomy_node_get_tids($node->nid);
     $filenames = array();
@@ -564,6 +570,21 @@ function boost_expire_node($node, $nid = 0) {
         $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'taxonomy', 'page_id' => $tid);
       }
     }
+  }
+
+  // Get menu and flush related items in the menu.
+  if (BOOST_FLUSH_MENU_ITEMS !=0) {
+    if (!isset($node->menu['menu_name'])) {
+      menu_nodeapi($node, 'prepare');
+    }
+    $menu = menu_tree_all_data($node->menu['menu_name']);
+    if (BOOST_FLUSH_MENU_ITEMS == 1) {
+      $links = boost_get_menu_structure($menu, FALSE, 'node/' . $node->nid);
+    }
+    elseif (BOOST_FLUSH_MENU_ITEMS == 2) {
+      $links = boost_get_menu_structure($menu);
+    }
+    $paths = array_merge($links, $paths);
   }
 
   // Get CCK References and flush.
@@ -605,6 +626,7 @@ function boost_expire_node($node, $nid = 0) {
     }
   }
 
+  // Get views containing this node and flush.
   if (BOOST_FLUSH_VIEWS && module_exists('views')) {
     $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
     $router_item = $GLOBALS['_boost_router_item'];
@@ -613,6 +635,7 @@ function boost_expire_node($node, $nid = 0) {
     $data[] = boost_cache_get_node_relationships($relationship);
   }
 
+  // Flush the cache
   $flushed = 0;
   if (!empty($data)) {
     $flushed += boost_cache_expire_router($data);
@@ -622,6 +645,77 @@ function boost_expire_node($node, $nid = 0) {
   }
   if (BOOST_VERBOSE >= 7) {
     watchdog('boost', 'Debug: boost_expire_node() <br />Node !nid was flushed resulting in !flushed pages being expired from the cache',  array('!nid' => $node->nid, '!flushed' => $flushed));
+  }
+}
+
+/**
+ * Finds parent, siblings and children of the menu item. UGLY CODE...
+ *
+ * @param array $menu
+ *  Output from menu_tree_all_data()
+ * @param bool $found
+ *  Signal for when the needle was found in the menu array.
+ *  Set TRUE to get entire menu
+ * @param string $needle
+ *  Name of menu link. Example 'node/21'
+ * @param bool $first
+ *  Keep track of the first call; this is a recursive function.
+ * @param bool &$found_global
+ *  Used to signal the parent item was found in one of it's children
+ * @param bool &$menu_out
+ *  Output array of parent, siblings and children menu links
+ *
+ * TODO: Use page_callback and page_arguments instead of link_path.
+ *  Can use boost_cache_expire_router() then.
+ */
+function boost_get_menu_structure($menu, $found = TRUE, $needle = '', $first = TRUE, &$found_global = FALSE, &$menu_out = array()) {
+  $found_global = FALSE;
+  // Get Siblings
+  foreach ($menu as $item) {
+    if ($item['link']['hidden'] == 0 && $item['link']['page_callback'] != '' && ($item['link']['link_path'] == $needle || $found)) {
+      $menu_out[] = $item['link']['link_path'];
+      $found = TRUE;
+    }
+  }
+  // Get Children
+  foreach ($menu as $item) {
+    if ($item['link']['hidden'] != 0) {
+      continue;
+    }
+    if ($item['link']['page_callback'] != '' && ($item['link']['link_path'] == $needle || $found)) {
+      $menu_out[] = $item['link']['link_path'];
+      $found = TRUE;
+    }
+    // Get Grandkids
+    if (!empty($item['below'])) {
+      $sub_menu = array();
+      foreach ($item['below'] as $below) {
+        if ($below['link']['hidden'] == 0) {
+          $sub_menu[] = $below;
+        }
+      }
+      boost_get_menu_structure($sub_menu, $needle, $found, FALSE, $found_global, $menu_out);
+      $structure[$item['link']['link_path']][] = $sub;
+      if ($item['link']['page_callback'] != '' && $found_global) {
+        // Get Parent of kid
+        $menu_out[] = $item['link']['link_path'];
+      }
+    }
+    else {
+      $structure[$item['link']['link_path']] = '';
+    }
+  }
+
+  // Clean up
+  $structure = array_unique($structure);
+  $found_global = $found;
+  if ($first) {
+    $menu_out = array_unique($menu_out);
+    sort($menu_out);
+    return $menu_out;
+  }
+  else {
+    return $structure;
   }
 }
 
@@ -1499,24 +1593,25 @@ function boost_cache_expire_by_db($paths) {
   foreach ($paths as $path) {
     // With URL Variables
     $html = boost_file_path($path, TRUE, BOOST_FILE_EXTENSION);
-    if ($html === FALSE) {
-      continue;
+    if ($html !== FALSE) {
+      $xml  = boost_file_path($path, TRUE, BOOST_XML_EXTENSION);
+      $json = boost_file_path($path, TRUE, BOOST_JSON_EXTENSION);
+      // Hash the paths
+      $hashes[] = md5($html);
+      $hashes[] = md5($xml);
+      $hashes[] = md5($json);
     }
-    $xml  = boost_file_path($path, TRUE, BOOST_XML_EXTENSION);
-    $json = boost_file_path($path, TRUE, BOOST_JSON_EXTENSION);
-    // Hash the paths
-    $hashes[] = md5($html);
-    $hashes[] = md5($xml);
-    $hashes[] = md5($json);
 
     // Without URL Variables
     $html = boost_file_path($path, FALSE, BOOST_FILE_EXTENSION);
-    $xml  = boost_file_path($path, FALSE, BOOST_XML_EXTENSION);
-    $json = boost_file_path($path, FALSE, BOOST_JSON_EXTENSION);
-    // Hash the paths
-    $hashes[] = md5($html);
-    $hashes[] = md5($xml);
-    $hashes[] = md5($json);
+    if ($html !== FALSE) {
+      $xml  = boost_file_path($path, FALSE, BOOST_XML_EXTENSION);
+      $json = boost_file_path($path, FALSE, BOOST_JSON_EXTENSION);
+      // Hash the paths
+      $hashes[] = md5($html);
+      $hashes[] = md5($xml);
+      $hashes[] = md5($json);
+    }
   }
   // Input has been MD5-ed should be ok to do this; do not do if not MD5-ed
   $sql = implode("' OR hash = '", array_unique($hashes));
