@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.70 2009/11/02 18:47:09 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.71 2009/11/02 22:48:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -189,7 +189,7 @@ function boost_requirements($phase) {
           'severity'    => REQUIREMENT_WARNING,
           'value'       => $t('Boost Disabled'),
         );
-       }
+      }
       if (ini_get('safe_mode') && !BOOST_IGNORE_SAFE_WARNING) {
         $requirements['boost_safemode'] = array(
           'title'       => $t('Boost'),
@@ -374,7 +374,7 @@ if (!function_exists("scandir")) {
     while (FALSE !== ($filename = readdir($dh))) {
       $files[] = $filename;
     }
-    return($files);
+    return $files;
   }
 }
 

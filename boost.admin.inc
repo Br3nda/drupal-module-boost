@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.103 2009/11/02 18:45:07 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.104 2009/11/02 22:48:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -1154,7 +1154,6 @@ function boost_clear_cache_submit() {
 function boost_clear_cache_parallel($dir) {
   $dirs = _boost_copy_file_get_domains($dir);
   foreach ($dirs as $directory) {
-    watchdog('boost', $directory);
     _boost_rmdir_rf($directory, TRUE, TRUE);
   }
 }
