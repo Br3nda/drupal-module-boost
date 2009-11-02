@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.69 2009/11/02 10:56:42 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.70 2009/11/02 18:47:09 mikeytown2 Exp $
 
 /**
  * @file
@@ -90,6 +90,8 @@ function boost_requirements($phase) {
         $crawler_response = drupal_http_request(BOOST_CRAWLER_SELF . '&test=1');
         $crawler_response = $crawler_response->code;
       }
+      $robots = file_exists('robots.txt') ? file_get_contents('robots.txt') : FALSE;
+
       foreach ($cache_directories as $cache_directory) {
         _boost_mkdir_p($cache_directory);
         $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
@@ -218,6 +220,14 @@ function boost_requirements($phase) {
           'description' => $t('Sub directory has been hit in these directories: <br /> !list <br /><br /> Change your url structure or open a new thread on the Boost issue tracker; there is a solution but it will cost you $100, since it can not be generalized & must be customized for your configuration.', array('!list' => implode(" <br />\n ", $GLOBALS['_boost_dir_limit_hit']))),
           'severity'    => REQUIREMENT_WARNING,
           'value'       => $t('File system sub directory limit.'),
+        );
+      }
+      if ($robots && !stristr($robots, 'Disallow: /boost_stats.php')) {
+        $requirements['boost_robots'] = array(
+          'title'       => $t('Boost'),
+          'description' => $t('Your robots.txt file does not contain "Disallow: /boost_stats.php". This is needed inorder to prevent the output of this from accendently getting indexed by search engines.'),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('"Disallow: /boost_stats.php" entry missing in robots.txt'),
         );
       }
       if (empty($requirements)) {

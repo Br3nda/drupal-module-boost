@@ -1,15 +1,10 @@
 <?php
-// $Id: boost_stats.php,v 1.1.2.13 2009/10/21 19:57:38 mikeytown2 Exp $
+// $Id: boost_stats.php,v 1.1.2.14 2009/11/02 18:47:09 mikeytown2 Exp $
 
 /**
  * @file
  * Place in webroot, for faster stats if needed.
  */
-
-if (!isset($_GET['js'])) {
-  // stats not called via JS, send image out & close connection.
-  boost_stats_async_image();
-}
 
 // Exit script if nothing was passed to it.
 if (   !isset($_GET['nid'])
@@ -17,7 +12,14 @@ if (   !isset($_GET['nid'])
     && !isset($_GET['qq'])
     && !isset($_GET['referer'])
     ) {
+  boost_stats_full_boot();
+  drupal_not_found();
   exit;
+}
+
+if (!isset($_GET['js'])) {
+  // stats not called via JS, send image out & close connection.
+  boost_stats_async_image();
 }
 
 // connect to db & set variables.
@@ -41,8 +43,7 @@ if (isset($_GET['js'])) {
 
     // Send JSON Back
     if (!empty($json)) {
-      header('Content-Type: text/javascript; charset=utf-8');
-      echo json_encode($json);
+      drupal_json($json);
     }
   }
   // Send HTML back

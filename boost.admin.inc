@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.102 2009/11/02 10:55:27 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.103 2009/11/02 18:45:07 mikeytown2 Exp $
 
 /**
  * @file
@@ -466,12 +466,14 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_DISABLE_CLEAN_URL,
     '#description'   => t('Drupal will output non clean url\'s for non anonymous users. This allows for the browser to cache the page and still have logging in work. This is more on the extreme side of tweaks.'),
   );
-  $form['advanced']['boost_aggressive_gzip'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Aggressive Gzip: Deliver gzipped content independent of the request header.'),
-    '#default_value' => BOOST_AGGRESSIVE_GZIP,
-    '#description'   => t('In order to deliver gzipped content independent of the header, this will test for gzip compression in a small iframe by sending it compressed content. This compressed content is javascript which creates a cookie with a note of gzip support. On the server side it checks for the cookie and then sends out gzipped content accordingly. See <a href="@url">Website Performance - Activate Gzip</a>. In short some firewalls/proxies mangle the gzip header; this gets around that. iframe is on non compressed version of the frontpage only.', array('@url' => 'http://actionable-stats.com/website-performance-activate-gzip')),
-  );
+  if (BOOST_GZIP) {
+    $form['advanced']['boost_aggressive_gzip'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Aggressive Gzip: Deliver gzipped content independent of the request header.'),
+      '#default_value' => BOOST_AGGRESSIVE_GZIP,
+      '#description'   => t('In order to deliver gzipped content independent of the header, this will test for gzip compression in a small iframe by sending it compressed content. This compressed content is javascript which creates a cookie with a note of gzip support. On the server side it checks for the cookie and then sends out gzipped content accordingly. See <a href="@url">Website Performance - Activate Gzip</a>. In short some firewalls/proxies mangle the gzip header; this gets around that. iframe is on non compressed version of the frontpage only.', array('@url' => 'http://actionable-stats.com/website-performance-activate-gzip')),
+    );
+  }
   $form['advanced']['boost_permissions_file'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),
@@ -968,30 +970,32 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= BOOST_GZIP ?       "    AddEncoding gzip $_gz\n" : '';
     $string .= "  </IfModule>\n";
   }
-  if (BOOST_CACHE_HTML) {
-    $string .= "  <FilesMatch \"$html$gz$\">\n";
-    $string .= "    ForceType text/html\n";
-    $string .= "  </FilesMatch>\n";
-  }
-  if (BOOST_CACHE_XML) {
-    $string .= "  <FilesMatch \"$xml$gz$\">\n";
-    $string .= "    ForceType text/xml\n";
-    $string .= "  </FilesMatch>\n";
-  }
-  if (BOOST_CACHE_CSS) {
-    $string .= "  <FilesMatch \"$css$gz$\">\n";
-    $string .= "    ForceType text/css\n";
-    $string .= "  </FilesMatch>\n";
-  }
-  if (BOOST_CACHE_JS) {
-    $string .= "  <FilesMatch \"$js$gz$\">\n";
-    $string .= "    ForceType text/javascript\n";
-    $string .= "  </FilesMatch>\n";
-  }
-  if (BOOST_CACHE_JSON) {
-    $string .= "  <FilesMatch \"$json$gz$\">\n";
-    $string .= "    ForceType text/javascript\n";
-    $string .= "  </FilesMatch>\n";
+  if (BOOST_GZIP) {
+    if (BOOST_CACHE_HTML) {
+      $string .= "  <FilesMatch \"$html$gz$\">\n";
+      $string .= "    ForceType text/html\n";
+      $string .= "  </FilesMatch>\n";
+    }
+    if (BOOST_CACHE_XML) {
+      $string .= "  <FilesMatch \"$xml$gz$\">\n";
+      $string .= "    ForceType text/xml\n";
+      $string .= "  </FilesMatch>\n";
+    }
+    if (BOOST_CACHE_CSS) {
+      $string .= "  <FilesMatch \"$css$gz$\">\n";
+      $string .= "    ForceType text/css\n";
+      $string .= "  </FilesMatch>\n";
+    }
+    if (BOOST_CACHE_JS) {
+      $string .= "  <FilesMatch \"$js$gz$\">\n";
+      $string .= "    ForceType text/javascript\n";
+      $string .= "  </FilesMatch>\n";
+    }
+    if (BOOST_CACHE_JSON) {
+      $string .= "  <FilesMatch \"$json$gz$\">\n";
+      $string .= "    ForceType text/javascript\n";
+      $string .= "  </FilesMatch>\n";
+    }
   }
   if (BOOST_AGGRESSIVE_GZIP) {
     $string .= "\n";
