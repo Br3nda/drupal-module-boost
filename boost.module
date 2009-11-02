@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.224 2009/11/02 21:37:45 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.225 2009/11/02 21:41:46 mikeytown2 Exp $
 
 /**
  * @file
@@ -3072,12 +3072,6 @@ function _boost_mkdir_p($pathname, $recursive = TRUE, $depth = 0) {
   return $result;
 }
 
-function _boost_microtime_float()
-{
-    list($usec, $sec) = explode(" ", microtime());
-    return ((float)$usec + (float)$sec);
-}
-
 /**
  * Recursive version of rmdir(); use with extreme caution.
  *
@@ -3238,6 +3232,16 @@ function _boost_set_time_limit($time_limit) {
 
 //////////////////////////////////////////////////////////////////////////////
 // PHP 4.x compatibility
+
+
+/**
+ * microtime(TRUE) emulation
+ */
+function _boost_microtime_float() {
+  list($usec, $sec) = explode(" ", microtime());
+  return ((float)$usec + (float)$sec);
+}
+
 
 if (!function_exists('file_put_contents')) {
   function file_put_contents($filename, $data) {
