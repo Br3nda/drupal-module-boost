@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.68 2009/11/01 04:55:41 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.69 2009/11/02 10:56:42 mikeytown2 Exp $
 
 /**
  * @file
@@ -365,6 +365,16 @@ if (!function_exists("scandir")) {
       $files[] = $filename;
     }
     return($files);
+  }
+}
+
+/**
+ * Attempts to set the PHP maximum execution time.
+ * See http://api.drupal.org/api/function/drupal_set_time_limit/7
+ */
+function _boost_install_set_time_limit($time_limit) {
+  if (function_exists('set_time_limit')) {
+    @set_time_limit($time_limit);
   }
 }
 
@@ -1296,11 +1306,26 @@ function boost_update_6120() {
 }
 
 /**
- * Attempts to set the PHP maximum execution time.
- * See http://api.drupal.org/api/function/drupal_set_time_limit/7
+ * Update 6121 - Add indexes to database for boost_has_site_changed() function.
  */
-function _boost_install_set_time_limit($time_limit) {
-  if (function_exists('set_time_limit')) {
-    @set_time_limit($time_limit);
-  }
+function boost_update_6121() {
+  $GLOBALS['_boost_max_execution_time'] =  ini_get('max_execution_time');
+  ini_set('max_execution_time', 10800); //3 Hours
+  _boost_install_set_time_limit(0);
+
+  // Make sure we have boost.module file loaded
+  drupal_load('module', 'boost');
+
+  $ret = array();
+  _boost_index_exists($ret, 'node_revisions', 'timestamp');
+  _boost_index_exists($ret, 'files', 'timestamp');
+  _boost_index_exists($ret, 'comments', 'timestamp');
+  _boost_index_exists($ret, 'node', 'changed');
+  _boost_index_exists($ret, 'files', 'timestamp');
+  _boost_index_exists($ret, 'node_comment_statistics', 'last_comment_timestamp');
+  _boost_index_exists($ret, 'votingapi_vote', 'timestamp');
+
+  _boost_install_set_time_limit(0);
+  ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
+  return $ret;
 }

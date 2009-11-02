@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.220 2009/11/02 10:55:27 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.221 2009/11/02 10:56:42 mikeytown2 Exp $
 
 /**
  * @file
@@ -2319,14 +2319,29 @@ function boost_get_settings_db($router_item) {
  */
 function boost_has_site_changed($set_max = FALSE) {
 
+  // Make sure database has been indexed.
+  if (boost_drupal_get_installed_schema_version('boost') <= 6120) {
+    return FALSE;
+  }
+
+  // Index any new tables
+  $ret = array();
+  _boost_index_exists($ret, 'node_revisions', 'timestamp');
+  _boost_index_exists($ret, 'files', 'timestamp');
+  _boost_index_exists($ret, 'comments', 'timestamp');
+  _boost_index_exists($ret, 'node', 'changed');
+  _boost_index_exists($ret, 'files', 'timestamp');
+  _boost_index_exists($ret, 'node_comment_statistics', 'last_comment_timestamp');
+  _boost_index_exists($ret, 'votingapi_vote', 'timestamp');
+
   // Get timestamps from the database
   $node_revisions = boost_get_time('node_revisions', 'timestamp');
   //$history = boost_get_time('history', 'timestamp');
   $files = boost_get_time('files', 'timestamp');
   $comments = boost_get_time('comments', 'timestamp');
+  $voteapi_vote = boost_get_time('votingapi_vote', 'timestamp');
   $node = boost_get_time('node', 'changed');
   $last_comment_timestamp = boost_get_time('node_comment_statistics', 'last_comment_timestamp');
-  $voteapi_vote = boost_get_time('votingapi_vote', 'timestamp');
 
   $max = max($node_revisions, $files, $comments, $node, $last_comment_timestamp, $voteapi_vote);
   if ($max != BOOST_MAX_TIMESTAMP) {
@@ -2338,6 +2353,39 @@ function boost_has_site_changed($set_max = FALSE) {
   else {
     return FALSE;
   }
+}
+
+/**
+ * Returns the currently installed schema version for a module.
+ *
+ * @see drupal_get_installed_schema_version()
+ *
+ * @param $module
+ *   A module name.
+ * @param $reset
+ *   Set to TRUE after modifying the system table.
+ * @param $array
+ *   Set to TRUE if you want to get information about all modules in the
+ *   system.
+ * @return
+ *   The currently installed schema version.
+ */
+function boost_drupal_get_installed_schema_version($module, $reset = FALSE, $array = FALSE) {
+  static $versions = array();
+
+  if ($reset) {
+    $versions = array();
+  }
+
+  if (!$versions) {
+    $versions = array();
+    $result = db_query("SELECT name, schema_version FROM {system} WHERE type = '%s'", 'module');
+    while ($row = db_fetch_object($result)) {
+      $versions[$row->name] = $row->schema_version;
+    }
+  }
+
+  return $array ? $versions : $versions[$module];
 }
 
 /**
@@ -2695,6 +2743,33 @@ function boost_glue_url($parsed) {
 
 //////////////////////////////////////////////////////////////////////////////
 // Boost API internals
+
+
+/**
+ * Add an index if it doesn't exist
+ *
+ * @param $ret
+ *   Array to which query results will be added.
+ * @param $table
+ *   The table to be altered.
+ * @param $name
+ *   The name of the index.
+ * @param $fields
+ *   An array of field names.
+ */
+function _boost_index_exists(&$ret, $table, $index) {
+  if (db_table_exists($table)) {
+    $result = db_query('SHOW INDEX FROM {%s}', $table);
+    while ($name = db_fetch_array($result)) {
+      if ($name['Key_name'] == $index) {
+        return TRUE;
+      }
+    }
+    // Index doesn't exists create it
+    db_add_index($ret, $table, $index, array($index));
+  }
+  return FALSE;
+}
 
 /**
  * Change a file extension in the database.
