@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.225 2009/11/02 21:41:46 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.226 2009/11/02 23:38:37 mikeytown2 Exp $
 
 /**
  * @file
@@ -847,7 +847,9 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
               $ttl = boost_db_get_ttl($filename);
               $generate = boost_get_generation_time($filename);
               $output = '';
-              $output .= t('Site Has Changed: %old<br />', array('%old' => boost_has_site_changed() ? 'True' : 'False'));
+              if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
+                $output .= t('Site Has Changed: %old<br />', array('%old' => boost_has_site_changed() ? 'True' : 'False'));
+              }
               if ($ttl < 0) {
                 $output .= t('<strong>Expired: %interval ago</strong><br />', array('%interval' => format_interval(abs($ttl))));
               }
