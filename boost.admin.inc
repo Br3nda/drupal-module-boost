@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.104 2009/11/02 22:48:31 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.105 2009/11/03 04:23:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -528,7 +528,7 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Disable warning about reaching the ext3 file system subdir limit.'),
     '#default_value' => BOOST_IGNORE_SUBDIR_LIMIT,
-    '#description'   => t('Disable the warning on the status page about coming close to the file system directory limit; warning thrown when at 31,000 subdirectories. Boost will stop creating new subdirectories when 31,998 subdirectories have been created.'),
+    '#description'   => t('Disable the warning on the status page about coming close to the file system directory limit; warning thrown when at 31,000 subdirectories. Boost will stop creating new subdirectories when 31,998 subdirectories have been created. Can be a slow opperation & might even timeout; if your status page will not load, Disable this warning.'),
   );
   $form['advanced']['no_db'] = array(
     '#type'          => 'fieldset',
