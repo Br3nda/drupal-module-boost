@@ -1,5 +1,5 @@
 <?php
-// $Id: boost_stats.php,v 1.1.2.14 2009/11/02 18:47:09 mikeytown2 Exp $
+// $Id: boost_stats.php,v 1.1.2.15 2009/11/06 11:37:43 mikeytown2 Exp $
 
 /**
  * @file
@@ -87,6 +87,7 @@ function boost_stats_init() {
 
   // Connect to DB.
   include_once './includes/bootstrap.inc';
+  include_once './includes/common.inc';
   drupal_bootstrap(DRUPAL_BOOTSTRAP_DATABASE);
 
   // Set variables passed via GET.
