@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.229 2009/11/06 08:52:58 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.230 2009/11/06 10:41:41 mikeytown2 Exp $
 
 /**
  * @file
@@ -537,7 +537,7 @@ function boost_expire_node($node, $nid = 0) {
 
   // Check node object
   if (empty($node->nid)) {
-    if ($nid) {
+    if (is_int($nid)) {
       $node->nid = $nid;
     }
     else {
@@ -547,15 +547,15 @@ function boost_expire_node($node, $nid = 0) {
 
   // Expire this node
   if (BOOST_NO_DATABASE) {
-    $paths[] = 'node/' . $node->nid;
+    $paths['node'] = 'node/' . $node->nid;
   }
   else {
-    $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $node->nid);
+    $data['node'] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $node->nid);
   }
 
   // If promoted to front page, expire front page
   if ($node->promote == 1) {
-    $paths[] = '<front>';
+    $paths['front'] = '<front>';
   }
 
   // Get taxonomy terms and flush
@@ -563,11 +563,13 @@ function boost_expire_node($node, $nid = 0) {
     $tids = boost_taxonomy_node_get_tids($node->nid);
     $filenames = array();
     foreach ($tids as $tid) {
-      if (BOOST_NO_DATABASE) {
-        $paths[] = 'taxonomy/term/' . $tid;
-      }
-      else {
-        $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'taxonomy', 'page_id' => $tid);
+      if (is_int($tid)) {
+        if (BOOST_NO_DATABASE) {
+          $paths['term' . $tid] = 'taxonomy/term/' . $tid;
+        }
+        else {
+          $data['term' . $tid] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'taxonomy', 'page_id' => $tid);
+        }
       }
     }
   }
@@ -603,11 +605,13 @@ function boost_expire_node($node, $nid = 0) {
         }
       }
       foreach ($nids as $nid) {
-        if (BOOST_NO_DATABASE) {
-          $paths[] = 'node/' . $nid;
-        }
-        else {
-          $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $nid);
+        if (is_int($nid)) {
+          if (BOOST_NO_DATABASE) {
+            $paths['reference' . $nid] = 'node/' . $nid;
+          }
+          else {
+            $data['reference' . $nid] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $nid);
+          }
         }
       }
     }
@@ -616,11 +620,13 @@ function boost_expire_node($node, $nid = 0) {
     if (module_exists('nodereferrer')) {
       $nids = nodereferrer_referrers($node->nid);
       foreach ($nids as $nid) {
-        if (BOOST_NO_DATABASE) {
-          $paths[] = 'node/' . $nid['nid'];
-        }
-        else {
-          $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $nid['nid']);
+        if (is_int($nid['nid'])) {
+          if (BOOST_NO_DATABASE) {
+            $paths['referrer' . $nid['nid']] = 'node/' . $nid['nid'];
+          }
+          else {
+            $data['referrer' . $nid['nid']] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'node', 'page_id' => $nid['nid']);
+          }
         }
       }
     }
@@ -632,7 +638,7 @@ function boost_expire_node($node, $nid = 0) {
     $router_item = $GLOBALS['_boost_router_item'];
     $relationship = array();
     $relationship[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_type' => $router_item['page_type'], 'page_id' => $router_item['page_id']);
-    $data[] = boost_cache_get_node_relationships($relationship);
+    $data = array_merge($data, boost_cache_get_node_relationships($relationship));
   }
 
   // Flush the cache
@@ -771,7 +777,7 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
       if (!empty($account->uid)) {
         if (BOOST_NO_DATABASE) {
           $paths[] = 'user/' . $account->uid;
-          $flushed = boost_cache_expire_derivative($paths, TRUE);
+          $flushed = boost_cache_expire_derivative($paths, TRUE, TRUE);
         }
         else {
           $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'user', 'page_id' => $account->uid);
@@ -951,8 +957,8 @@ function boost_block_form_flush_submit(&$form_state, $form) {
   if ($data) {
     $flushed += boost_cache_expire_router($data, TRUE);
   }
-  if (isset($form['values']['path'])) {
-    $flushed += boost_cache_expire_derivative(array($form['values']['path']));
+  if (array_key_exists('path', $form['values'])) {
+    $flushed += boost_cache_expire_derivative(array($form['values']['path']), TRUE, TRUE);
   }
   if (BOOST_VERBOSE >= 7) {
     watchdog('boost', 'Debug: boost_block_form_flush_submit() <br />Page !path was deleted resulting in !flushed pages being expired from the cache',  array('!path' => $form['values']['path'], '!flushed' => $flushed));
@@ -1502,8 +1508,10 @@ function boost_cache_delete($flush = FALSE) {
  *   Array of current URLs
  * @param $both
  *   Expire database & file
+ * @param $force_flush
+ *   Override the settings and kill the file
  */
-function boost_cache_expire_derivative($paths, $both = FALSE) {
+function boost_cache_expire_derivative($paths, $both = FALSE, $force_flush = FALSE) {
   global $base_path;
   $expire = array();
 
@@ -1537,20 +1545,25 @@ function boost_cache_expire_derivative($paths, $both = FALSE) {
     }
   }
 
+  // Expire cached files
   $counter = 0;
   if (empty($expire)) {
     return FALSE;
   }
   $expire = array_unique($expire);
   if (BOOST_NO_DATABASE ) {
-    $counter += boost_cache_expire_by_filename($expire);
+    $counter += boost_cache_expire_by_filename($expire, TRUE, $force_flush);
   }
-  elseif ($both && !BOOST_EXPIRE_NO_FLUSH) {
+  elseif ($both) {
     $counter += boost_cache_expire_by_db($expire);
-    $counter += boost_cache_expire_by_filename($expire);
+    $counter += boost_cache_expire_by_filename($expire, TRUE, $force_flush);
   }
   else {
     $counter += boost_cache_expire_by_db($expire);
+    if ($counter == 0) {
+      // Database was a negative. Fallback: Look into flushing by filename
+      $counter += boost_cache_expire_by_filename($expire, TRUE, $force_flush);
+    }
   }
   return $counter;
 }
@@ -1595,15 +1608,32 @@ function boost_cache_expire_by_db($paths) {
   $sql = implode("' OR hash = '", array_unique($hashes));
   $result = db_query("SELECT * FROM {boost_cache} WHERE hash = '" . $sql . "'");
 
-  // Eliminate duplicates
+  // Eliminate duplicates with the key hash
   $data = array();
-  while ($info = db_fetch_array($result)) {
-    $hash = BOOST_FILE_PATH . $info['page_callback'] . $info['page_type'] . $info['page_id'];
-    $data[$hash] = $info;
+  $counter = 0;
+  $filenames = array();
+  if ($result) {
+    while ($info = db_fetch_array($result)) {
+      if ($info['page_id'] != '' && $info['page_type'] != '' && $info['page_callback'] != '') {
+        // Use boost_cache_expire_router() if we can get a 'lock' on this item in the database
+        $hash = BOOST_FILE_PATH . $info['page_callback'] . $info['page_type'] . $info['page_id'];
+        $data[$hash] = $info;
+      }
+      else {
+        // If we can't get a 'lock' just expire the file
+        $filenames[] = $info;
+      }
+    }
+    // Expire all files that match up
+    if ($data) {
+      $counter += boost_cache_expire_router($data);
+    }
+    if ($filenames) {
+      $counter += boost_cache_flush_by_filename($filenames);
+    }
   }
 
-  // Expire all files that match up
-  return boost_cache_expire_router($data);
+  return $counter;
 }
 
 
@@ -1614,9 +1644,11 @@ function boost_cache_expire_by_db($paths) {
  *   Array of URLs
  * @param $wildcard
  *   If true get all chached files that start with this path.
+ * @param $force_flush
+ *   If true kill file no matter what.
  */
-function boost_cache_expire_by_filename($paths, $wildcard = TRUE) {
-  $filenames = $files = array();
+function boost_cache_expire_by_filename($paths, $wildcard = TRUE, $force_flush) {
+  $filenames = array();
   if (empty($paths)) {
     return FALSE;
   }
@@ -1634,7 +1666,7 @@ function boost_cache_expire_by_filename($paths, $wildcard = TRUE) {
 
     // Make sure something is in the arrays
     $html[] = '';
-    $xml[] = '';
+    $xml[]  = '';
     $json[] = '';
 
     // Merge arrays
@@ -1642,6 +1674,19 @@ function boost_cache_expire_by_filename($paths, $wildcard = TRUE) {
   }
 
   // Flush expired files
+  boost_cache_flush_by_filename($filenames, $force_flush);
+}
+
+/**
+ * Expires the static file cache for files given.
+ *
+ * @param array $filenames
+ *   filenames
+ * @param $force_flush
+ *   If true get all chached files that start with this path.
+ */
+function boost_cache_flush_by_filename($filenames, $force_flush = FALSE) {
+  $files = array();
   if ($filenames) {
     $filenames = array_unique($filenames);
     foreach ($filenames as $filename) {
@@ -1649,7 +1694,7 @@ function boost_cache_expire_by_filename($paths, $wildcard = TRUE) {
     }
     $counter = boost_cache_kill($files);
     if (BOOST_VERBOSE >= 9) {
-      watchdog('boost', 'Debug: boost_cache_expire_by_filename() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $filenames)));
+      watchdog('boost', 'Debug: boost_cache_flush_by_filename() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $filenames)));
     }
     return $counter;
   }
@@ -1657,6 +1702,7 @@ function boost_cache_expire_by_filename($paths, $wildcard = TRUE) {
     return FALSE;
   }
 }
+
 
 /**
  * Expires the static file cache for the given router items.
@@ -1739,7 +1785,7 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
     }
   }
   if (BOOST_VERBOSE >= 9) {
-    watchdog('boost', 'Debug: boost_cache_expire_router() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $list)));
+    watchdog('boost', 'Debug: boost_cache_expire_router() <br />Following files where flushed: <br />!list<br /><br />Input: <br /> !input', array('!list' => implode('<br />', $list), '!input' => boost_print_r($router_items, TRUE, TRUE)));
   }
   return $count;
 }
@@ -1750,7 +1796,7 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
  * @param array $files
  *  An array of files. Each file is a secondary array must have a key for 'filename'
  *  Optional keys for 'hash' and 'base_dir' that will be recalculated if necessary.
- *  The hash is the primary key in the databse. If omitted it will be recalculated from the filename.
+ *  The hash is the primary key in the database. If omitted it will be recalculated from the filename.
  * @param boolean $force_flush = FALSE
  *  Override BOOST_EXPIRE_NO_FLUSH setting.
  * @param string $base_dir = ''
@@ -2081,7 +2127,7 @@ function boost_cache_get_node_relationships($relationships) {
     $data['base_dir'] = isset($data['base_dir']) ? $data['base_dir'] : BOOST_FILE_PATH;
     $result = db_query("SELECT page_callback, page_type, page_id FROM {boost_cache_relationships} WHERE child_page_id = '%s' AND child_page_type = '%s' AND child_page_callback = '%s' AND base_dir = '%s'", $data['page_id'], $data['page_type'], $data['page_callback'], $data['base_dir']);
     while ($info = db_fetch_array($result)) {
-      $hash = $info['page_callback'] . '-' .  $info['page_type'] . '-' . $info['page_id'];
+      $hash = 'relationship' . $info['page_callback'] . $info['page_type'] . $info['page_id'];
       $results[$hash] = $info;
     }
   }
@@ -2186,7 +2232,7 @@ function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer
  *
  * @param array $files
  *  An array of files. Each file is a secondary array with keys for 'filename' and 'hash'.
- *  The hash is the primary key in the databse. If omitted it will be recalculated from the filename.
+ *  The hash is the primary key in the database. If omitted it will be recalculated from the filename.
  */
 function boost_remove_db($files) {
   $hashes = array();
@@ -2714,13 +2760,15 @@ function boost_print_r($var, $return = FALSE, $html = FALSE, $level = 0) {
   $output = $title . $newline . $newline;
 
   // Recursive boost_print_r
-  foreach ($var as $key => $value) {
-    if (is_array($value) || is_object($value)) {
-      $level++;
-      $value = boost_print_r($value, TRUE, $html, $level);
-      $level--;
+  if ($var) {
+    foreach ($var as $key => $value) {
+      if (is_array($value) || is_object($value)) {
+        $level++;
+        $value = boost_print_r($value, TRUE, $html, $level);
+        $level--;
+      }
+      $output .= $tabs . "[" . $key . "] => " . $value . $newline;
     }
-    $output .= $tabs . "[" . $key . "] => " . $value . $newline;
   }
 
   if ($return) {
