@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.105 2009/11/03 04:23:34 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.106 2009/11/06 10:46:01 mikeytown2 Exp $
 
 /**
  * @file
@@ -415,12 +415,12 @@ function boost_admin_boost_performance_page() {
   );
   $form['advanced']['boost_flush_menu_items'] = array(
     '#type'          => 'radios',
-    '#title'         => t('Clear all cached pages in a menu on an insert/update/delete opperation'),
+    '#title'         => t('Clear all cached pages in a menu on an insert/update/delete operation'),
     '#default_value' => BOOST_FLUSH_MENU_ITEMS,
     '#description'   => t('This can flush a lot of pages depending on your menu structure.'),
     '#options'       => array(
       0 => t('Disabled'),
-      1 => t('Only Flush Menu Parrents, Siblings & Children'),
+      1 => t('Only Flush Menu Parents, Siblings & Children'),
       2 => t('Flushes Entire Menu Tree'),
     ),
   );
@@ -528,7 +528,7 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Disable warning about reaching the ext3 file system subdir limit.'),
     '#default_value' => BOOST_IGNORE_SUBDIR_LIMIT,
-    '#description'   => t('Disable the warning on the status page about coming close to the file system directory limit; warning thrown when at 31,000 subdirectories. Boost will stop creating new subdirectories when 31,998 subdirectories have been created. Can be a slow opperation & might even timeout; if your status page will not load, Disable this warning.'),
+    '#description'   => t('Disable the warning on the status page about coming close to the file system directory limit; warning thrown when at 31,000 subdirectories. Boost will stop creating new subdirectories when 31,998 subdirectories have been created. Can be a slow operation & might even timeout; if your status page will not load, Disable this warning.'),
   );
   $form['advanced']['no_db'] = array(
     '#type'          => 'fieldset',
@@ -1101,30 +1101,38 @@ function boost_count_db($all = 0) {
 /**
  * Count the number of files in a folder
  *
- * @param string $dir
+ * @param string $path
  *  Directory name, usually BOOST_ROOT_CACHE_DIR or /cache
+ * @param float $timer
+ *  Internal timer so function doesn't run forever
+ * @param bool $first
+ *  Indicator for top call in recursive function
  */
-function boost_count_all_files($dirname) {
-  if (is_dir($dirname)) {
-    $dir_handle = opendir($dirname);
+function boost_count_all_files($path, &$timer = NULL, $first = TRUE) {
+  $files = 0;
+
+  // Prevent timeouts
+  if (is_null($timer)) {
+    $timer = _boost_microtime_float();
   }
-  if (!$dir_handle) {
-    return 0;
+  if (_boost_microtime_float() - $timer > 7) {
+    return $files;
   }
 
-  $files = 0;
-  while ($file = readdir($dir_handle)) {
-    if ($file != "." && $file != "..") {
-      if (!is_dir($dirname . "/" . $file)) {
-        $files++;
-      }
-      else {
-        $files += boost_count_all_files($dirname . "/" . $file);
-      }
-    }
+  // Get File Count
+  $paths = glob($path . '*', GLOB_MARK|GLOB_ONLYDIR|GLOB_NOSORT);
+  $files = count(glob($path . '*.*', GLOB_NOSORT));
+  foreach ($paths as $path) {
+    $files += boost_count_all_files($path, $timer, FALSE);
   }
-  closedir($dir_handle);
-  return $files;
+
+  // If we ran out of time round and add a ++ to the file count
+  if ($first && _boost_microtime_float() - $timer > 10) {
+    return round($files, -2) . '++';
+  }
+  else {
+    return $files;
+  }
 }
 
 /**
