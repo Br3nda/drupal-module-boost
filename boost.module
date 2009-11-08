@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.237 2009/11/08 07:24:04 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.238 2009/11/08 07:29:38 mikeytown2 Exp $
 
 /**
  * @file
@@ -1655,9 +1655,7 @@ function boost_cache_expire_by_db($paths) {
       $hashes[] = md5($json);
     }
   }
-  // Input has been MD5-ed should be ok to do this; do not do if not MD5-ed
-  $sql = implode("' OR hash = '", array_unique($hashes));
-  $result = db_query("SELECT * FROM {boost_cache} WHERE hash = '" . $sql . "'");
+  $result = boost_db_select_in_multi('boost_cache', 'hash', "'%s'", $hashes);
 
   // Eliminate duplicates with the key hash
   $data = array();
@@ -1885,16 +1883,15 @@ function boost_cache_kill($files, $force_flush = FALSE) {
       if (empty($file['base_dir'])) {
         $file['base_dir'] = BOOST_FILE_PATH;
       }
-      $hashes[] = "'" .$file['hash'] ."'";
+      $hashes[] = $file['hash'];
     }
     // Expire entries from Database
     if (count($hashes)) {
-      $hashes = implode(', ', $hashes);
       if ($force_flush || !BOOST_EXPIRE_NO_FLUSH) {
-        db_query("UPDATE {boost_cache} SET expire = 0 WHERE hash IN ($hashes)");
+        boost_db_update_set_multi('boost_cache', 'expire', '%d', 0, 'hash', "'%s'", $hashes);
       }
       else {
-        db_query("UPDATE {boost_cache} SET expire = 434966400 WHERE hash IN ($hashes)");
+        boost_db_update_set_multi('boost_cache', 'expire', '%d', 434966400, 'hash', "'%s'", $hashes);
         $count = db_affected_rows();
       }
     }
@@ -2303,11 +2300,10 @@ function boost_remove_db($files) {
     if (empty($file['hash'])) {
       $file['hash'] = md5($file['filename']);
     }
-    $hashes[] = "'" .$file['hash'] ."'";
+    $hashes[] = $file['hash'];
   }
   if ($hashes) {
-    $hashes = implode(', ', $hashes);
-    db_query("DELETE FROM {boost_cache} WHERE hash IN ($hashes)");
+    boost_db_delete_in_multi('boost_cache', 'hash', "'%s'", $hashes);
   }
 }
 
@@ -3385,6 +3381,147 @@ function _boost_set_time_limit($time_limit) {
   }
 }
 
+/**
+ * Insert many records into the database.
+ *
+ * NOTE Be aware of the servers max_packet_size variable.
+ *
+ * @param $table
+ *   The name of the table.
+ * @param $fields
+ *   array of field names to be updated
+ * @param $placeholders
+ *   array of db_query placeholders; like %d or '%s'
+ * @param $values
+ *   array of values you wish to be insterted. If you have 3 fields then the
+ *   array should be structed like
+ *    array($field_1_value_A, $field_2_value_A, $field_3_value_A,
+ *           $field_1_value_B, $field_2_value_B, $field_3_value_B);
+ * @return
+ *   returns db_query() result.
+ */
+function boost_db_insert_multi($table, $fields, $placeholders, $data) {
+  // Get the number of rows that will be inserted
+  $rows = count($data)/count($fields);
+  // Build the values placeholders string.
+  $values = '(' . implode(', ', $placeholders) . ')';
+  // Create what goes in the IN ()
+  $v = $values;
+  // Add the rest of the place holders
+  for ($i = 1; $i < $rows; $i++) {
+    $v .= ', ' . $values;
+  }
+  // Build the fields part of this query
+  $fields = implode(', ', $fields);
+  $query = "INSERT INTO {$table} ($fields) VALUES $v";
+  // Run the query
+  return db_query($query, $data);
+}
+
+/**
+ * Delete records from the database where IN(...).
+ *
+ * NOTE Be aware of the servers max_packet_size variable.
+ *
+ * @param $table
+ *   The name of the table.
+ * @param $field
+ *  field names to be compared to
+ * @param $placeholder
+ *   db_query placeholders; like %d or '%s'
+ * @param $data
+ *   array of values you wish to compare to
+ * @return
+ *   returns db_query() result.
+ */
+function boost_db_delete_in_multi($table, $field, $placeholder, $data) {
+  // Get the number of rows that will be inserted
+  $rows = count($data);
+  // Create what goes in the IN ()
+  $in = $placeholder;
+  // Add the rest of the place holders
+  for ($i = 1; $i < $rows; $i++) {
+    $in .= ', ' . $placeholder;
+  }
+  // Build the query
+  $query = "DELETE FROM {$table} WHERE $field IN ($in)";
+  // Run the query
+  return db_query($query, $data);
+}
+
+/**
+ * Update records in the database where IN(...).
+ *
+ * NOTE Be aware of the servers max_packet_size variable.
+ *
+ * @param $table
+ *   The name of the table.
+ * @param $set_field
+ *  field names to be compared to
+ * @param $set_value
+ *  field names to be compared to
+ * @param $set_placeholders
+ *   db_query placeholders; like %d or '%s'
+ * @param $where_field
+ *  field names to be compared to
+ * @param $where_placeholder
+ *   db_query placeholders; like %d or '%s'
+ * @param $data
+ *   array of values you wish to be insterted. If you have 3 fields then the
+ *   array should be structed like
+ *    array($field_1_value_A, $field_2_value_A, $field_3_value_A,
+ *           $field_1_value_B, $field_2_value_B, $field_3_value_B);
+ * @return
+ *   returns db_query() result.
+ */
+function boost_db_update_set_multi($table, $set_field, $set_placeholders, $set_value, $where_field, $where_placeholder, $data) {
+  // Get the number of rows that will be inserted
+  $rows = count($data);
+  // Create what goes in the IN ()
+  $in = $where_placeholder;
+  // Add the rest of the place holders
+  for ($i = 1; $i < $rows; $i++) {
+    $in .= ', ' . $where_placeholder;
+  }
+  // Build the query
+  $query = "UPDATE {$table} SET $set_field = $set_placeholders WHERE $where_field IN ($in)";
+  // Add the set value to the top of the array
+  array_unshift($data, $set_value);
+  // Run the query
+  return db_query($query, $data);
+}
+
+
+/**
+ * Select records in the database matching where IN(...).
+ *
+ * NOTE Be aware of the servers max_packet_size variable.
+ *
+ * @param $table
+ *   The name of the table.
+ * @param $field
+ *  field names to be compared to
+ * @param $placeholder
+ *   db_query placeholders; like %d or '%s'
+ * @param $data
+ *   array of values you wish to compare to
+ * @return
+ *   returns db_query() result.
+ */
+function boost_db_select_in_multi($table, $field, $placeholder, $data) {
+  // Get the number of rows that will be inserted
+  $rows = count($data);
+  // Create what goes in the IN ()
+  $in = $placeholder;
+  // Add the rest of the place holders
+  for ($i = 1; $i < $rows; $i++) {
+    $in .= ', ' . $placeholder;
+  }
+  // Build the query
+  $query = "SELECT * FROM {$table} WHERE $field IN ($in)";
+  // Run the query
+  return db_query($query, $data);
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // PHP 4.x compatibility
@@ -3828,6 +3965,7 @@ function boost_crawler_seed_tables($expire) {
       && boost_crawler_add_to_table(BOOST_PUSH_XML, BOOST_XML_EXTENSION, $expire)
       && boost_crawler_add_to_table(BOOST_PUSH_JSON, BOOST_JSON_EXTENSION, $expire)
       && boost_crawler_add_alias_to_table()
+      && boost_crawler_prune_table($expire)
       ) {
     // All URL's added to boost_crawler table; start hitting URL's
     return TRUE;
@@ -3846,15 +3984,33 @@ function boost_crawler_add_alias_to_table() {
   if (!variable_get('boost_crawl_url_alias', FALSE)) {
     return TRUE;
   }
-  $count = 1000;
+  $count = 10000;
+  $chunks = 0;
+  $loop_counter = 0;
+
+  // Get maximum packet size for mysql
+  $max_packet = db_result(db_query("SHOW VARIABLES WHERE Variable_name = 'max_allowed_packet'"));
+  $max_packet = $max_packet > 512 ? $max_packet : 524288;
+  $max_chunk = $max_packet/512;
+
   $total = db_result(db_query("SELECT COUNT(*) FROM {url_alias}"));
   $loaded = variable_get('boost_crawler_loaded_count_alias', 0);
   if ($total > $loaded) {
     $list = db_query_range("SELECT dst FROM {url_alias}", $loaded, $count);
+    $data = array();
     while ($url = db_result($list)) {
       $url = $base_url . '/' . $url;
-      $hash = md5($url);
-      @db_query("INSERT INTO {boost_crawler} (url, hash) VALUES ('%s', '%s')", $url, $hash);
+      $md5 = md5($url);
+      $data[$chunks][] = $url;
+      $data[$chunks][] = $md5;
+      $loop_counter++;
+      if ($loop_counter > $max_chunk) {
+        $chunks++;
+        $loop_counter = 0;
+      }
+    }
+    foreach ($data as $values) {
+      boost_db_insert_multi('boost_crawler', array('url', 'hash'), array("'%s'", "'%s'"), $values);
     }
     variable_set('boost_crawler_loaded_count_alias', $loaded + $count);
     return FALSE;
@@ -3862,6 +4018,22 @@ function boost_crawler_add_alias_to_table() {
   else {
     return TRUE;
   }
+}
+
+/**
+ * Remove any urls in the crawler table if they are not expired or flushed.
+ *
+ * @param $expire
+ *  Has the site changed, if so get expire column
+ */
+function boost_crawler_prune_table($expire) {
+  if ($expire && BOOST_LOOPBACK_BYPASS) {
+    db_query("DELETE cr FROM {boost_crawler} cr INNER JOIN {boost_cache} AS ca ON cr.hash=ca.hash_url WHERE ca.expire BETWEEN 1 AND 434966399 OR ca.expire BETWEEN 434966400 AND %d", BOOST_TIME);
+  }
+  else {
+    db_query("DELETE cr FROM {boost_crawler} cr INNER JOIN {boost_cache} AS ca ON cr.hash=ca.hash_url WHERE ca.expire BETWEEN 1 AND 434966399 OR ca.expire > 434966400");
+  }
+  return TRUE;
 }
 
 /**
