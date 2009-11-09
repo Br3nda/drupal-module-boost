@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.240 2009/11/09 09:35:56 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.241 2009/11/09 10:47:13 mikeytown2 Exp $
 
 /**
  * @file
@@ -3832,6 +3832,7 @@ function boost_crawler_run($expire = -1) {
     variable_set('boost_crawler_loaded_count' . BOOST_XML_EXTENSION, 0);
     variable_set('boost_crawler_loaded_count' . BOOST_JSON_EXTENSION, 0);
     variable_set('boost_crawler_loaded_count_alias', 0);
+    variable_set('boost_crawl_prune_table', FALSE);
     variable_set('boost_crawler_number_of_tries', 0);
     variable_set('boost_crawler_number_of_threads', 0);
     variable_set('boost_crawler_sleeping', FALSE);
@@ -4052,13 +4053,17 @@ function boost_crawler_add_alias_to_table() {
  *  Has the site changed, if so get expire column
  */
 function boost_crawler_prune_table($expire) {
+  if (!variable_get('boost_crawl_prune_table', FALSE)) {
+    return TRUE;
+  }
   if ($expire && BOOST_LOOPBACK_BYPASS) {
     db_query("DELETE cr FROM {boost_crawler} cr INNER JOIN {boost_cache} AS ca ON cr.hash=ca.hash_url WHERE ca.expire BETWEEN 1 AND 434966399 OR ca.expire BETWEEN 434966400 AND %d", BOOST_TIME);
   }
   else {
     db_query("DELETE cr FROM {boost_crawler} cr INNER JOIN {boost_cache} AS ca ON cr.hash=ca.hash_url WHERE ca.expire BETWEEN 1 AND 434966399 OR ca.expire > 434966400");
   }
-  return TRUE;
+  variable_set('boost_crawl_prune_table', TRUE);
+  return FALSE;
 }
 
 /**
