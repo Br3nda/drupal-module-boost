@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.107 2009/11/09 09:34:15 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.108 2009/11/09 11:19:01 mikeytown2 Exp $
 
 /**
  * @file
@@ -663,43 +663,42 @@ function boost_admin_boost_performance_page() {
   $total = boost_crawler_total_count();
   $number_done = min($total, unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_position'")))) + 1;
   $crawl_rate = round((BOOST_TIME - variable_get('boost_crawler_start_time', BOOST_TIME))/$number_done, 2);
-  if (boost_crawler_threads_alive() && $number_done > 0 && !variable_get('boost_crawler_stopped', FALSE) && round(($total - $number_done)/$crawl_rate) > 0) {
-    $form['crawler']['live'] = array(
-      '#type'          => 'fieldset',
-      '#title'         => t('Boost crawler - Live info'),
-    );
-    $form['crawler']['live']['boost_crawler_rate'] = array(
+  $crawler_live = boost_crawler_threads_alive() && $number_done > 0 && !variable_get('boost_crawler_stopped', FALSE) && round(($total - $number_done)/$crawl_rate) > 0;
+  $form['crawler']['live'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Boost crawler - Live info'),
+  );
+  $form['crawler']['live']['boost_crawler_rate'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Crawl Rate - Seconds Per Node (highly inaccurate)'),
+    '#default_value' => $crawl_rate,
+    '#disabled'      => TRUE,
+  );
+  $form['crawler']['live']['boost_crawler_eta'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Crawl ETA - highly inaccurate'),
+    '#default_value' => format_interval(($total - $number_done)/$crawl_rate),
+    '#disabled'      => TRUE,
+  );
+  $form['crawler']['live']['boost_stop_crawler'] = array(
+    '#type' => 'submit',
+    '#value' => t('Stop Crawler. !count URL\'s left.', array('!count' => $total - $number_done)),
+    '#submit' => array('boost_stop_crawler_submit'),
+    '#disabled'      => !$crawler_live,
+  );
+  $form['crawler']['boost_reset_crawler'] = array(
+    '#type' => 'submit',
+    '#value' => t('Reset Crawler & Cron Semaphore'),
+    '#submit' => array('boost_reset_crawler_submit'),
+    '#disabled'      => $crawler_live,
+  );
+  if (BOOST_CRAWL_ON_CRON) {
+    $form['crawler']['boost_crawler_eta'] = array(
       '#type'          => 'textfield',
-      '#title'         => t('Crawl Rate - Seconds Per Node (highly inaccurate)'),
-      '#default_value' => $crawl_rate,
+      '#title'         => t('Estimated Time to crawl site - highly inaccurate'),
+      '#default_value' => format_interval(boost_count_db(2) * boost_average_time()),
       '#disabled'      => TRUE,
     );
-    $form['crawler']['live']['boost_crawler_eta'] = array(
-      '#type'          => 'textfield',
-      '#title'         => t('Crawl ETA - highly inaccurate'),
-      '#default_value' => format_interval(($total - $number_done)/$crawl_rate),
-      '#disabled'      => TRUE,
-    );
-    $form['crawler']['live']['boost_stop_crawler'] = array(
-      '#type' => 'submit',
-      '#value' => t('Stop Crawler. !count URL\'s left.', array('!count' => $total - $number_done)),
-      '#submit' => array('boost_stop_crawler_submit'),
-    );
-  }
-  else {
-    $form['crawler']['boost_reset_crawler'] = array(
-      '#type' => 'submit',
-      '#value' => t('Reset Crawler & Cron Semaphore'),
-      '#submit' => array('boost_reset_crawler_submit'),
-    );
-    if (BOOST_CRAWL_ON_CRON) {
-      $form['crawler']['boost_crawler_eta'] = array(
-        '#type'          => 'textfield',
-        '#title'         => t('Estimated Time to crawl site - highly inaccurate'),
-        '#default_value' => format_interval(boost_count_db(2) * boost_average_time()),
-        '#disabled'      => TRUE,
-      );
-    }
   }
 
   // Apache .htaccess settings generation
