@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.108 2009/11/09 11:19:01 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.109 2009/11/09 23:47:30 mikeytown2 Exp $
 
 /**
  * @file
@@ -554,21 +554,18 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_CRAWL_ON_CRON,
     '#description'   => t('Pre-cache boosted URL\'s so they get cached before anyone accesses them. Enable the crawler first and save settings to use Preemptive Cache settings.'),
   );
-  if (BOOST_CRAWL_ON_CRON && BOOST_OVERWRITE_FILE) {
+  if (BOOST_CRAWL_ON_CRON) {
     $description = t('Bypass cron cache expiration and load to be expired content in the crawler. Allow this servers IP to bypass the boost cache. Check for fast but potentially stale; uncheck for slow but always fresh.');
   }
-  elseif (!BOOST_CRAWL_ON_CRON) {
+  else {
     $description = t('Enable the crawler first to enable this checkbox.');
-  }
-  elseif (!BOOST_OVERWRITE_FILE) {
-    $description = t('The "Overwrite the cached file if it already exits" must be turned on in order to enable this.');
   }
   $form['crawler']['boost_loopback_bypass'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Do not flush expired content on cron run, instead recrawl and overwrite it.'),
     '#default_value' => BOOST_LOOPBACK_BYPASS,
     '#description'   => $description,
-    '#disabled' => !BOOST_CRAWL_ON_CRON || !BOOST_OVERWRITE_FILE,
+    '#disabled' => !BOOST_CRAWL_ON_CRON,
   );
   if (BOOST_CRAWL_ON_CRON && BOOST_CACHE_HTML) {
     $description = t('Crawl Site after cron runs, so the cache is primed.');
@@ -1044,7 +1041,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= "  RewriteCond %{REQUEST_METHOD} !^GET$ [OR]\n";
     $string .= "  RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|$cache_dir|misc|modules|sites|system|openid|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
     $string .= "  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]\n";
-    $string .= BOOST_LOOPBACK_BYPASS ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
+    $string .= BOOST_LOOPBACK_BYPASS && BOOST_OVERWRITE_FILE ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
     $string .= "  RewriteCond %{HTTPS} on\n";
     $string .= "  RewriteRule .* - [S=$skip]\n";
     if (BOOST_GZIP) {

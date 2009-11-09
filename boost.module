@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.242 2009/11/09 22:48:57 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.243 2009/11/09 23:47:30 mikeytown2 Exp $
 
 /**
  * @file
@@ -83,7 +83,7 @@ define('BOOST_NO_DATABASE',          variable_get('boost_no_database', FALSE));
 
 // Crawler Settings
 define('BOOST_CRAWL_ON_CRON',        variable_get('boost_crawl_on_cron', FALSE));
-define('BOOST_LOOPBACK_BYPASS',      BOOST_OVERWRITE_FILE && BOOST_CRAWL_ON_CRON ? variable_get('boost_loopback_bypass', FALSE) : FALSE);
+define('BOOST_LOOPBACK_BYPASS',      BOOST_CRAWL_ON_CRON ? variable_get('boost_loopback_bypass', FALSE) : FALSE);
 define('BOOST_PUSH_HTML',            variable_get('boost_push_html', TRUE));
 define('BOOST_PUSH_XML',             variable_get('boost_push_xml', TRUE));
 define('BOOST_PUSH_JSON',            variable_get('boost_push_json', TRUE));
@@ -474,6 +474,17 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
     case 'delete':
       boost_expire_node($node);
       boost_cache_expire_router($data, TRUE, TRUE);
+      break;
+    case 'presave':
+      // Logic taken from path_redirect_node_presave()
+      if (!empty($node->path)) {
+        $node_path = 'node/'. $node->nid;
+        $old_alias = drupal_get_path_alias($node_path, ($node->language ? $node->language : ''));
+        if ($old_alias != $node_path && $node->path != $old_alias) {
+          // If the user is manually changing the path alias, nuke the old files
+          boost_cache_expire_router($data, TRUE, TRUE);
+        }
+      }
       break;
   }
 }
@@ -1313,12 +1324,40 @@ function _boost_ob_handler() {
         $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_FILE_EXTENSION);
       }
     }
+  }
+  // Remove dead items from the cache (file & db)
+  if ($filename) {
+    $files = array(array('filename' => $filename));
+    boost_cache_kill($files, TRUE);
+    boost_remove_db($files);
+  }
+
+  // Remove cached items when a redirect happens
+  if (empty($GLOBALS['_boost_router_item']['page_callback']) && boost_headers_contain('Location: ')) {
+    $types = boost_get_content_type();
+    if (BOOST_VERBOSE >= 7) {
+      watchdog('boost', 'Debug: _boost_ob_handler() <br />HTTP Info: Location redirect for !types <br />Path: !path', array('!status' => $status, '!types' => implode(', ', $types), '!path' => boost_file_path($GLOBALS['_boost_path'])));
+    }
+    $types = array_pop($types);
+
+    if (stristr($types, 'text/javascript')) {
+      $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_JSON_EXTENSION);
+    }
+    elseif (stristr($types, 'application/rss') || stristr($types, 'text/xml') || stristr($types, 'application/rss+xml')) {
+      $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_XML_EXTENSION);
+    }
+    elseif (stristr($types, 'text/html')) {
+      $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_FILE_EXTENSION);
+    }
+
+    // Remove dead items from the file cache
     if ($filename) {
       $files = array(array('filename' => $filename));
       boost_cache_kill($files, TRUE);
-      boost_remove_db($files);
     }
   }
+
+
 }
 
 /**
@@ -1863,8 +1902,6 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
  *  The hash is the primary key in the database. If omitted it will be recalculated from the filename.
  * @param boolean $force_flush = FALSE
  *  Override BOOST_EXPIRE_NO_FLUSH setting.
- * @param string $base_dir = ''
- *  Base directory of the site.
  */
 function boost_cache_kill($files, $force_flush = FALSE) {
   $hashes = array();
@@ -3757,8 +3794,8 @@ function boost_crawler_run($expire = -1) {
     _boost_variable_set('boost_crawler_position', $from + BOOST_CRAWLER_BATCH_SIZE);
     db_unlock_tables();
 
-    $results = db_query_range("SELECT url FROM {boost_crawler} ORDER BY id ASC", $from, BOOST_CRAWLER_BATCH_SIZE);
-    $url = db_result($results);
+    $results = db_query_range("SELECT url, filename FROM {boost_crawler} ORDER BY id ASC", $from, BOOST_CRAWLER_BATCH_SIZE);
+    $url = db_fetch_array($results);
     if (!$url) {
       // We Are Done
       // Wait 0 to 0.1 seconds before grabbing number of threads.
@@ -3772,7 +3809,7 @@ function boost_crawler_run($expire = -1) {
       if (BOOST_VERBOSE >= 5) {
         watchdog('boost', 'Crawler - Thread %num of %total Done.', array('%num' => $this_thread, '%total' => $total_threads));
       }
-      // Re init crawler if it missed some, try 5 times
+      // Re init crawler if it missed some, try 3 times
       if (   !boost_crawler_threads_alive()
           && _boost_variable_get('boost_crawler_number_of_tries') < 3
           && boost_crawler_verify($expire)
@@ -3787,15 +3824,24 @@ function boost_crawler_run($expire = -1) {
       }
       return TRUE;
     }
+    // Crawl the page!
     else {
-      drupal_http_request($url);
+      // Delete page right before crawling it
+      if (!BOOST_OVERWRITE_FILE && BOOST_LOOPBACK_BYPASS) {
+        boost_cache_kill($url, TRUE);
+      }
+      drupal_http_request($url['url']);
       if (BOOST_CRAWLER_THROTTLE) {
         usleep(BOOST_CRAWLER_THROTTLE);
       }
       _boost_set_time_limit(0);
     }
-    while ($url = db_result($results)) {
-      drupal_http_request($url);
+    while ($url = db_fetch_array($results)) {
+      // Delete page right before crawling it
+      if (!BOOST_OVERWRITE_FILE && BOOST_LOOPBACK_BYPASS) {
+        boost_cache_kill($url, TRUE);
+      }
+      drupal_http_request($url['url']);
       if (BOOST_CRAWLER_THROTTLE) {
         usleep(BOOST_CRAWLER_THROTTLE);
       }
