@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.109 2009/11/09 23:47:30 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.110 2009/11/10 21:50:32 mikeytown2 Exp $
 
 /**
  * @file
@@ -42,7 +42,7 @@ function boost_admin_performance_page_submit($form, &$form_state) {
 /**
  * Flushes core page cache
  */
-function boost_clear_core_page_cache_submit() {
+function boost_clear_core_page_cache_submit($form, &$form_state) {
   cache_clear_all('*', 'cache_page', TRUE);
   drupal_set_message(t('Core page cache cleared.'));
 }
@@ -124,12 +124,12 @@ function boost_admin_boost_performance_page() {
   );
   $form['boost']['boost_clear'] = array(
     '#type' => 'submit',
-    '#value' => t('Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(0))),
+    '#value' => t('_0 Clear ALL Boost cached data: !count pages', array('!count' => boost_count_db(0))),
     '#submit' => array('boost_clear_cache_submit'),
   );
   $form['boost']['boost_clear_expired'] = array(
     '#type' => 'submit',
-    '#value' => t('Clear Boost expired data: !count pages', array('!count' => boost_count_db(1))),
+    '#value' => t('_1 Clear Boost expired data: !count pages', array('!count' => boost_count_db(1))),
     '#submit' => array('boost_clear_expired_cache_submit'),
   );
 
@@ -659,10 +659,12 @@ function boost_admin_boost_performance_page() {
   );
   $total = boost_crawler_total_count();
   $number_done = min($total, unserialize(db_result(db_query("SELECT value FROM {variable} WHERE name = 'boost_crawler_position'")))) + 1;
-  $crawl_rate = round((BOOST_TIME - variable_get('boost_crawler_start_time', BOOST_TIME))/$number_done, 2);
+  $crawl_rate = round((BOOST_TIME - variable_get('boost_crawler_start_time', BOOST_TIME))/$number_done, 2) + .01;
   $crawler_live = boost_crawler_threads_alive() && $number_done > 0 && !variable_get('boost_crawler_stopped', FALSE) && round(($total - $number_done)/$crawl_rate) > 0;
   $form['crawler']['live'] = array(
     '#type'          => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => !$crawler_live,
     '#title'         => t('Boost crawler - Live info'),
   );
   $form['crawler']['live']['boost_crawler_rate'] = array(
@@ -679,13 +681,13 @@ function boost_admin_boost_performance_page() {
   );
   $form['crawler']['live']['boost_stop_crawler'] = array(
     '#type' => 'submit',
-    '#value' => t('Stop Crawler. !count URL\'s left.', array('!count' => $total - $number_done)),
+    '#value' => t('_2 Stop Crawler. !count URL\'s left.', array('!count' => $total - $number_done)),
     '#submit' => array('boost_stop_crawler_submit'),
     '#disabled'      => !$crawler_live,
   );
   $form['crawler']['boost_reset_crawler'] = array(
     '#type' => 'submit',
-    '#value' => t('Reset Crawler & Cron Semaphore'),
+    '#value' => t('_3 Reset Crawler & Cron Semaphore'),
     '#submit' => array('boost_reset_crawler_submit'),
     '#disabled'      => $crawler_live,
   );
@@ -769,7 +771,7 @@ function boost_admin_boost_performance_page() {
   );
   $form['clear']['boost_reset'] = array(
     '#type' => 'submit',
-    '#value' => t('Reset Button - Database Records: !records, Files: !files', array('!records' => boost_count_db(2), '!files' => boost_count_all_files(BOOST_ROOT_CACHE_DIR))),
+    '#value' => t('_4 Reset Button - Database Records: !records, Files: !files', array('!records' => boost_count_db(2), '!files' => boost_count_all_files(BOOST_ROOT_CACHE_DIR))),
     '#submit' => array('boost_reset_database_file_submit'),
   );
 
@@ -1147,7 +1149,15 @@ function boost_count_core_db($all = FALSE) {
 /**
  * Flushes boost page cache
  */
-function boost_clear_cache_submit() {
+function boost_clear_cache_submit($form, &$form_state) {
+  // Temp fix for bug in form api & buttons
+  // Check to make sure this button was actually called
+  $value = array_find_element_by_key('op', $form);
+  if (strpos($value, '0') != 1) {
+    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+    return FALSE;
+  }
+
   $ignore = variable_get('boost_ignore_flush', 0);
   $GLOBALS['conf']['boost_ignore_flush'] = 0;
   if (boost_cache_clear_all()) {
@@ -1171,7 +1181,15 @@ function boost_clear_cache_parallel($dir) {
 /**
  * Flushes all expired pages from database
  */
-function boost_clear_expired_cache_submit() {
+function boost_clear_expired_cache_submit($form, &$form_state) {
+  // Temp fix for bug in form api & buttons
+  // Check to make sure this button was actually called
+  $value = array_find_element_by_key('op', $form);
+  if (strpos($value, '1') != 1) {
+    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+    return FALSE;
+  }
+
   $ignore = variable_get('boost_ignore_flush', 0);
   $GLOBALS['conf']['boost_ignore_flush'] = 0;
   if (boost_cache_expire_all()) {
@@ -1186,7 +1204,15 @@ function boost_clear_expired_cache_submit() {
 /**
  * Resets boost database & cache directory
  */
-function boost_reset_database_file_submit() {
+function boost_reset_database_file_submit($form, &$form_state) {
+  // Temp fix for bug in form api & buttons
+  // Check to make sure this button was actually called
+  $value = array_find_element_by_key('op', $form);
+  if (strpos($value, '4') != 1) {
+    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+    return FALSE;
+  }
+
   $ignore = variable_get('boost_ignore_flush', 0);
   $GLOBALS['conf']['boost_ignore_flush'] = 0;
   if (boost_cache_clear_all()) {
@@ -1206,7 +1232,15 @@ function boost_reset_database_file_submit() {
 /**
  * Stop Crawler
  */
-function boost_stop_crawler_submit() {
+function boost_stop_crawler_submit($form, &$form_state) {
+  // Temp fix for bug in form api & buttons
+  // Check to make sure this button was actually called
+  $value = array_find_element_by_key('op', $form);
+  if (strpos($value, '2') != 1) {
+    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+    return FALSE;
+  }
+
   variable_set('boost_crawler_stopped', TRUE);
   variable_set('boost_crawler_number_of_threads', 0);
   drupal_set_message(t('Boost: Stop crawler signal given; all crawler threads should be stopped in less then %time', array('%time' => format_interval(BOOST_MAX_THREAD_TIME))));
@@ -1215,7 +1249,15 @@ function boost_stop_crawler_submit() {
 /**
  * Reset Crawler
  */
-function boost_reset_crawler_submit() {
+function boost_reset_crawler_submit($form, &$form_state) {
+  // Temp fix for bug in form api & buttons
+  // Check to make sure this button was actually called
+  $value = array_find_element_by_key('op', $form);
+  if (strpos($value, '3') != 1) {
+    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+    return FALSE;
+  }
+
   db_query("DELETE FROM {variable} WHERE name LIKE '%s%%'", 'boost_crawl');
   db_query("DELETE FROM {variable} WHERE name = 'cron_semaphore'");
   cache_clear_all('variables', 'cache');
@@ -1250,3 +1292,25 @@ function boost_array_find($needle, $haystack, $a_not = array()) {
   }
   return $out;
 }
+
+/**
+ * Returns the value of the key in a multidimensional array.
+ *
+ * http://php.net/array-key-exists#85184
+ */
+function &array_find_element_by_key($key, &$form) {
+  if (array_key_exists($key, $form)) {
+    $ret =& $form[$key];
+    return $ret;
+  }
+  foreach ($form as $k => $v) {
+    if (is_array($v)) {
+      $ret =& array_find_element_by_key($key, $form[$k]);
+      if ($ret) {
+        return $ret;
+      }
+    }
+  }
+  return FALSE;
+}
+

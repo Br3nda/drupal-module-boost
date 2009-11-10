@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.243 2009/11/09 23:47:30 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.244 2009/11/10 21:50:32 mikeytown2 Exp $
 
 /**
  * @file
@@ -3456,10 +3456,12 @@ function _boost_set_time_limit($time_limit) {
  *   array should be structured like
  *    array($field_1_value_A, $field_2_value_A, $field_3_value_A,
  *           $field_1_value_B, $field_2_value_B, $field_3_value_B);
+ * @param $suppress
+ *   bool. TRUE to supress db_query errors
  * @return
  *   returns db_query() result.
  */
-function boost_db_insert_multi($table, $fields, $placeholders, $data) {
+function boost_db_insert_multi($table, $fields, $placeholders, $data, $suppress = FALSE) {
   // Get the number of rows that will be inserted
   $rows = count($data)/count($fields);
   // Build the values placeholders string.
@@ -3474,7 +3476,12 @@ function boost_db_insert_multi($table, $fields, $placeholders, $data) {
   $fields = implode(', ', $fields);
   $query = "INSERT INTO {$table} ($fields) VALUES $v";
   // Run the query
-  return db_query($query, $data);
+  if ($suppress) {
+    return @db_query($query, $data);
+  }
+  else {
+    return db_query($query, $data);
+  }
 }
 
 /**
@@ -3794,7 +3801,7 @@ function boost_crawler_run($expire = -1) {
     _boost_variable_set('boost_crawler_position', $from + BOOST_CRAWLER_BATCH_SIZE);
     db_unlock_tables();
 
-    $results = db_query_range("SELECT url, filename FROM {boost_crawler} ORDER BY id ASC", $from, BOOST_CRAWLER_BATCH_SIZE);
+    $results = db_query_range("SELECT * FROM {boost_crawler} ORDER BY id ASC", $from, BOOST_CRAWLER_BATCH_SIZE);
     $url = db_fetch_array($results);
     if (!$url) {
       // We Are Done
@@ -3828,7 +3835,10 @@ function boost_crawler_run($expire = -1) {
     else {
       // Delete page right before crawling it
       if (!BOOST_OVERWRITE_FILE && BOOST_LOOPBACK_BYPASS) {
-        boost_cache_kill($url, TRUE);
+        $kill = db_result(db_query("SELECT filename FROM {boost_cache} WHERE hash_url = '%s'", $url['hash']));
+        if ($kill) {
+          boost_cache_kill(array('filename' => $kill, 'hash' => $url['hash']), TRUE);
+        }
       }
       drupal_http_request($url['url']);
       if (BOOST_CRAWLER_THROTTLE) {
@@ -3839,7 +3849,10 @@ function boost_crawler_run($expire = -1) {
     while ($url = db_fetch_array($results)) {
       // Delete page right before crawling it
       if (!BOOST_OVERWRITE_FILE && BOOST_LOOPBACK_BYPASS) {
-        boost_cache_kill($url, TRUE);
+        $kill = db_result(db_query("SELECT filename FROM {boost_cache} WHERE hash_url = '%s'", $url['hash']));
+        if ($kill) {
+          boost_cache_kill(array('filename' => $kill, 'hash' => $url['hash']), TRUE);
+        }
       }
       drupal_http_request($url['url']);
       if (BOOST_CRAWLER_THROTTLE) {
@@ -3881,6 +3894,7 @@ function boost_crawler_run($expire = -1) {
     variable_set('boost_crawler_sleeping', FALSE);
     variable_set('boost_crawler_average_generation', max(1, db_result(db_query("SELECT AVG(timer_average) FROM {boost_cache}"))));
     variable_set('boost_crawler_start_time', FALSE);
+    variable_set('boost_crawler_stopped', FALSE);
     $threads = BOOST_MAX_THREADS;
     while ($threads > 0) {
       variable_set('boost_crawler_thread_num_' . $threads, 0);
@@ -4030,10 +4044,10 @@ function boost_crawler_count($push_setting, $extension, $expire) {
  *  Has the site changed, if so get expire column
  */
 function boost_crawler_seed_tables($expire) {
-  if (   boost_crawler_add_to_table(BOOST_PUSH_HTML, BOOST_FILE_EXTENSION, $expire)
+  if (   boost_crawler_add_alias_to_table()
+      && boost_crawler_add_to_table(BOOST_PUSH_HTML, BOOST_FILE_EXTENSION, $expire)
       && boost_crawler_add_to_table(BOOST_PUSH_XML, BOOST_XML_EXTENSION, $expire)
       && boost_crawler_add_to_table(BOOST_PUSH_JSON, BOOST_JSON_EXTENSION, $expire)
-      && boost_crawler_add_alias_to_table()
       && boost_crawler_prune_table($expire)
       ) {
     // All URL's added to boost_crawler table; start hitting URL's
@@ -4079,7 +4093,7 @@ function boost_crawler_add_alias_to_table() {
       }
     }
     foreach ($data as $values) {
-      boost_db_insert_multi('boost_crawler', array('url', 'hash'), array("'%s'", "'%s'"), $values);
+      boost_db_insert_multi('boost_crawler', array('url', 'hash'), array("'%s'", "'%s'"), $values, FALSE);
     }
     variable_set('boost_crawler_loaded_count_alias', $loaded + $count);
     return FALSE;
@@ -4096,11 +4110,11 @@ function boost_crawler_add_alias_to_table() {
  *  Has the site changed, if so get expire column
  */
 function boost_crawler_prune_table($expire) {
-  if (!variable_get('boost_crawl_prune_table', FALSE)) {
+  if (variable_get('boost_crawl_prune_table', FALSE)) {
     return TRUE;
   }
   if ($expire && BOOST_LOOPBACK_BYPASS) {
-    db_query("DELETE cr FROM {boost_crawler} cr INNER JOIN {boost_cache} AS ca ON cr.hash=ca.hash_url WHERE ca.expire BETWEEN 1 AND 434966399 OR ca.expire BETWEEN 434966400 AND %d", BOOST_TIME);
+    db_query("DELETE cr FROM {boost_crawler} cr INNER JOIN {boost_cache} AS ca ON cr.hash=ca.hash_url WHERE ca.expire BETWEEN 1 AND 434966399 OR ca.expire > %d", BOOST_TIME);
   }
   else {
     db_query("DELETE cr FROM {boost_crawler} cr INNER JOIN {boost_cache} AS ca ON cr.hash=ca.hash_url WHERE ca.expire BETWEEN 1 AND 434966399 OR ca.expire > 434966400");
