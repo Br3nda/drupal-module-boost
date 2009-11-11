@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.71 2009/11/02 22:48:31 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.72 2009/11/11 08:35:02 mikeytown2 Exp $
 
 /**
  * @file
@@ -198,14 +198,14 @@ function boost_requirements($phase) {
           'value'       => $t('Boost & PHP running in Safe Mode is not a good idea.'),
         );
       }
-      if (BOOST_CRAWL_URL_ALIAS && BOOST_LOOPBACK_BYPASS) {
-        $requirements['boost_crawler'] = array(
-          'title'       => $t('Boost'),
-          'description' => $t('Crawler settings are inefficient. You probably want to disable the "Crawl All URL\'s in the url_alias table" <a href="@performance">setting</a>.', array('@performance' => url('admin/settings/performance/boost#edit-boost-crawl-on-cron-wrapper'))),
-          'severity'    => REQUIREMENT_WARNING,
-          'value'       => $t('Boost crawler does not have efficient settings.'),
-        );
-      }
+//       if (BOOST_CRAWL_URL_ALIAS && BOOST_LOOPBACK_BYPASS) {
+//         $requirements['boost_crawler'] = array(
+//           'title'       => $t('Boost'),
+//           'description' => $t('Crawler settings are inefficient. You probably want to disable the "Crawl All URL\'s in the url_alias table" <a href="@performance">setting</a>.', array('@performance' => url('admin/settings/performance/boost#edit-boost-crawl-on-cron-wrapper'))),
+//           'severity'    => REQUIREMENT_WARNING,
+//           'value'       => $t('Boost crawler does not have efficient settings.'),
+//         );
+//       }
       if (!BOOST_IGNORE_SUBDIR_LIMIT && isset($GLOBALS['_boost_dir_limit_warning'])) {
         $requirements['boost_dir_limit'] = array(
           'title'       => $t('Boost'),
