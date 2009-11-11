@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.245 2009/11/11 07:21:14 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.246 2009/11/11 08:14:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -2071,29 +2071,35 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
   // Append the Boost footer with the relevant timestamps
   switch ($extension) {
     case BOOST_FILE_EXTENSION:
-      $comment_start = '<!-- ';
-      $comment_end = " -->\n";
       $expire = BOOST_CACHE_LIFETIME;
-      $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
-      $comment = $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
-      //$data = _boost_inject_code(rtrim($data), "\n" . $comment);
-      $data = rtrim($data) . "\n" . $comment;
+      if (variable_get('boost_apache_xheader', 0) < 2) {
+        $comment_start = '<!-- ';
+        $comment_end = " -->\n";
+        $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
+        $comment = $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
+        //$data = _boost_inject_code(rtrim($data), "\n" . $comment);
+        $data = rtrim($data) . "\n" . $comment;
+      }
       break;
     case BOOST_XML_EXTENSION:
-      $comment_start = '<!-- ';
-      $comment_end = " -->\n";
       $expire = BOOST_CACHE_XML_LIFETIME;
-      $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
-      $comment = $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
-      $data = rtrim($data) . "\n" . $comment;
+      if (variable_get('boost_apache_xheader', 0) < 2) {
+        $comment_start = '<!-- ';
+        $comment_end = " -->\n";
+        $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
+        $comment = $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
+        $data = rtrim($data) . "\n" . $comment;
+      }
       break;
     case BOOST_JSON_EXTENSION:
-      $comment_start = '/* ';
-      $comment_end = " */\n";
       $expire = BOOST_CACHE_JSON_LIFETIME;
-      $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
-      $comment = $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
-      $data = rtrim($data) . "\n" . $comment;
+      if (variable_get('boost_apache_xheader', 0) < 2) {
+        $comment_start = '/* ';
+        $comment_end = " */\n";
+        $expires_at = date('Y-m-d H:i:s', BOOST_TIME + $expire);
+        $comment = $comment_start . str_replace(array('%cached_at', '%expires_at'), array($cached_at, $expires_at), BOOST_BANNER) . $comment_end;
+        $data = rtrim($data) . "\n" . $comment;
+      }
       break;
   }
 

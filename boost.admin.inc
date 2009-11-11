@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.110 2009/11/10 21:50:32 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.111 2009/11/11 08:14:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -762,6 +762,17 @@ function boost_admin_boost_performance_page() {
     ),
     '#description'   => t('Uses <a href="!link">FileETag Directive</a> to set <a href="!about">ETags</a> for the files cached by Boost. <a href="!stack">More info on this subject</a>', array('!link' => url('http://httpd.apache.org/docs/trunk/mod/core.html#fileetag'), '!about' => url('http://en.wikipedia.org/wiki/HTTP_ETag'), '!stack' => url('http://stackoverflow.com/questions/tagged?tagnames=etag&sort=votes&pagesize=50'))),
   );
+  $form['htaccess']['boost_apache_xheader'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Boost Tags'),
+    '#default_value' => variable_get('boost_apache_xheader', 0),
+    '#options'       => array(
+      0 => 'Inject boost tags at the bottom of the file',
+      1 => 'Set Header and tags',
+      2 => 'Only Set the header',
+    ),
+    '#description'   => t('In order to identify that the page is being served from the cache Boost can: Set a comment at the bottom of the page, indicating that this page is cached by boost; It can also send out a header that will identify any files served from the boost cache; Or it can do both.'),
+  );
 
   // Clear database button
   $form['clear'] = array(
@@ -961,6 +972,9 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= "    <IfModule mod_headers.c>\n";
     $string .= "      Header set Expires \"Sun, 19 Nov 1978 05:00:00 GMT\"\n";
     $string .= "      Header set Cache-Control \"no-store, no-cache, must-revalidate, post-check=0, pre-check=0\"\n";
+    if (variable_get('boost_apache_xheader', 0) > 0) {
+      $string .= "      Header set X-Header \"Boost Citrus 1.8\"\n";
+    }
     $string .= "    </IfModule>\n";
     $string .= "  </FilesMatch>\n";
   }
