@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.244 2009/11/10 21:50:32 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.245 2009/11/11 07:21:14 mikeytown2 Exp $
 
 /**
  * @file
@@ -1911,26 +1911,22 @@ function boost_cache_kill($files, $force_flush = FALSE) {
     return FALSE;
   }
 
-  // Pull out the first file to determine our course of action.
-  $first_file = current($files);
-
   // If not ignoring file removal
   // AND site is multisite and cache path matches filename
   //  OR full base url matches filename
-  if (variable_get('boost_ignore_flush', 0) < 3 && (
-          (BOOST_FLUSH_ALL_MULTISITE && strstr($first_file['filename'], BOOST_ROOT_CACHE_DIR))
-          || strstr($first_file['filename'], BOOST_FILE_PATH)
-        )
-      ) {
+  if (variable_get('boost_ignore_flush', 0) < 3) {
     // Calc md5 hash and set base dir
-    foreach ($files as $file) {
+    foreach ($files as $key => $file) {
       if (empty($file['hash'])) {
-        $file['hash'] = md5($file['filename']);
+        $files[$key]['hash'] = md5($file['filename']);
       }
       if (empty($file['base_dir'])) {
-        $file['base_dir'] = BOOST_FILE_PATH;
+        $files[$key]['base_dir'] = BOOST_FILE_PATH;
       }
-      $hashes[] = $file['hash'];
+      $hashes[] = $files[$key]['hash'];
+      if (stristr($files[$key]['filename'], BOOST_ROOT_CACHE_DIR) == FALSE) {
+        unset($files[$key]);
+      }
     }
     // Expire entries from Database
     if (count($hashes)) {
@@ -2006,7 +2002,7 @@ function boost_cache_expire_all_db() {
   if (BOOST_VERBOSE >= 9) {
     watchdog('boost', 'Debug: boost_cache_expire_all_db() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $list)));
   }
-  if (BOOST_VERBOSE >= 7) {
+  elseif (BOOST_VERBOSE >= 7) {
     watchdog('boost', 'Debug: boost_cache_expire_all_db() <br />!num files where flushed', array('!num' => $count));
   }
   return TRUE;
@@ -3733,6 +3729,17 @@ function boost_crawler_run($expire = -1) {
       $threads = floor($total/BOOST_CRAWLER_BATCH_SIZE);
     }
 
+    // Sanity Check
+    if (abs($threads) > BOOST_CRAWLER_THREADS) {
+      // Kill this thread
+      if (BOOST_VERBOSE >= 5) {
+        watchdog('boost', 'Crawler - Thread %num of %total Killed.', array('%num' => $this_thread, '%total' => $total_threads));
+      }
+      ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
+      ini_set('output_buffering', $GLOBALS['_boost_output_buffering']);
+      exit;
+    }
+
     // Start the clock on first run
     if (!_boost_variable_get('boost_crawler_start_time')) {
       _boost_variable_set('boost_crawler_start_time', BOOST_TIME);
@@ -3837,7 +3844,7 @@ function boost_crawler_run($expire = -1) {
       if (!BOOST_OVERWRITE_FILE && BOOST_LOOPBACK_BYPASS) {
         $kill = db_result(db_query("SELECT filename FROM {boost_cache} WHERE hash_url = '%s'", $url['hash']));
         if ($kill) {
-          boost_cache_kill(array('filename' => $kill, 'hash' => $url['hash']), TRUE);
+          boost_cache_kill(array(array('filename' => $kill, 'hash' => $url['hash'])), TRUE);
         }
       }
       drupal_http_request($url['url']);
@@ -3851,7 +3858,7 @@ function boost_crawler_run($expire = -1) {
       if (!BOOST_OVERWRITE_FILE && BOOST_LOOPBACK_BYPASS) {
         $kill = db_result(db_query("SELECT filename FROM {boost_cache} WHERE hash_url = '%s'", $url['hash']));
         if ($kill) {
-          boost_cache_kill(array('filename' => $kill, 'hash' => $url['hash']), TRUE);
+          boost_cache_kill(array(array('filename' => $kill, 'hash' => $url['hash'])), TRUE);
         }
       }
       drupal_http_request($url['url']);
