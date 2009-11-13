@@ -14,20 +14,17 @@
     AddCharset utf-8 .js
     AddEncoding gzip .gz
   </IfModule>
-  <FilesMatch "\.html\.gz$">
+  <FilesMatch "(\.html|\.html\.gz)">
     ForceType text/html
   </FilesMatch>
-  <FilesMatch "\.xml\.gz$">
+  <FilesMatch "(\.xml|\.xml\.gz)$">
     ForceType text/xml
   </FilesMatch>
-  <FilesMatch "\.json\.gz$">
+  <FilesMatch "(\.json|\.json\.gz|\.js|\.js\.gz)$">
     ForceType text/javascript
   </FilesMatch>
-  <FilesMatch "\.css\.gz$">
+  <FilesMatch "(\.css|\.css\.gz)">
     ForceType text/css
-  </FilesMatch>
-  <FilesMatch "\.js\.gz$">
-    ForceType text/javascript
   </FilesMatch>
 
   # Gzip Cookie Test
@@ -77,4 +74,4 @@
 
   ### BOOST END ###
 
-# $Id: boosted2.txt,v 1.1.2.19 2009/10/30 15:30:48 mikeytown2 Exp $
+# $Id: boosted2.txt,v 1.1.2.20 2009/11/13 23:33:18 mikeytown2 Exp $

@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.113 2009/11/13 23:03:35 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.114 2009/11/13 23:33:18 mikeytown2 Exp $
 
 /**
  * @file
@@ -988,32 +988,58 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= BOOST_GZIP ?       "    AddEncoding gzip $_gz\n" : '';
     $string .= "  </IfModule>\n";
   }
-  if (BOOST_GZIP) {
-    if (BOOST_CACHE_HTML) {
-      $string .= "  <FilesMatch \"$html$gz$\">\n";
-      $string .= "    ForceType text/html\n";
-      $string .= "  </FilesMatch>\n";
+  // Fix for versions of apache that do not respect the T='' RewriteRule
+  $files = '';
+  if (BOOST_CACHE_HTML) {
+    $files .= "$html|";
+    if (BOOST_GZIP) {
+      $files .= "$html$gz|";
     }
-    if (BOOST_CACHE_XML) {
-      $string .= "  <FilesMatch \"$xml$gz$\">\n";
-      $string .= "    ForceType text/xml\n";
-      $string .= "  </FilesMatch>\n";
+    $files = trim($files, '|');
+    $string .= "  <FilesMatch \"($files)\">\n";
+    $string .= "    ForceType text/html\n";
+    $string .= "  </FilesMatch>\n";
+  }
+  $files = '';
+  if (BOOST_CACHE_XML) {
+    $files .= "$xml|";
+    if (BOOST_GZIP) {
+      $files .= "$xml$gz|";
     }
-    if (BOOST_CACHE_CSS) {
-      $string .= "  <FilesMatch \"$css$gz$\">\n";
-      $string .= "    ForceType text/css\n";
-      $string .= "  </FilesMatch>\n";
+    $files = trim($files, '|');
+    $string .= "  <FilesMatch \"($files)$\">\n";
+    $string .= "    ForceType text/xml\n";
+    $string .= "  </FilesMatch>\n";
+  }
+  $files = '';
+  if (BOOST_CACHE_JSON) {
+    $files .= "$json|";
+    if (BOOST_GZIP) {
+      $files .= "$json$gz|";
     }
-    if (BOOST_CACHE_JS) {
-      $string .= "  <FilesMatch \"$js$gz$\">\n";
-      $string .= "    ForceType text/javascript\n";
-      $string .= "  </FilesMatch>\n";
+  }
+  if (BOOST_CACHE_JS) {
+    $files .= "$js|";
+    if (BOOST_GZIP) {
+      $files .= "$js$gz|";
     }
-    if (BOOST_CACHE_JSON) {
-      $string .= "  <FilesMatch \"$json$gz$\">\n";
-      $string .= "    ForceType text/javascript\n";
-      $string .= "  </FilesMatch>\n";
+  }
+  if ($files != '') {
+    $files = trim($files, '|');
+    $string .= "  <FilesMatch \"($files)$\">\n";
+    $string .= "    ForceType text/javascript\n";
+    $string .= "  </FilesMatch>\n";
+  }
+  $files = '';
+  if (BOOST_CACHE_CSS) {
+    $files .= "$css|";
+    if (BOOST_GZIP) {
+      $files .= "$css$gz|";
     }
+    $files = trim($files, '|');
+    $string .= "  <FilesMatch \"($files)\">\n";
+    $string .= "    ForceType text/css\n";
+    $string .= "  </FilesMatch>\n";
   }
   if (BOOST_AGGRESSIVE_GZIP) {
     $string .= "\n";
