@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.246 2009/11/11 08:14:03 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.247 2009/11/13 23:07:32 mikeytown2 Exp $
 
 /**
  * @file
@@ -1714,7 +1714,7 @@ function boost_cache_expire_by_db($paths) {
     while ($info = db_fetch_array($result)) {
       if (($info['page_callback'] == 'node' || $info['page_callback'] == 'taxonomy') && $info['page_id'] == 0) {
         // If we can't get a 'lock' just expire the file
-        $filenames[] = $info;
+        $filenames[] = $info['filename'];
       }
       elseif ($info['page_id'] != '' && $info['page_type'] != '' && $info['page_callback'] != '') {
         // Use boost_cache_expire_router() if we can get a 'lock' on this item in the database
@@ -1723,7 +1723,7 @@ function boost_cache_expire_by_db($paths) {
       }
       else {
         // If we can't get a 'lock' just expire the file
-        $filenames[] = $info;
+        $filenames[] = $info['filename'];
       }
     }
     // Expire all files that match up
@@ -1917,6 +1917,12 @@ function boost_cache_kill($files, $force_flush = FALSE) {
   if (variable_get('boost_ignore_flush', 0) < 3) {
     // Calc md5 hash and set base dir
     foreach ($files as $key => $file) {
+      if (!is_string($file['filename'])) {
+        if (BOOST_VERBOSE >= 5) {
+          watchdog('boost', 'Error in boost_cache_kill() <br />String was not given for filename: !output', array('!output' => boost_print_r($file, TRUE, TRUE)));
+        }
+        continue;
+      }
       if (empty($file['hash'])) {
         $files[$key]['hash'] = md5($file['filename']);
       }
