@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.112 2009/11/13 20:02:45 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.113 2009/11/13 23:03:35 mikeytown2 Exp $
 
 /**
  * @file
@@ -1165,12 +1165,10 @@ function boost_count_core_db($all = FALSE) {
 /**
  * Flushes boost page cache
  */
-function boost_clear_cache_submit($form, &$form_state) {
+function boost_clear_cache_submit($form, &$form_state, $first = TRUE) {
   // Temp fix for bug in form api & buttons
   // Check to make sure this button was actually called
-  $value = array_find_element_by_key('op', $form);
-  if (strpos($value, '0') != 1) {
-    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+  if (!boost_admin_button_router(0, $first, $form, $form_state)) {
     return FALSE;
   }
 
@@ -1197,12 +1195,10 @@ function boost_clear_cache_parallel($dir) {
 /**
  * Flushes all expired pages from database
  */
-function boost_clear_expired_cache_submit($form, &$form_state) {
+function boost_clear_expired_cache_submit($form, &$form_state, $first = TRUE) {
   // Temp fix for bug in form api & buttons
   // Check to make sure this button was actually called
-  $value = array_find_element_by_key('op', $form);
-  if (strpos($value, '1') != 1) {
-    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+  if (!boost_admin_button_router(1, $first, $form, $form_state)) {
     return FALSE;
   }
 
@@ -1220,12 +1216,10 @@ function boost_clear_expired_cache_submit($form, &$form_state) {
 /**
  * Resets boost database & cache directory
  */
-function boost_reset_database_file_submit($form, &$form_state) {
+function boost_reset_database_file_submit($form, &$form_state, $first = TRUE) {
   // Temp fix for bug in form api & buttons
   // Check to make sure this button was actually called
-  $value = array_find_element_by_key('op', $form);
-  if (strpos($value, '4') != 1) {
-    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+  if (!boost_admin_button_router(4, $first, $form, $form_state)) {
     return FALSE;
   }
 
@@ -1248,12 +1242,10 @@ function boost_reset_database_file_submit($form, &$form_state) {
 /**
  * Stop Crawler
  */
-function boost_stop_crawler_submit($form, &$form_state) {
+function boost_stop_crawler_submit($form, &$form_state, $first = TRUE) {
   // Temp fix for bug in form api & buttons
   // Check to make sure this button was actually called
-  $value = array_find_element_by_key('op', $form);
-  if (strpos($value, '2') != 1) {
-    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+  if (!boost_admin_button_router(2, $first, $form, $form_state)) {
     return FALSE;
   }
 
@@ -1265,12 +1257,10 @@ function boost_stop_crawler_submit($form, &$form_state) {
 /**
  * Reset Crawler
  */
-function boost_reset_crawler_submit($form, &$form_state) {
+function boost_reset_crawler_submit($form, &$form_state, $first = TRUE) {
   // Temp fix for bug in form api & buttons
   // Check to make sure this button was actually called
-  $value = array_find_element_by_key('op', $form);
-  if (strpos($value, '3') != 1) {
-    drupal_set_message(t('FormAPI Bug Encountered; try again'), 'error');
+  if (!boost_admin_button_router(3, $first, $form, $form_state)) {
     return FALSE;
   }
 
@@ -1314,14 +1304,14 @@ function boost_array_find($needle, $haystack, $a_not = array()) {
  *
  * http://php.net/array-key-exists#85184
  */
-function &array_find_element_by_key($key, &$form) {
+function &boost_array_find_element_by_key($key, &$form) {
   if (array_key_exists($key, $form)) {
     $ret =& $form[$key];
     return $ret;
   }
   foreach ($form as $k => $v) {
     if (is_array($v)) {
-      $ret =& array_find_element_by_key($key, $form[$k]);
+      $ret =& boost_array_find_element_by_key($key, $form[$k]);
       if ($ret) {
         return $ret;
       }
@@ -1330,3 +1320,34 @@ function &array_find_element_by_key($key, &$form) {
   return FALSE;
 }
 
+function boost_admin_button_router($number, $first, $form, &$form_state) {
+  $value = boost_array_find_element_by_key('op', $form);
+  if (strpos($value, (string)$number) != 1) {
+    $correct = substr($value, 1, 1);
+    if ($first) {
+      drupal_set_message(t('FormAPI Bug Encountered; trying to work around the bug. Given: %given Wanted: %wanted.', array('%given' => $number, '%wanted' => $correct)), 'warning');
+      switch ($correct) {
+        case 0:
+          boost_clear_cache_submit($form, $form_state, FALSE);
+          break;
+        case 1:
+          boost_clear_expired_cache_submit($form, $form_state, FALSE);
+          break;
+        case 2:
+          boost_stop_crawler_submit($form, $form_state, FALSE);
+          break;
+        case 3:
+          boost_reset_crawler_submit($form, $form_state, FALSE);
+          break;
+        case 4:
+          boost_reset_database_file_submit($form, $form_state, FALSE);
+          break;
+      }
+    }
+    else {
+      drupal_set_message(t('FormAPI Bug Encountered; try again. Given: %given Wanted: %wanted.', array('%given' => $number, '%wanted' => $correct)), 'error');
+    }
+    return FALSE;
+  }
+  return TRUE;
+}
