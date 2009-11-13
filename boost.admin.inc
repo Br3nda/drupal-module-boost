@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.111 2009/11/11 08:14:03 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.112 2009/11/13 20:02:45 mikeytown2 Exp $
 
 /**
  * @file
@@ -1140,8 +1140,10 @@ function boost_count_all_files($path, &$timer = NULL, $first = TRUE) {
   // Get File Count
   $paths = glob($path . '*', GLOB_MARK|GLOB_ONLYDIR|GLOB_NOSORT);
   $files = count(glob($path . '*.*', GLOB_NOSORT));
-  foreach ($paths as $path) {
-    $files += boost_count_all_files($path, $timer, FALSE);
+  if ($paths) {
+    foreach ($paths as $path) {
+      $files += boost_count_all_files($path, $timer, FALSE);
+    }
   }
 
   // If we ran out of time round and add a ++ to the file count
