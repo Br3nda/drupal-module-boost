@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.247 2009/11/13 23:07:32 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.248 2009/11/13 23:10:07 mikeytown2 Exp $
 
 /**
  * @file
@@ -3482,7 +3482,7 @@ function boost_db_insert_multi($table, $fields, $placeholders, $data, $suppress 
   }
   // Build the fields part of this query
   $fields = implode(', ', $fields);
-  $query = "INSERT INTO {$table} ($fields) VALUES $v";
+  $query = "INSERT INTO {" . $table . "} ($fields) VALUES $v";
   // Run the query
   if ($suppress) {
     return @db_query($query, $data);
@@ -3518,7 +3518,7 @@ function boost_db_delete_in_multi($table, $field, $placeholder, $data) {
     $in .= ', ' . $placeholder;
   }
   // Build the query
-  $query = "DELETE FROM {$table} WHERE $field IN ($in)";
+  $query = "DELETE FROM {" . $table . "} WHERE $field IN ($in)";
   // Run the query
   return db_query($query, $data);
 }
@@ -3558,7 +3558,7 @@ function boost_db_update_set_multi($table, $set_field, $set_placeholders, $set_v
     $in .= ', ' . $where_placeholder;
   }
   // Build the query
-  $query = "UPDATE {$table} SET $set_field = $set_placeholders WHERE $where_field IN ($in)";
+  $query = "UPDATE {" . $table . "} SET $set_field = $set_placeholders WHERE $where_field IN ($in)";
   // Add the set value to the top of the array
   array_unshift($data, $set_value);
   // Run the query
@@ -3592,7 +3592,7 @@ function boost_db_select_in_multi($table, $field, $placeholder, $data) {
     $in .= ', ' . $placeholder;
   }
   // Build the query
-  $query = "SELECT * FROM {$table} WHERE $field IN ($in)";
+  $query = "SELECT * FROM {" . $table . "} WHERE $field IN ($in)";
   // Run the query
   return db_query($query, $data);
 }
