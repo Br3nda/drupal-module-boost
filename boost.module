@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.250 2009/11/15 02:07:51 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.251 2009/11/16 18:15:29 mikeytown2 Exp $
 
 /**
  * @file
@@ -2069,6 +2069,14 @@ function boost_get_all_filenames($filename, $base_dir = NULL) {
   $chars = '*:<>|?#,';
   if (preg_match("/[" . $chars . "]/", $end)) {
     $end = urlencode($end);
+    // '=' sign should not be encoded
+    $end = str_replace('%3D', '=', $end);
+    // '&' should not be encoded
+    $end = str_replace('%26', '&', $end);
+    // '#' should not be encoded
+    $end = str_replace('%23', '#', $end);
+    // '?' is not an issue because the first ? is converted to a _ with the default settings.
+    // If not using the default then this could be an issue. Will deal with it when that happens.
     $paths[] = $end;
     $names[] = implode('/', $paths);
   }
