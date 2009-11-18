@@ -14,7 +14,7 @@
     AddCharset utf-8 .js
     AddEncoding gzip .gz
   </IfModule>
-  <FilesMatch "(\.html|\.html\.gz)">
+  <FilesMatch "(\.html|\.html\.gz)$">
     ForceType text/html
   </FilesMatch>
   <FilesMatch "(\.xml|\.xml\.gz)$">
@@ -23,7 +23,7 @@
   <FilesMatch "(\.json|\.json\.gz|\.js|\.js\.gz)$">
     ForceType text/javascript
   </FilesMatch>
-  <FilesMatch "(\.css|\.css\.gz)">
+  <FilesMatch "(\.css|\.css\.gz)$">
     ForceType text/css
   </FilesMatch>
 
@@ -74,4 +74,4 @@
 
   ### BOOST END ###
 
-# $Id: boosted1.txt,v 1.1.2.19 2009/11/13 23:33:18 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.20 2009/11/18 23:37:37 mikeytown2 Exp $

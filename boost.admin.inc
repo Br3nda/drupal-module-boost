@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.114 2009/11/13 23:33:18 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.115 2009/11/18 23:37:37 mikeytown2 Exp $
 
 /**
  * @file
@@ -996,7 +996,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
       $files .= "$html$gz|";
     }
     $files = trim($files, '|');
-    $string .= "  <FilesMatch \"($files)\">\n";
+    $string .= "  <FilesMatch \"($files)$\">\n";
     $string .= "    ForceType text/html\n";
     $string .= "  </FilesMatch>\n";
   }
@@ -1037,7 +1037,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
       $files .= "$css$gz|";
     }
     $files = trim($files, '|');
-    $string .= "  <FilesMatch \"($files)\">\n";
+    $string .= "  <FilesMatch \"($files)$\">\n";
     $string .= "    ForceType text/css\n";
     $string .= "  </FilesMatch>\n";
   }
