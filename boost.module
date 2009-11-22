@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.251 2009/11/16 18:15:29 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.252 2009/11/22 00:29:19 mikeytown2 Exp $
 
 /**
  * @file
@@ -1581,14 +1581,15 @@ function boost_cache_delete($flush = FALSE) {
   //recreate dirs
   _boost_mkdir_p(BOOST_FILE_PATH);
   _boost_mkdir_p(BOOST_GZIP_FILE_PATH);
+
   //add in .boost root id file
-  file_put_contents(BOOST_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
-  file_put_contents(BOOST_GZIP_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_GZIP_FILE_PATH);
+  _boost_write_file_chmod(BOOST_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
+  _boost_write_file_chmod(BOOST_GZIP_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
   foreach (_boost_copy_file_get_domains(BOOST_PERM_FILE_PATH) as $dir) {
-    file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+    _boost_write_file_chmod($dir . '/' . BOOST_ROOT_FILE, $dir);
   }
   foreach (_boost_copy_file_get_domains(BOOST_PERM_GZIP_FILE_PATH) as $dir) {
-    file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+    _boost_write_file_chmod($dir . '/' . BOOST_ROOT_FILE, $dir);
   }
 
   //Flush Cache
@@ -1602,14 +1603,15 @@ function boost_cache_delete($flush = FALSE) {
   //recreate dirs
   _boost_mkdir_p(BOOST_FILE_PATH);
   _boost_mkdir_p(BOOST_GZIP_FILE_PATH);
+
   //add in .boost root id file
-  file_put_contents(BOOST_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
-  file_put_contents(BOOST_GZIP_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_GZIP_FILE_PATH);
+  _boost_write_file_chmod(BOOST_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
+  _boost_write_file_chmod(BOOST_GZIP_FILE_PATH . '/' . BOOST_ROOT_FILE, BOOST_FILE_PATH);
   foreach (_boost_copy_file_get_domains(BOOST_PERM_FILE_PATH) as $dir) {
-    file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+    _boost_write_file_chmod($dir . '/' . BOOST_ROOT_FILE, $dir);
   }
   foreach (_boost_copy_file_get_domains(BOOST_PERM_GZIP_FILE_PATH) as $dir) {
-    file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+    _boost_write_file_chmod($dir . '/' . BOOST_ROOT_FILE, $dir);
   }
 }
 
@@ -2918,12 +2920,10 @@ function boost_cache_css_js_files($buffer) {
   }
   if (BOOST_CACHE_CSS || BOOST_CACHE_JS) {
     foreach (_boost_copy_file_get_domains(BOOST_PERM_FILE_PATH) as $dir) {
-      _boost_mkdir_p($dir);
-      file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+      _boost_write_file_chmod($dir . '/' . BOOST_ROOT_FILE, $dir);
     }
     foreach (_boost_copy_file_get_domains(BOOST_PERM_GZIP_FILE_PATH) as $dir) {
-      _boost_mkdir_p($dir);
-      file_put_contents($dir . '/' . BOOST_ROOT_FILE, $dir);
+      _boost_write_file_chmod($dir . '/' . BOOST_ROOT_FILE, $dir);
     }
   }
 }
@@ -3177,7 +3177,7 @@ function _boost_copy_file($src, $dest) {
     if (_boost_mkdir_p(dirname($destination))) {
       @copy($src, $destination);
       if (is_numeric(BOOST_PERMISSIONS_FILE)) {
-        @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
+        @chmod($destination, octdec(BOOST_PERMISSIONS_FILE));
       }
     }
   }
@@ -3194,12 +3194,7 @@ function _boost_copy_file($src, $dest) {
 function _boost_gz_copy_file($src, $dest) {
   $destinations = _boost_copy_file_get_domains($dest);
   foreach ($destinations as $destination) {
-    if (_boost_mkdir_p(dirname($destination))) {
-      @file_put_contents($destination, gzencode(file_get_contents($src), 9));
-      if (is_numeric(BOOST_PERMISSIONS_FILE)) {
-        @chmod($tempfile, octdec(BOOST_PERMISSIONS_FILE));
-      }
-    }
+    _boost_write_file_chmod($destination, gzencode(file_get_contents($src), 9));
   }
 }
 
@@ -3461,8 +3456,7 @@ document.cookie = 'boost-gzip=true' + expires + '; path=/'
 </script>
 </head><body><h1>It works!</h1></body></html>
 ETO;
-    _boost_mkdir_p(dirname($filename));
-    file_put_contents($filename, gzencode($string, 9));
+    _boost_write_file_chmod($filename, gzencode($string, 9));
   }
 }
 
@@ -3478,6 +3472,27 @@ ETO;
  */
 function _boost_inject_code($document, $html_code, $point = '</body>') {
   return str_replace($point, $html_code . $point, $document);
+}
+
+/**
+ * Create the dir, write the file, chmod the file.
+ *
+ * @param $filename
+ *  Path and filename to be created
+ * @param $data
+ *  data inside the file
+ */
+function _boost_write_file_chmod($filename, $data) {
+  if (_boost_mkdir_p(dirname($filename))) {
+    $bytes = @file_put_contents($filename, $data);
+    if ($bytes && is_numeric(BOOST_PERMISSIONS_FILE)) {
+      @chmod($filename, octdec(BOOST_PERMISSIONS_FILE));
+    }
+    return $bytes;
+  }
+  else {
+    return FALSE;
+  }
 }
 
 /**
