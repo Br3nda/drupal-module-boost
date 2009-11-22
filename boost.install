@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.73 2009/11/13 20:00:23 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.74 2009/11/22 00:32:19 mikeytown2 Exp $
 
 /**
  * @file
@@ -13,7 +13,8 @@
  * Implementation of hook_enable().
  */
 function boost_enable() {
-  drupal_set_message(t('Boost successfully installed. Please review the available <a href="@settings">configuration settings</a>. There are 2 new <a href="@blocks">blocks</a> that you can add to help with the administrative side (<a href="@status">status</a>, <a href="@config">page configuration</a>), and 1 to support core <a href="@stats">stats</a>.', array(
+  drupal_set_message(t('Boost successfully installed. Fix all errors and warnings on the <a href="@report">status report page</a> under Boost for a quick installation.', array('@report' => url('admin/reports/status'))));
+  drupal_set_message(t('For a more in depth install, please review the available <a href="@settings">configuration settings</a>. There are 2 new <a href="@blocks">blocks</a> that you can add to help with the administrative side (<a href="@status">status</a>, <a href="@config">page configuration</a>), and 1 to support core <a href="@stats">stats</a>.', array(
     '@settings' => url('admin/settings/performance/boost'),
     '@blocks' => url('admin/build/block'),
     '@status' => url('admin/build/block/configure/boost/status'),
@@ -225,7 +226,7 @@ function boost_requirements($phase) {
       if ($robots && !stristr($robots, 'Disallow: /boost_stats.php')) {
         $requirements['boost_robots'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('Your robots.txt file does not contain "Disallow: /boost_stats.php". This is needed inorder to prevent the output of this from accendently getting indexed by search engines.'),
+          'description' => $t('Your robots.txt file does not contain "Disallow: /boost_stats.php". This is needed inorder to prevent the output of this from accidentally getting indexed by search engines.'),
           'severity'    => REQUIREMENT_WARNING,
           'value'       => $t('"Disallow: /boost_stats.php" entry missing in robots.txt'),
         );
@@ -234,7 +235,7 @@ function boost_requirements($phase) {
         $requirements['boost'] = array(
           'title'       => $t('Boost'),
           'severity'    => REQUIREMENT_OK,
-          'value'       => t('Boost Installed correctly, should be working if properly <a href="@settings">configured</a>.', array('@settings' => url('admin/settings/performance/boost'))),
+          'value'       => t('Boost installed correctly, should be working if properly <a href="@settings">configured</a>.', array('@settings' => url('admin/settings/performance/boost'))),
         );
       }
       break;
