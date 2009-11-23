@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.255 2009/11/22 00:40:19 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.256 2009/11/23 04:21:39 mikeytown2 Exp $
 
 /**
  * @file
@@ -4055,7 +4055,10 @@ function boost_crawler_run($expire = -1) {
  *  string - Content type header.
  */
 function boost_async_opp($output, $wait = TRUE, $content_type = "text/html", $length = 0) {
-  $length = ($length == 0) ? (mb_strlen($output, '8bit')-1) : $length;
+  if ($length == 0) {
+    $output .= "\n";
+    $length = (mb_strlen($output, '8bit')-1);
+  }
   // Prime php for background operations
   $loop = 0;
   while (ob_get_level() && $loop < 25) {
