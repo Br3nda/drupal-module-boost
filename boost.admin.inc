@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.116 2009/11/24 03:50:59 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.117 2009/11/24 16:23:39 mikeytown2 Exp $
 
 /**
  * @file
@@ -367,7 +367,7 @@ function boost_admin_boost_performance_page() {
   );
   $form['advanced']['boost_check_before_cron_expire'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Check database timestamps for any site changes. Only if there's been a change will boost flush the expired content on cron.'),
+    '#title'         => t('Check database timestamps for any site changes. Only if there has been a change will boost flush the expired content on cron.'),
     '#default_value' => BOOST_CHECK_BEFORE_CRON_EXPIRE,
   );
   $form['advanced']['boost_pre_process_function'] = array(
