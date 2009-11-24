@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.115 2009/11/18 23:37:37 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.116 2009/11/24 03:50:59 mikeytown2 Exp $
 
 /**
  * @file
@@ -154,7 +154,7 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Cache html documents/pages'),
     '#default_value' => BOOST_CACHE_HTML,
-    '#description'   => t('Boost will cache most drupal pages.'),
+    '#description'   => t('Boost will cache most Drupal pages.'),
   );
   $form['cacheability']['boost_cache_xml'] = array(
     '#type'          => 'checkbox',
@@ -240,19 +240,19 @@ function boost_admin_boost_performance_page() {
   );
   $form['directories']['generated']['boost_normal_dir'] = array(
     '#type'          => 'textfield',
-    '#title'         => t('Dir for non compressed files'),
+    '#title'         => t('Directory for non compressed files'),
     '#default_value' => BOOST_NORMAL_DIR,
     '#size'          => 15,
     '#maxlength'     => 255,
-    '#description'   => t('Leave blank to not use a subdir'),
+    '#description'   => t('Leave blank to not use a subdirectory'),
   );
   $form['directories']['generated']['boost_gzip_dir'] = array(
     '#type'          => 'textfield',
-    '#title'         => t('Dir for compressed files'),
+    '#title'         => t('Directory for compressed files'),
     '#default_value' => BOOST_GZIP_DIR,
     '#size'          => 15,
     '#maxlength'     => 255,
-    '#description'   => t('Leave blank to not use a subdir'),
+    '#description'   => t('Leave blank to not use a subdirectory'),
   );
   $form['directories']['generated']['boost_char'] = array(
     '#type'          => 'textfield',
@@ -304,23 +304,23 @@ function boost_admin_boost_performance_page() {
   );
   $form['directories']['static']['boost_perm_normal_dir'] = array(
     '#type'          => 'textfield',
-    '#title'         => t('Dir for more permanent files (css/js)'),
+    '#title'         => t('Directory for more permanent files (css/js)'),
     '#default_value' => BOOST_PERM_NORMAL_DIR,
     '#size'          => 15,
     '#maxlength'     => 255,
-    '#description'   => t('Leave blank to not use a subdir'),
+    '#description'   => t('Leave blank to not use a subdirectory'),
   );
   $form['directories']['static']['boost_perm_gz_dir'] = array(
     '#type'          => 'textfield',
-    '#title'         => t('Dir for compressed more permanent files (css/js)'),
+    '#title'         => t('Directory for compressed more permanent files (css/js)'),
     '#default_value' => BOOST_PERM_GZ_DIR,
     '#size'          => 15,
     '#maxlength'     => 255,
-    '#description'   => t('Leave blank to not use a subdir'),
+    '#description'   => t('Leave blank to not use a subdirectory'),
   );
   $form['directories']['static']['boost_perm_char'] = array(
     '#type'          => 'textfield',
-    '#title'         => t('Character used to replace "?" in the permanent dir'),
+    '#title'         => t('Character used to replace "?" in the permanent directory'),
     '#default_value' => BOOST_PERM_CHAR,
     '#size'          => 15,
     '#maxlength'     => 16,
@@ -367,7 +367,7 @@ function boost_admin_boost_performance_page() {
   );
   $form['advanced']['boost_check_before_cron_expire'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Check database timestamps for any site changes. Only if theres been a change will boost flush the expired content on cron.'),
+    '#title'         => t('Check database timestamps for any site changes. Only if there's been a change will boost flush the expired content on cron.'),
     '#default_value' => BOOST_CHECK_BEFORE_CRON_EXPIRE,
   );
   $form['advanced']['boost_pre_process_function'] = array(
@@ -393,7 +393,7 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Asynchronous Operation: output HTML, close connection, then store static file.'),
     '#default_value' => BOOST_ASYNCHRONOUS_OUTPUT,
-    '#description'   => t('Run php in the background. When a cached page is generated, this will allow for faster page generation; downside is the headers are not the standard ones outputted by drupal; sends "Connection: close" instead of "Connection: Keep-Alive".'),
+    '#description'   => t('Run php in the background. When a cached page is generated, this will allow for faster page generation; downside is the headers are not the standard ones outputted by Drupal; sends "Connection: close" instead of "Connection: Keep-Alive".'),
   );
   $form['advanced']['boost_flush_dir'] = array(
     '#type'          => 'checkbox',
@@ -458,7 +458,7 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Do not cache if a message is on the page'),
     '#default_value' => BOOST_HALT_ON_MESSAGES,
-    '#description'   => t('Selected - Do not cache the page if there are drupal messages. Not Selected - Cache pages even if it might contain a drupal message.'),
+    '#description'   => t('Selected - Do not cache the page if there are Drupal messages. Not Selected - Cache pages even if it might contain a Drupal message.'),
   );
   $form['advanced']['boost_disable_clean_url'] = array(
     '#type'          => 'checkbox',
@@ -741,7 +741,7 @@ function boost_admin_boost_performance_page() {
   $description = t('Value of %best is recommended for this server.', array('%best' => $best)) . ' ';
   if (!isset($best)) {
     $best = $document_root;
-    $description .= t('Please open an boost issue on drupal.org, since apache and php are not configured correctly.');
+    $description .= t('Please open an boost issue on Drupal.org, since apache and php are not configured correctly.');
   }
   $form['htaccess']['boost_document_root'] = array(
     '#type'          => 'radios',

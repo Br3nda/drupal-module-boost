@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.2.2.1.2.5.2.11 2009/10/30 15:27:01 mikeytown2 Exp $
+// $Id: README.txt,v 1.2.2.1.2.5.2.12 2009/11/24 03:50:59 mikeytown2 Exp $
 
  BOOST MODULE FOR DRUPAL 6.x
  ---------------------------
@@ -85,7 +85,7 @@
     Token		http://drupal.org/project/token
 
   Optional if cron configuration is not available on your server.
-    Poormanscron -dev	http://drupal.org/project/poormanscron
+    Poormanscron 1.1 or 2.0	http://drupal.org/project/poormanscron
 
   If enabled [x] Clear all cached pages referenced via CCK with a node...
     The node referrer module is recommended.
@@ -141,6 +141,15 @@
 
   6. Goto: [Administer > Site configuration > Performance]
      Check and set the Drupal cache settings as desired.
+
+  7. Prepare robots.txt file for search engines.
+     Add "Disallow: /boost_stats.php" to the robots.txt file as shown below.
+
+     # Files
+     Disallow: /boost_stats.php
+     Disallow: /CHANGELOG.txt
+     .....
+     .....
 
 
  SYSTEM CHECK AND VERIFY FUNCTIONS

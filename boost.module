@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.256 2009/11/23 04:21:39 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.257 2009/11/24 03:50:59 mikeytown2 Exp $
 
 /**
  * @file
@@ -178,7 +178,7 @@ function boost_init() {
     $GLOBALS['conf']['cache'] = CACHE_DISABLED;
     $GLOBALS['_boost_cache_this'] = FALSE;
     if (BOOST_VERBOSE >= 7) {
-      watchdog('boost', '404 recieved from server via redirect, going to send a 404. Info: !output', array('!output' => boost_print_r($_SERVER, TRUE, TRUE)));
+      watchdog('boost', '404 received from server via redirect, going to send a 404. Info: !output', array('!output' => boost_print_r($_SERVER, TRUE, TRUE)));
     }
     drupal_not_found();
     return;
@@ -907,7 +907,7 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
             $drupal_msg = max(count(drupal_get_messages(NULL, FALSE)), $GLOBALS['_boost_message_count']);
 
             if ($error || (BOOST_HALT_ON_MESSAGES && $drupal_msg != 0)) {
-              $output = t('There are <strong>php errors</strong> or <strong>drupal messages</strong> on this page, preventing boost from caching.') . ' ';
+              $output = t('There are <strong>php errors</strong> or <strong>Drupal messages</strong> on this page, preventing boost from caching.') . ' ';
               if ($error) {
                 $output .= t('ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => boost_print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')));
               }
@@ -1286,7 +1286,7 @@ function _boost_ob_handler() {
   if (BOOST_HALT_ON_MESSAGES && $GLOBALS['_boost_message_count'] != 0) {
     $GLOBALS['_boost_cache_this'] = FALSE;
     if (BOOST_VERBOSE >= 3) {
-      watchdog('boost', 'There are <strong>drupal messages</strong> on this page, preventing boost from caching. MESSAGES: %msg <br /> !performance', array('%msg' => $GLOBALS['_boost_message_count'], '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')), WATCHDOG_WARNING);
+      watchdog('boost', 'There are <strong>Drupal messages</strong> on this page, preventing boost from caching. MESSAGES: %msg <br /> !performance', array('%msg' => $GLOBALS['_boost_message_count'], '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')), WATCHDOG_WARNING);
     }
   }
 
