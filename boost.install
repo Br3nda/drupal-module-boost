@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.75 2009/11/22 19:05:43 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.76 2009/11/26 06:41:02 mikeytown2 Exp $
 
 /**
  * @file
@@ -140,7 +140,7 @@ function boost_requirements($phase) {
       if (!boost_chk_module_versions()) {
         $requirements['boost_other_modules'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('You need to get a newer version of <a href="@url">poormanscron</a>, most likely the latest dev, or the 2.0 branch.', array('@url' => "http://drupal.org/project/poormanscron")),
+          'description' => $t('You need to get a newer version of <a href="@url">poormanscron</a>, 1.1 and above, or the 2.0 branch.', array('@url' => "http://drupal.org/project/poormanscron")),
           'severity'    => REQUIREMENT_ERROR,
           'value'       => $t('poormanscron is the wrong version'),
         );
