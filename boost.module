@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.258 2009/11/24 05:32:55 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.259 2009/11/26 06:39:53 mikeytown2 Exp $
 
 /**
  * @file
@@ -2136,12 +2136,23 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
     return FALSE;
   }
 
+  // Get custom expiration time if set
+  $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
+  $settings = boost_get_settings_db($GLOBALS['_boost_router_item']);
+  $expire = -2;
+  foreach ($settings as $value) {
+    if ($value != NULL) {
+      $expire = $value['lifetime'];
+      break;
+    }
+  }
+
   $cached_at = date('Y-m-d H:i:s', BOOST_TIME);
   // Code commenting style based on what is being cached.
   // Append the Boost footer with the relevant timestamps
   switch ($extension) {
     case BOOST_FILE_EXTENSION:
-      $expire = BOOST_CACHE_LIFETIME;
+      $expire = ($expire == -2) ? BOOST_CACHE_LIFETIME : $expire;
       if (variable_get('boost_apache_xheader', 0) < 2) {
         $comment_start = '<!-- ';
         $comment_end = " -->\n";
@@ -2152,7 +2163,7 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
       }
       break;
     case BOOST_XML_EXTENSION:
-      $expire = BOOST_CACHE_XML_LIFETIME;
+      $expire = ($expire == -2) ? BOOST_CACHE_XML_LIFETIME : $expire;
       if (variable_get('boost_apache_xheader', 0) < 2) {
         $comment_start = '<!-- ';
         $comment_end = " -->\n";
@@ -2162,7 +2173,7 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
       }
       break;
     case BOOST_JSON_EXTENSION:
-      $expire = BOOST_CACHE_JSON_LIFETIME;
+      $expire = ($expire == -2) ? BOOST_CACHE_JSON_LIFETIME : $expire;
       if (variable_get('boost_apache_xheader', 0) < 2) {
         $comment_start = '/* ';
         $comment_end = " */\n";
