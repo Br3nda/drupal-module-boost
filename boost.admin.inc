@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.118 2009/11/30 15:11:29 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.119 2009/11/30 15:19:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -1086,7 +1086,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= "\n";
     $string .= "  # Caching for anonymous users\n";
     $string .= "  # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR request came from this server OR https request\n";
-    $string .= "  RewriteCond %{REQUEST_METHOD} !^GET$ [OR]\n";
+    $string .= "  RewriteCond %{REQUEST_METHOD} !^(GET|HEAD)$ [OR]\n";
     $string .= "  RewriteCond %{REQUEST_URI} (^$drupal_subdir(admin|$cache_dir|misc|modules|sites|system|openid|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
     $string .= "  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]\n";
     $string .= BOOST_LOOPBACK_BYPASS && BOOST_OVERWRITE_FILE ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
