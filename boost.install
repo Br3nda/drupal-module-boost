@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.76 2009/11/26 06:41:02 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.77 2009/11/30 15:17:26 mikeytown2 Exp $
 
 /**
  * @file
@@ -1332,7 +1332,6 @@ function boost_update_6121() {
   _boost_index_exists($ret, 'files', 'timestamp');
   _boost_index_exists($ret, 'comments', 'timestamp');
   _boost_index_exists($ret, 'node', 'changed');
-  _boost_index_exists($ret, 'files', 'timestamp');
   _boost_index_exists($ret, 'node_comment_statistics', 'last_comment_timestamp');
   _boost_index_exists($ret, 'votingapi_vote', 'timestamp');
 
