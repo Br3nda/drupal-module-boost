@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.119 2009/11/30 15:19:03 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.120 2009/11/30 15:39:25 mikeytown2 Exp $
 
 /**
  * @file
@@ -382,6 +382,12 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Only allow ASCII characters in path'),
     '#default_value' => BOOST_ONLY_ASCII_PATH,
     '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
+  );
+  $form['advanced']['boost_agressive_cookie'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Agressive setting of the boost cookie'),
+    '#default_value' => BOOST_AGRESSIVE_COOKIE,
+    '#description'   => t('Set/Remove the boost cookie in the boost_init function.'),
   );
   $form['advanced']['boost_flush_all_multisite'] = array(
     '#type'          => 'checkbox',

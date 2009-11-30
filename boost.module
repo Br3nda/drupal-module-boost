@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.267 2009/11/30 15:39:25 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.268 2009/11/30 15:40:11 mikeytown2 Exp $
 
 /**
  * @file
@@ -818,7 +818,7 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
   global $user;
 
   if (BOOST_VERBOSE >= 7) {
-    watchdog('boost', 'Debug: boost_user() <br />The %op opperation was sent for user %user', array('%op' => $op, '%user' => $user->uid), WATCHDOG_WARNING);
+    watchdog('boost', 'Debug: boost_user() <br />The %op opperation was sent for user %user', array('%op' => $op, '%user' => $user->uid));
   }
   switch ($op) {
     case 'login':
