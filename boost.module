@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.262 2009/11/28 07:59:34 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.263 2009/11/30 15:11:29 mikeytown2 Exp $
 
 /**
  * @file
@@ -63,6 +63,7 @@ define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE)
 define('BOOST_ASYNCHRONOUS_OUTPUT',  variable_get('boost_asynchronous_output', TRUE));
 define('BOOST_FLUSH_DIR',            variable_get('boost_flush_dir', FALSE));
 define('BOOST_FLUSH_CCK_REFERENCES', variable_get('boost_flush_cck_references', TRUE));
+define('BOOST_FLUSH_FRONT',          variable_get('boost_flush_front', TRUE));
 define('BOOST_FLUSH_NODE_TERMS',     variable_get('boost_flush_node_terms', TRUE));
 define('BOOST_FLUSH_MENU_ITEMS',     variable_get('boost_flush_menu_items', 0));
 define('BOOST_FLUSH_VIEWS',          variable_get('boost_flush_views', TRUE));
@@ -597,7 +598,7 @@ function boost_expire_node($node, $nid = 0) {
   }
 
   // If promoted to front page, expire front page
-  if ($node->promote == 1) {
+  if (BOOST_FLUSH_FRONT && $node->promote == 1) {
     $paths['front'] = '<front>';
   }
 

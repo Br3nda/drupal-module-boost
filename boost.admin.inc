@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.117 2009/11/24 16:23:39 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.118 2009/11/30 15:11:29 mikeytown2 Exp $
 
 /**
  * @file
@@ -400,6 +400,12 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Clear all empty folders from cache.'),
     '#default_value' => BOOST_FLUSH_DIR,
     '#description'   => t('Disable this if you have to set settings for each dir/subdir, due to the way your server operates (permissions, etc...).'),
+  );
+  $form['advanced']['boost_flush_front'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Clear the front page cache when promoted'),
+    '#default_value' => BOOST_FLUSH_FRONT,
+    '#description'   => t('Clear the front page cache when a node that is promoted to the fron page is also changed.'),
   );
   $form['advanced']['boost_flush_cck_references'] = array(
     '#type'          => 'checkbox',
