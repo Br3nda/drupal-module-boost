@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.269 2009/11/30 15:45:54 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.270 2009/11/30 15:48:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -60,7 +60,7 @@ define('BOOST_CHECK_BEFORE_CRON_EXPIRE', variable_get('boost_check_before_cron_e
 define('BOOST_PRE_PROCESS_FUNCTION', variable_get('boost_pre_process_function', ''));
 define('BOOST_FLUSH_ALL_MULTISITE',  variable_get('boost_flush_all_multisite', FALSE));
 define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE));
-define('BOOST_AGRESSIVE_COOKIE',     variable_get('boost_agressive_cookie', TRUE));
+define('BOOST_AGGRESSIVE_COOKIE',     variable_get('boost_aggressive_cookie', TRUE));
 define('BOOST_ASYNCHRONOUS_OUTPUT',  variable_get('boost_asynchronous_output', TRUE));
 define('BOOST_FLUSH_DIR',            variable_get('boost_flush_dir', FALSE));
 define('BOOST_FLUSH_CCK_REFERENCES', variable_get('boost_flush_cck_references', TRUE));
@@ -166,7 +166,7 @@ function boost_init() {
 
   $uid = isset($user->uid) ? $user->uid : 0;
   // Remove Boost cookie at logout if it still exists
-  if (BOOST_AGRESSIVE_COOKIE && isset($_COOKIE[BOOST_COOKIE]) && $uid == 0) {
+  if (BOOST_AGGRESSIVE_COOKIE && isset($_COOKIE[BOOST_COOKIE]) && $uid == 0) {
     boost_set_cookie($uid, BOOST_TIME - 86400);
   }
   // Remove Boost cookie if set to -1
@@ -174,7 +174,7 @@ function boost_init() {
     boost_set_cookie($uid, BOOST_TIME - 86400);
   }
   // Set Boost cookie if it doesn't exists and user is logged in
-  elseif (BOOST_AGRESSIVE_COOKIE && !isset($_COOKIE[BOOST_COOKIE]) && $uid != 0) {
+  elseif (BOOST_AGGRESSIVE_COOKIE && !isset($_COOKIE[BOOST_COOKIE]) && $uid != 0) {
     boost_set_cookie($uid);
   }
 
@@ -818,7 +818,7 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
   global $user;
 
   if (BOOST_VERBOSE >= 7) {
-    watchdog('boost', 'Debug: boost_user() <br />The %op opperation was sent for user %user', array('%op' => $op, '%user' => $user->uid));
+    watchdog('boost', 'Debug: boost_user() <br />The %op operation was sent for user %user', array('%op' => $op, '%user' => $user->uid));
   }
   switch ($op) {
     case 'login':

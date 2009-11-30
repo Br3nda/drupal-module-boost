@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.120 2009/11/30 15:39:25 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.121 2009/11/30 15:48:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -383,10 +383,10 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_ONLY_ASCII_PATH,
     '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
   );
-  $form['advanced']['boost_agressive_cookie'] = array(
+  $form['advanced']['boost_aggressive_cookie'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Agressive setting of the boost cookie'),
-    '#default_value' => BOOST_AGRESSIVE_COOKIE,
+    '#title'         => t('Aggressive setting of the boost cookie'),
+    '#default_value' => BOOST_AGGRESSIVE_COOKIE,
     '#description'   => t('Set/Remove the boost cookie in the boost_init function.'),
   );
   $form['advanced']['boost_flush_all_multisite'] = array(
@@ -411,7 +411,7 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Clear the front page cache when promoted'),
     '#default_value' => BOOST_FLUSH_FRONT,
-    '#description'   => t('Clear the front page cache when a node that is promoted to the fron page is also changed.'),
+    '#description'   => t('Clear the front page cache when a node that is promoted to the from page is also changed.'),
   );
   $form['advanced']['boost_flush_cck_references'] = array(
     '#type'          => 'checkbox',
