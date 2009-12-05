@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.122 2009/12/05 06:10:44 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.123 2009/12/05 06:11:59 mikeytown2 Exp $
 
 /**
  * @file
@@ -1096,6 +1096,8 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= "  RewriteCond %{REQUEST_URI} (^$base_path(admin|$cache_dir|misc|modules|sites|system|openid|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
     $string .= "  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]\n";
     $string .= BOOST_LOOPBACK_BYPASS && BOOST_OVERWRITE_FILE ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
+    $string .= "  RewriteCond %{HTTP:Pragma} no-cache [OR]\n";
+    $string .= "  RewriteCond %{HTTP:Cache-Control} no-cache [OR]\n";
     $string .= "  RewriteCond %{HTTPS} on\n";
     $string .= "  RewriteRule .* - [S=$skip]\n";
     if (BOOST_GZIP) {
