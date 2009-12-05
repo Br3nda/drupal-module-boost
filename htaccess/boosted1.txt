@@ -1,6 +1,6 @@
   ### BOOST START ###
   AddDefaultCharset utf-8
-  <FilesMatch "(\.html\.gz|\.html|\.xml\.gz|\.xml|\.json\.gz|\.json|\.pdf|\.pdf\.gz)$">
+  <FilesMatch "(\.html\.gz|\.html|\.xml\.gz|\.xml|\.json\.gz|\.json)$">
     <IfModule mod_headers.c>
       Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
       Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
@@ -25,9 +25,6 @@
   </FilesMatch>
   <FilesMatch "(\.css|\.css\.gz)$">
     ForceType text/css
-  </FilesMatch>
-  <FilesMatch "(\.pdf|\.pdf\.gz)$">
-    ForceType application/pdf
   </FilesMatch>
 
   # Gzip Cookie Test
@@ -56,20 +53,18 @@
   RewriteCond %{HTTP:Pragma} no-cache [OR]
   RewriteCond %{HTTP:Cache-Control} no-cache [OR]
   RewriteCond %{HTTPS} on
-  RewriteRule .* - [S=9]
+  RewriteRule .* - [S=7]
 
   # GZIP
   RewriteCond %{HTTP_COOKIE} !(boost-gzip)
   RewriteCond %{HTTP:Accept-encoding} !gzip
-  RewriteRule .* - [S=4]
+  RewriteRule .* - [S=3]
   RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz -s
   RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz [L,T=text/html]
   RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml\.gz -s
   RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml\.gz [L,T=text/xml]
   RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.json\.gz -s
   RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.json\.gz [L,T=text/javascript]
-  RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.pdf\.gz -s
-  RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.pdf\.gz [L,T=application/pdf]
 
   # NORMAL
   RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html -s
@@ -78,9 +73,7 @@
   RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml [L,T=text/xml]
   RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.json -s
   RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.json [L,T=text/javascript]
-  RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.pdf -s
-  RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.pdf [L,T=application/pdf]
 
   ### BOOST END ###
 
-# $Id: boosted1.txt,v 1.1.2.23 2009/12/05 18:49:04 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.24 2009/12/05 18:50:29 mikeytown2 Exp $
