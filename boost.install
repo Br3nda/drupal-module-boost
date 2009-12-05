@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.77 2009/11/30 15:17:26 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.78 2009/12/05 06:30:38 mikeytown2 Exp $
 
 /**
  * @file
@@ -230,6 +230,35 @@ function boost_requirements($phase) {
           'severity'    => REQUIREMENT_WARNING,
           'value'       => $t('"Disallow: /boost_stats.php" entry missing in robots.txt'),
         );
+      }
+      // if the apache_get_modules function doesn't exist, skip this entirely
+      if (function_exists('apache_get_modules')) {
+        // Get all available Apache modules.
+        $modules = apache_get_modules();
+        if (!in_array('mod_headers', $modules)) {
+          $requirements['boost_apache_headers'] = array(
+            'title'       => $t('Boost'),
+            'description' => $t('The Apache module "mod_headers" is not available.  You must enable <a href="!link">mod_headers</a> for Apache.', array('!link' => 'http://httpd.apache.org/docs/trunk/mod/mod_headers.html')),
+            'severity'    => REQUIREMENT_WARNING,
+            'value'       => $t('Apache module "mod_headers" is not installed.'),
+          );
+        }
+        if (!in_array('mod_rewrite', $modules)) {
+          $requirements['boost_apache_rewrite'] = array(
+            'title'       => $t('Boost'),
+            'description' => $t('The Apache module "mod_rewrite" is not available.  You must enable <a href="!link">mod_rewrite</a> for Apache.', array('!link' => 'http://httpd.apache.org/docs/trunk/mod/mod_rewrite.html')),
+            'severity'    => REQUIREMENT_ERROR,
+            'value'       => $t('Apache module "mod_rewrite" is not installed.'),
+          );
+        }
+        if (!in_array('mod_mime', $modules)) {
+          $requirements['boost_apache_mime'] = array(
+            'title'       => $t('Boost'),
+            'description' => $t('The Apache module "mod_mime" is not available.  You must enable <a href="!link">mod_mime</a> for Apache.', array('!link' => 'http://httpd.apache.org/docs/trunk/mod/mod_mime.html')),
+            'severity'    => REQUIREMENT_WARNING,
+            'value'       => $t('Apache module "mod_mime" is not installed.'),
+          );
+        }
       }
       if (empty($requirements)) {
         $requirements['boost'] = array(
