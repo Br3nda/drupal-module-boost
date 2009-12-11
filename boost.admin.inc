@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.123 2009/12/05 06:11:59 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.124 2009/12/11 05:06:04 mikeytown2 Exp $
 
 /**
  * @file
@@ -785,6 +785,12 @@ function boost_admin_boost_performance_page() {
     ),
     '#description'   => t('In order to identify that the page is being served from the cache Boost can: Set a comment at the bottom of the page, indicating that this page is cached by boost; It can also send out a header that will identify any files served from the boost cache; Or it can do both.'),
   );
+  $form['htaccess']['boost_apache_rfc2616'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Follow RFC2616 14.9.4'),
+    '#default_value' => variable_get('boost_apache_rfc2616', TRUE),
+    '#description'   => t('Bypass the boost cache when the headers contain a "no-cache" cache-control directive (ctrl-F5 in browser). Disable this to make boost always serve pages from the cache. Good time to disable this is right before your site goes into maintance mode.'),
+  );
 
   // Clear database button
   $form['clear'] = array(
@@ -1096,8 +1102,10 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= "  RewriteCond %{REQUEST_URI} (^$base_path(admin|$cache_dir|misc|modules|sites|system|openid|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
     $string .= "  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]\n";
     $string .= BOOST_LOOPBACK_BYPASS && BOOST_OVERWRITE_FILE ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
-    $string .= "  RewriteCond %{HTTP:Pragma} no-cache [OR]\n";
-    $string .= "  RewriteCond %{HTTP:Cache-Control} no-cache [OR]\n";
+    if (variable_get('boost_apache_rfc2616', TRUE)) {
+      $string .= "  RewriteCond %{HTTP:Pragma} no-cache [OR]\n";
+      $string .= "  RewriteCond %{HTTP:Cache-Control} no-cache [OR]\n";
+    }
     $string .= "  RewriteCond %{HTTPS} on\n";
     $string .= "  RewriteRule .* - [S=$skip]\n";
     if (BOOST_GZIP) {
