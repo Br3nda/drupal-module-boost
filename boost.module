@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.278 2009/12/11 04:51:36 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.279 2009/12/12 23:09:07 mikeytown2 Exp $
 
 /**
  * @file
@@ -1351,10 +1351,13 @@ function _boost_ob_handler() {
     if (BOOST_VERBOSE >= 7) {
       watchdog('boost', 'Debug: _boost_ob_handler() <br />HTTP Info: !status - !types <br />Path: !path <br />Content Container: !callback <br />Content Type: !type <br />ID: !id <br />Cache This: !cache.', array('!status' => $status, '!types' => implode(', ', $types), '!path' => boost_file_path($GLOBALS['_boost_path']), '!callback' => $GLOBALS['_boost_router_item']['page_callback'], '!type' => $GLOBALS['_boost_router_item']['page_type'], '!id' => $GLOBALS['_boost_router_item']['page_id'], '!cache' => $GLOBALS['_boost_cache_this'] ? 'TRUE' : 'FALSE'));
     }
+    if (headers_sent($filename, $linenum) && BOOST_VERBOSE >= 5) {
+      watchdog('boost', 'Headers already sent in @filename on line @linenum. Asynchronous Operation will be disabled.', array('@filename' => $filename, '@linenum' => $linenum));
+    }
     $types = array_pop($types);
     if (stristr($types, 'text/javascript')) {
       if ($status == 200 & $GLOBALS['_boost_cache_this']) {
-        if (BOOST_ASYNCHRONOUS_OUTPUT) {
+        if (BOOST_ASYNCHRONOUS_OUTPUT && !headers_sent()) {
           boost_async_opp($buffer, FALSE, 'text/javascript');
         }
         boost_cache_set($GLOBALS['_boost_path'], $decompressed_buffer, BOOST_JSON_EXTENSION);
@@ -1365,7 +1368,7 @@ function _boost_ob_handler() {
     }
     elseif (stristr($types, 'application/rss') || stristr($types, 'text/xml') || stristr($types, 'application/rss+xml')) {
       if ($status == 200 && $GLOBALS['_boost_cache_this']) {
-        if (BOOST_ASYNCHRONOUS_OUTPUT) {
+        if (BOOST_ASYNCHRONOUS_OUTPUT && !headers_sent()) {
           boost_async_opp($buffer, FALSE, 'text/xml');
         }
         boost_cache_set($GLOBALS['_boost_path'], $decompressed_buffer, BOOST_XML_EXTENSION);
@@ -1376,7 +1379,7 @@ function _boost_ob_handler() {
     }
     elseif (stristr($types, 'text/html')) {
       if ($status == 200 && $GLOBALS['_boost_cache_this']) {
-        if (BOOST_ASYNCHRONOUS_OUTPUT) {
+        if (BOOST_ASYNCHRONOUS_OUTPUT && !headers_sent()) {
           boost_async_opp($buffer, FALSE, 'text/html');
         }
         boost_cache_set($GLOBALS['_boost_path'], $decompressed_buffer, BOOST_FILE_EXTENSION);
