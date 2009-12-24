@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.79 2009/12/11 04:52:49 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.80 2009/12/24 06:04:58 mikeytown2 Exp $
 
 /**
  * @file
@@ -444,7 +444,6 @@ function boost_schema() {
         'type' => 'text',
         'size' => 'normal',
         'not null' => TRUE,
-        'default' => '',
       ),
       'base_dir' => array(
         'description' => 'Path of the cache root dir relative to Drupal webroot.',
@@ -526,7 +525,6 @@ function boost_schema() {
         'type' => 'text',
         'size' => 'normal',
         'not null' => TRUE,
-        'default' => '',
       ),
     ),
     'indexes' => array(
@@ -630,7 +628,6 @@ function boost_schema() {
         'type' => 'text',
         'size' => 'normal',
         'not null' => TRUE,
-        'default' => '',
       ),
     ),
     'primary key' => array('id'),
@@ -1373,5 +1370,31 @@ function boost_update_6121() {
 
   _boost_install_set_time_limit(0);
   ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
+  return $ret;
+}
+
+/**
+ * Update 6122 - Remove default value for all text columns.
+ */
+function boost_update_6122() {
+  $ret = array();
+  db_change_field($ret, 'boost_cache', 'filename', 'filename', array(
+        'description' => 'URL of cached page',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ));
+  db_change_field($ret, 'boost_cache', 'url', 'url', array(
+        'description' => 'URL of cached page',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ));
+  db_change_field($ret, 'boost_crawler', 'url', 'url', array(
+        'description' => 'URL of page',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ));
   return $ret;
 }
