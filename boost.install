@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.80 2009/12/24 06:04:58 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.81 2009/12/24 06:07:26 mikeytown2 Exp $
 
 /**
  * @file
@@ -708,6 +708,17 @@ function boost_schema() {
         'default' => 0
       ),
     ),
+    'indexes' => array(
+      'base_dir' => array('base_dir'),
+      'page_callback' => array('page_callback'),
+      'page_type' => array('page_type'),
+      'page_id' => array('page_id'),
+      'child_page_callback' => array('child_page_callback'),
+      'child_page_type' => array('child_page_type'),
+      'child_page_id' => array('child_page_id'),
+      'hash_url' => array('hash_url'),
+      'timestamp' => array('timestamp'),
+    ),
     'primary key' => array('hash'),
   );
   return $schema;
@@ -1396,5 +1407,24 @@ function boost_update_6122() {
         'size' => 'normal',
         'not null' => TRUE,
       ));
+  return $ret;
+}
+
+/**
+ * Update 6123 - Add indexes to boost_cache_relationships table
+ */
+function boost_update_6123() {
+  $ret = array();
+
+  // Add indexes
+  db_add_index($ret, 'boost_cache_relationships', 'base_dir', array('base_dir'));
+  db_add_index($ret, 'boost_cache_relationships', 'page_callback', array('page_callback'));
+  db_add_index($ret, 'boost_cache_relationships', 'page_id', array('page_id'));
+  db_add_index($ret, 'boost_cache_relationships', 'child_page_callback', array('child_page_callback'));
+  db_add_index($ret, 'boost_cache_relationships', 'child_page_type', array('child_page_type'));
+  db_add_index($ret, 'boost_cache_relationships', 'child_page_id', array('child_page_id'));
+  db_add_index($ret, 'boost_cache_relationships', 'hash_url', array('hash_url'));
+  db_add_index($ret, 'boost_cache_relationships', 'timestamp', array('timestamp'));
+
   return $ret;
 }
