@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.82 2009/12/26 17:50:26 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.83 2009/12/26 23:56:53 mikeytown2 Exp $
 
 /**
  * @file
@@ -103,7 +103,7 @@ function boost_requirements($phase) {
       foreach ($cache_directories as $cache_directory) {
         if (_boost_mkdir_p($cache_directory)) {
           $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);
-        } 
+        }
         if (!is_dir($cache_directory)) {
           $requirements['boost_default'] = array(
             'title'       => $t('Boost'),
@@ -1428,4 +1428,11 @@ function boost_update_6123() {
   db_add_index($ret, 'boost_cache_relationships', 'timestamp', array('timestamp'));
 
   return $ret;
+}
+
+/**
+ * Update 6124 - Add missing page_type index to boost_cache_relationships table
+ */
+function boost_update_6124() {
+  db_add_index($ret, 'boost_cache_relationships', 'page_type', array('page_id'));
 }
