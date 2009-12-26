@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.285 2009/12/26 23:58:15 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.286 2009/12/26 23:59:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -2310,7 +2310,7 @@ function boost_cache_set_node_relationships($relationships) {
     // If one of the required items is not set, skip this entry
     if (!isset($data['child_page_callback']) || !isset($data['child_page_type']) || !isset($data['child_page_id'])) {
       if (BOOST_VERBOSE >= 5) {
-        watchdog('boost', 'boost_cache_set_node_relationships() <br /> child_page_* was not set');
+        watchdog('boost', 'boost_cache_set_node_relationships() <br /> child_page_* was not set.<br> !data<br> !backtrace', array('!data' => boost_print_r($data, TRUE, TRUE), '!backtrace' => boost_backtrace(FALSE)));
       }
       continue;
     }
@@ -3792,6 +3792,36 @@ function boost_db_select_in_multi($table, $field, $placeholder, $data) {
   $query = "SELECT * FROM {" . $table . "} WHERE $field IN ($in)";
   // Run the query
   return db_query($query, $data);
+}
+
+/**
+ * Runs debug_backtrace() and returns string containing that info.
+ *
+ * @param $args bool
+ *  output function arguments?
+ *
+ * @return $output string
+ *  parced backtrace output
+ */
+function boost_backtrace($args = TRUE) {
+  $output = '';
+  foreach (debug_backtrace() as $key => $entry) {
+    $output .= "\n\nLevel $key \n";
+    if (array_key_exists('file', $entry)) {
+      $output .= "File: " . $entry['file'];
+      if (array_key_exists('line', $entry)) {
+        $output .= " (Line: " . $entry['line'] . ")";
+      }
+      $output .= "\n";
+    }
+    if (array_key_exists('function', $entry)) {
+      $output .= "Function: " . $entry['function'] . "\n";
+    }
+    if ($args && array_key_exists('args', $entry)) {
+      $output .= "Args: " . implode(", ", $entry['args']) . "\n";
+    }
+  }
+  return $output;
 }
 
 //////////////////////////////////////////////////////////////////////////////
