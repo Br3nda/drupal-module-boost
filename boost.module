@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.286 2009/12/26 23:59:34 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.287 2009/12/27 00:03:37 mikeytown2 Exp $
 
 /**
  * @file
@@ -2811,17 +2811,23 @@ function boost_cache_write($filename, $buffer) {
  *   Host name. Example: example.com
  * @param $absolute
  *   Give path from system root if true. If false give path from web root.
+ * @param $root_dir
+ *   Cache directory
+ * @param $normal_dir
+ *   Normal directory
  */
-function boost_cache_directory($host = NULL, $absolute = TRUE) {
+function boost_cache_directory($host = NULL, $absolute = TRUE, $root_dir = NULL, $normal_dir = NULL) {
   global $base_url;
+  $root_dir = is_null($root_dir) ? BOOST_ROOT_CACHE_DIR : $root_dir;
+  $normal_dir = is_null($normal_dir) ? BOOST_NORMAL_DIR : $normal_dir;
   if ($base_url == "http://") {
     if (!BOOST_MULTISITE_SINGLE_DB) {
-      $base_url = $base_url . str_replace(BOOST_ROOT_CACHE_DIR . '/', '', variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
+      $base_url = $base_url . str_replace($root_dir . '/', '', variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
     }
     elseif (BOOST_NORMAL_DIR != '' && db_result(db_query("SELECT count(DISTINCT base_dir) FROM {boost_cache}")) == 1) {
       $base_dir = db_result(db_query("SELECT DISTINCT base_dir FROM {boost_cache}"));
-      $base_url = $base_url . str_replace(BOOST_ROOT_CACHE_DIR . '/', '', $base_dir);
-      $base_url = $base_url . str_replace(BOOST_NORMAL_DIR . '/', '', $base_dir);
+      $base_url = $base_url . str_replace($root_dir . '/', '', $base_dir);
+      $base_url = $base_url . str_replace($normal_dir . '/', '', $base_dir);
     }
   }
   if (@parse_url($base_url) === FALSE) {
@@ -2837,7 +2843,7 @@ function boost_cache_directory($host = NULL, $absolute = TRUE) {
   $parts['path'] = isset($parts['path']) ? $parts['path'] : '/';
   $subdir = implode('/', array_filter(explode('/', (!empty($base_path)) ? $base_path : $parts['path'])));
 
-  return implode('/', !$absolute ? array_filter(array(BOOST_ROOT_CACHE_DIR, BOOST_NORMAL_DIR, $host, $subdir)) : array_filter(array(getcwd(), BOOST_ROOT_CACHE_DIR, BOOST_NORMAL_DIR, $host, $subdir)));
+  return implode('/', !$absolute ? array_filter(array($root_dir, $normal_dir, $host, $subdir)) : array_filter(array(getcwd(), $root_dir, $normal_dir, $host, $subdir)));
 }
 
 /**
