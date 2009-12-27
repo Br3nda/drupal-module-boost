@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.83 2009/12/26 23:56:53 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.84 2009/12/27 00:10:18 mikeytown2 Exp $
 
 /**
  * @file
@@ -1434,5 +1434,7 @@ function boost_update_6123() {
  * Update 6124 - Add missing page_type index to boost_cache_relationships table
  */
 function boost_update_6124() {
+  $ret = array();
   db_add_index($ret, 'boost_cache_relationships', 'page_type', array('page_id'));
+  return $ret;
 }
