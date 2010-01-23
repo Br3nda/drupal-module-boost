@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.84 2009/12/27 00:10:18 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.85 2010/01/23 22:08:33 mikeytown2 Exp $
 
 /**
  * @file
@@ -1435,6 +1435,8 @@ function boost_update_6123() {
  */
 function boost_update_6124() {
   $ret = array();
-  db_add_index($ret, 'boost_cache_relationships', 'page_type', array('page_id'));
+  // Make sure we have boost.module file loaded
+  drupal_load('module', 'boost');
+  _boost_index_exists($ret, 'boost_cache_relationships', 'page_type');
   return $ret;
 }
