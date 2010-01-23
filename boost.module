@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.290 2010/01/23 22:11:59 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.291 2010/01/23 22:16:49 mikeytown2 Exp $
 
 /**
  * @file
@@ -2497,7 +2497,7 @@ function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer
   $hash_url = md5($url);
   db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_type = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = '%s', extension = '%s', url = '%s', filename = '%s', hash_url = '%s' WHERE hash = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_type'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url, $filename, $hash_url, $hash);
   if (!db_affected_rows()) {
-    db_query("INSERT INTO {boost_cache} (hash, hash_url, filename, expire, lifetime, push, page_callback, page_type, timer, timer_average, base_dir, page_id, extension, url) VALUES ('%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', '%s', '%s', '%s')", $hash, $hash_url, $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_type'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url);
+    @db_query("INSERT INTO {boost_cache} (hash, hash_url, filename, expire, lifetime, push, page_callback, page_type, timer, timer_average, base_dir, page_id, extension, url) VALUES ('%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', '%s', '%s', '%s')", $hash, $hash_url, $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_type'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url);
   }
 }
 
