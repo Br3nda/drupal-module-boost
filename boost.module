@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.293 2010/01/24 18:14:30 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.294 2010/01/24 18:15:43 mikeytown2 Exp $
 
 /**
  * @file
@@ -1785,7 +1785,7 @@ function boost_cache_expire_by_db($paths) {
       $hashes[] = md5($json);
     }
   }
-  $result = boost_db_select_in_multi('boost_cache', 'hash', "'%s'", $hashes);
+  $result = boost_db_multi_select_in('boost_cache', 'hash', "'%s'", $hashes);
 
   // Eliminate duplicates with the key hash
   $data = array();
@@ -2018,10 +2018,10 @@ function boost_cache_kill($files, $force_flush = FALSE) {
     // Expire entries from Database
     if (count($hashes)) {
       if ($force_flush || !BOOST_EXPIRE_NO_FLUSH) {
-        boost_db_update_set_multi('boost_cache', 'expire', '%d', 0, 'hash', "'%s'", $hashes);
+        boost_db_multi_update_set('boost_cache', 'expire', '%d', 0, 'hash', "'%s'", $hashes);
       }
       else {
-        boost_db_update_set_multi('boost_cache', 'expire', '%d', 434966400, 'hash', "'%s'", $hashes);
+        boost_db_multi_update_set('boost_cache', 'expire', '%d', 434966400, 'hash', "'%s'", $hashes);
         $count = db_affected_rows();
       }
     }
@@ -2526,7 +2526,7 @@ function boost_remove_db($files) {
     $hashes[] = $file['hash'];
   }
   if ($hashes) {
-    boost_db_delete_in_multi('boost_cache', 'hash', "'%s'", $hashes);
+    boost_db_multi_delete_in('boost_cache', 'hash', "'%s'", $hashes);
   }
 }
 
@@ -3666,14 +3666,13 @@ function _boost_set_time_limit($time_limit) {
 /**
  * Insert many records into the database.
  *
- * NOTE Be aware of the servers max_packet_size variable.
+ * NOTE Be aware of the MySQL's max_packet_size variable.
  *
  * @param $table
  *   The name of the table.
- * @param $fields
- *   array of field names to be updated
- * @param $placeholders
- *   array of db_query placeholders; like %d or '%s'
+ * @param $fields array
+ *     key: field name
+ *   value: db_query placeholders; like %d or '%s'
  * @param $values
  *   array of values you wish to be inserted. If you have 3 fields then the
  *   array should be structured like
@@ -3684,20 +3683,26 @@ function _boost_set_time_limit($time_limit) {
  * @return
  *   returns db_query() result.
  */
-function boost_db_insert_multi($table, $fields, $placeholders, $data, $suppress = FALSE) {
+function boost_db_multi_insert($table, $fields, $data, $suppress = FALSE) {
+  if (BOOST_VERBOSE >= 1 && (count($data) % count($fields)) != 0) {
+    watchdog('boost_db_multi_insert', 'Number of fields in the fields array do not match the number of fields in the data array', array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+  // Build the fields part of this query
+  $field_names = implode(', ', array_keys($fields));
+
   // Get the number of rows that will be inserted
   $rows = count($data)/count($fields);
   // Build the values placeholders string.
-  $values = '(' . implode(', ', $placeholders) . ')';
-  // Create what goes in the IN ()
-  $v = $values;
-  // Add the rest of the place holders
+  $values = '(' . implode(', ', $fields) . ')';
+  $placeholders = $values;
+  // Add the rest of the placeholders
   for ($i = 1; $i < $rows; $i++) {
-    $v .= ', ' . $values;
+    $placeholders .= ', ' . $values;
   }
-  // Build the fields part of this query
-  $fields = implode(', ', $fields);
-  $query = "INSERT INTO {" . $table . "} ($fields) VALUES $v";
+
+  // Glue query together
+  $query = "INSERT INTO {" . $table . "} ($field_names) VALUES $placeholders";
   // Run the query
   if ($suppress) {
     return @db_query($query, $data);
@@ -3715,7 +3720,7 @@ function boost_db_insert_multi($table, $fields, $placeholders, $data, $suppress 
  * @param $table
  *   The name of the table.
  * @param $field
- *  field names to be compared to
+ *  field name to be compared to
  * @param $placeholder
  *   db_query placeholders; like %d or '%s'
  * @param $data
@@ -3723,7 +3728,7 @@ function boost_db_insert_multi($table, $fields, $placeholders, $data, $suppress 
  * @return
  *   returns db_query() result.
  */
-function boost_db_delete_in_multi($table, $field, $placeholder, $data) {
+function boost_db_multi_delete_in($table, $field, $placeholder, $data) {
   // Get the number of rows that will be inserted
   $rows = count($data);
   // Create what goes in the IN ()
@@ -3763,7 +3768,7 @@ function boost_db_delete_in_multi($table, $field, $placeholder, $data) {
  * @return
  *   returns db_query() result.
  */
-function boost_db_update_set_multi($table, $set_field, $set_placeholders, $set_value, $where_field, $where_placeholder, $data) {
+function boost_db_multi_update_set($table, $set_field, $set_placeholders, $set_value, $where_field, $where_placeholder, $data) {
   // Get the number of rows that will be inserted
   $rows = count($data);
   // Create what goes in the IN ()
@@ -3789,7 +3794,7 @@ function boost_db_update_set_multi($table, $set_field, $set_placeholders, $set_v
  * @param $table
  *   The name of the table.
  * @param $field
- *  field names to be compared to
+ *  field name to be compared to
  * @param $placeholder
  *   db_query placeholders; like %d or '%s'
  * @param $data
@@ -3797,7 +3802,7 @@ function boost_db_update_set_multi($table, $set_field, $set_placeholders, $set_v
  * @return
  *   returns db_query() result.
  */
-function boost_db_select_in_multi($table, $field, $placeholder, $data) {
+function boost_db_multi_select_in($table, $field, $placeholder, $data) {
   // Get the number of rows that will be inserted
   $rows = count($data);
   // Create what goes in the IN ()
@@ -4362,13 +4367,29 @@ function boost_crawler_add_alias_to_table() {
     return TRUE;
   }
   $count = BOOST_CRAWL_DB_IMPORT_SIZE;
-  $chunks = 0;
-  $loop_counter = 0;
 
   // Get maximum packet size for mysql
-  $max_packet = db_result(db_query("SHOW VARIABLES WHERE Variable_name = 'max_allowed_packet'"));
-  $max_packet = $max_packet > 512 ? $max_packet : 524288;
+  if (stristr($db_type, 'pgsql')) {
+    // Set Max Packet size to 16MB if using postgreSQL.
+    $max_packet = 16777216;
+  }
+  else {
+    // Get maximum packet size for mysql
+    $max_packet = db_fetch_array(db_query("SHOW VARIABLES WHERE Variable_name = 'max_allowed_packet'"));
+    // default to 1/2 MB
+    $max_packet = (int)$max_packet['Value'] > 524288 ? (int)$max_packet['Value'] : 524288;
+
+    // Get bulk insert buffer size
+    $insert_buffer_size = db_fetch_array(db_query("SHOW VARIABLES WHERE Variable_name = 'bulk_insert_buffer_size'"));
+    // default to 1/2 MB
+    $insert_buffer_size = (int)$insert_buffer_size['Value'] > 524288 ? (int)$insert_buffer_size['Value'] : 524288;
+
+    // Set max
+    $max_packet = $max_packet > $insert_buffer_size ? $insert_buffer_size : $max_packet;
+  }
   $max_chunk = $max_packet/512;
+  $chunks = 0;
+  $loop_counter = 0;
 
   $total = db_result(db_query("SELECT COUNT(*) FROM {url_alias}"));
   $loaded = variable_get('boost_crawler_loaded_count_alias', 0);
@@ -4387,7 +4408,7 @@ function boost_crawler_add_alias_to_table() {
       }
     }
     foreach ($data as $values) {
-      boost_db_insert_multi('boost_crawler', array('url', 'hash'), array("'%s'", "'%s'"), $values, FALSE);
+      boost_db_multi_insert('boost_crawler', array('url' => "'%s'", 'hash' => "'%s'"), $values, FALSE);
     }
     variable_set('boost_crawler_loaded_count_alias', $loaded + $count);
     return FALSE;
