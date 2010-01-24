@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.127 2010/01/23 22:11:59 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.128 2010/01/24 02:28:41 mikeytown2 Exp $
 
 /**
  * @file
@@ -215,6 +215,7 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Pages'),
     '#default_value' => BOOST_CACHEABILITY_PAGES,
     '#description'   => $description,
+    '#wysiwyg'       => FALSE,
   );
 
   // Cache expiration settings
