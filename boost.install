@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.86 2010/01/24 18:22:40 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.87 2010/01/24 18:24:57 mikeytown2 Exp $
 
 /**
  * @file
@@ -1441,4 +1441,26 @@ function boost_update_6124() {
   drupal_load('module', 'boost');
   _boost_index_exists($ret, 'boost_cache_relationships', 'page_type');
   return $ret;
+}
+
+/**
+ * Update 6125 - Reset boost-gzip-cookie-test.html.gz file
+ */
+function boost_update_6125() {
+  $ret = array();
+  // Make sure we have boost.module file loaded
+  drupal_load('module', 'boost');
+  $filename = BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_GZ_DIR . '/boost-gzip-cookie-test.html.gz';
+  if (is_file($filename) || is_link($filename)) {
+    if (unlink($filename)) {
+      _boost_generate_gzip_test_file();
+      return array(array('success' => TRUE, 'query' => t('boost-gzip-cookie-test.html.gz file was reset')));
+    }
+    else {
+      return array(array('success' => FALSE, 'query' => t('boost-gzip-cookie-test.html.gz file was not deleted; please manually delete this file')));
+    }
+  }
+  else {
+    return array(array('success' => TRUE, 'query' => t('boost-gzip-cookie-test.html.gz did not need to be reset')));
+  }
 }
