@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.294 2010/01/24 18:15:43 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.295 2010/01/24 18:24:08 mikeytown2 Exp $
 
 /**
  * @file
@@ -12,7 +12,7 @@
 define('BOOST_TIME',                 time());
 define('BOOST_MAX_TIMESTAMP',        variable_get('boost_max_timestamp', BOOST_TIME));
 define('BOOST_ENABLED',              variable_get('boost_enabled', CACHE_NORMAL));
-define('BOOST_GZIP',                 variable_get('page_compression', TRUE));
+define('BOOST_GZIP',                 function_exists('gzencode') ? variable_get('page_compression', TRUE) : FALSE);
 
 // This cookie is set for all authenticated users, so that they can be
 // excluded from caching (or in the future get a user-specific cached page):
