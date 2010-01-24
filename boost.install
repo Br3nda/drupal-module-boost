@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.87 2010/01/24 18:24:57 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.88 2010/01/24 18:25:46 mikeytown2 Exp $
 
 /**
  * @file
@@ -131,7 +131,7 @@ function boost_requirements($phase) {
           'value'       => $t('Cache path'),
         );
       }
-      if ($htaccess && !boost_chk_htaccess_doc($htaccess)) {
+      if ($htaccess && !BOOST_IGNORE_HTACCESS_WARNING && !boost_chk_htaccess_doc($htaccess)) {
         $requirements['boost_htaccess'] = array(
           'title'       => $t('Boost'),
           'description' => $t('.htaccess file does not contain or match the boost specific rewrite rules, or the rewrite rules have changed, due to new settings, and they need to be updated. Get the rules: <a href="@url">Boost Apache .htaccess settings generation</a>.', array('@url' => url('admin/settings/performance/boost-rules'))),
