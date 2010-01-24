@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.85 2010/01/23 22:08:33 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.86 2010/01/24 18:22:40 mikeytown2 Exp $
 
 /**
  * @file
@@ -76,12 +76,14 @@ function boost_requirements($phase) {
       $cache_directories[] = BOOST_FILE_PATH;
       $cache_directories[] = BOOST_PERM_FILE_PATH;
       foreach (_boost_copy_file_get_domains(BOOST_PERM_FILE_PATH) as $dir) {
+        _boost_mkdir_p($dir);
         file_put_contents($dir . '/' . variable_get('boost_root_file', '.boost'), $dir);
       }
       if (BOOST_GZIP) {
         $cache_directories[] = BOOST_GZIP_FILE_PATH;
         $cache_directories[] = BOOST_PERM_GZIP_FILE_PATH;
         foreach (_boost_copy_file_get_domains(BOOST_PERM_GZIP_FILE_PATH) as $dir) {
+          _boost_mkdir_p($dir);
           file_put_contents($dir . '/' . variable_get('boost_root_file', '.boost'), $dir);
         }
       }
