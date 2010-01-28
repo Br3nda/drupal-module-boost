@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.298 2010/01/24 18:37:55 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.299 2010/01/28 17:46:56 mikeytown2 Exp $
 
 /**
  * @file
@@ -2277,7 +2277,7 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
     // Special handling of the front page for aggressive gzip test
     if ($path == '' && BOOST_AGGRESSIVE_GZIP && $extension == BOOST_FILE_EXTENSION) {
       _boost_generate_gzip_test_file();
-      boost_cache_write($filename, _boost_inject_code($data, '<object classid="clsid:25336920-03F9-11CF-8FD0-00AA00686F13" type="text/html" data="/boost-gzip-cookie-test.html" style="width:0px; height:0px; border:0px; position:absolute; top:-1000px; z-index:10;"></object>' . "\n"));
+      boost_cache_write($filename, _boost_inject_code($data, '<div style="width:0px; height:0px; border:0px; position:absolute; top:-1000px; z-index:10;"><object classid="clsid:25336920-03F9-11CF-8FD0-00AA00686F13" type="text/html" data="/boost-gzip-cookie-test.html" style="width:0px; height:0px; border:0px; position:absolute; top:-1000px; z-index:10;"></object></div>' . "\n"));
     }
     else {
       boost_cache_write($filename, $data);
