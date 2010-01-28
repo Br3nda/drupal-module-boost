@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.89 2010/01/28 17:46:56 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.90 2010/01/28 17:47:59 mikeytown2 Exp $
 
 /**
  * @file
@@ -1404,6 +1404,7 @@ function boost_update_6122() {
         'size' => 'normal',
         'not null' => TRUE,
       ));
+  $ret[] = update_sql('TRUNCATE {boost_crawler}');
   db_change_field($ret, 'boost_crawler', 'url', 'url', array(
         'description' => 'URL of page',
         'type' => 'text',
