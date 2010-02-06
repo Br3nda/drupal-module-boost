@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.302 2010/02/06 18:15:58 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.303 2010/02/06 18:17:07 mikeytown2 Exp $
 
 /**
  * @file
@@ -296,7 +296,13 @@ function boost_exit($destination = NULL) {
     }
   }
   // Set watchdog error if headers already sent
-  if (BOOST_ASYNCHRONOUS_OUTPUT && $GLOBALS['_boost_cache_this'] && headers_sent($filename, $linenum) && !boost_headers_contain('Location: ') && BOOST_VERBOSE >= 7) {
+  if (   BOOST_ASYNCHRONOUS_OUTPUT
+      && isset($GLOBALS['_boost_cache_this'])
+      && $GLOBALS['_boost_cache_this']
+      && headers_sent($filename, $linenum)
+      && !boost_headers_contain('Location: ')
+      && BOOST_VERBOSE >= 7
+      ) {
     watchdog('boost', 'boost_exit() Debug: Headers already sent in @filename on line @linenum. Asynchronous Operation will not be used.', array('@filename' => $filename, '@linenum' => $linenum));
   }
 }
