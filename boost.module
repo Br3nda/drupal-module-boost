@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.303 2010/02/06 18:17:07 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.304 2010/02/06 18:20:58 mikeytown2 Exp $
 
 /**
  * @file
@@ -770,8 +770,14 @@ function boost_expire_node($node, $nid = 0) {
  * TODO: Use page_callback and page_arguments instead of link_path.
  *  Can use boost_cache_expire_router() then.
  */
-function boost_get_menu_structure($menu, $found = TRUE, $needle = '', $first = TRUE, &$found_global = FALSE, &$menu_out = array()) {
+function boost_get_menu_structure($menu, $found, $needle, $first, &$found_global, &$menu_out) {
+  // Set Defaults
+  $found = isset($found) ? $found : TRUE;
+  $needle = isset($needle) ? $needle : '';
+  $first = isset($first) ? $first : TRUE;
   $found_global = FALSE;
+  $menu_out = isset($menu_out) ? $menu_out : array();
+
   // Get Siblings
   foreach ($menu as $item) {
     if ($item['link']['hidden'] == 0 && $item['link']['page_callback'] != '' && ($item['link']['link_path'] == $needle || $found)) {
