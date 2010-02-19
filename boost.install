@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.90 2010/01/28 17:47:59 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.91 2010/02/19 19:40:06 mikeytown2 Exp $
 
 /**
  * @file
@@ -64,6 +64,7 @@ function boost_uninstall() {
  */
 function boost_requirements($phase) {
   global $base_root;
+  Global $base_path;
   $requirements = array();
   $t = get_t();
   switch ($phase) {
@@ -182,7 +183,7 @@ function boost_requirements($phase) {
             $severity = REQUIREMENT_ERROR;
             break;
           default:
-            $description = t('<a href="!url">Clear cached data</a> & run cron; if error priests <a href="@link">open an issue</a> on the Boost issue queue.', array('!url' => url('admin/settings/performance'), '@link' => 'http://drupal.org/node/add/project-issue/boost'));
+            $description = t('<a href="!url">Clear cached data</a> & run cron; if error priests <a href="@link">open an issue</a> on the Boost issue queue. Got a %num response from the URL.', array('!url' => url('admin/settings/performance'), '@link' => 'http://drupal.org/node/add/project-issue/boost', '%num' => $crawler_response));
             $severity = REQUIREMENT_ERROR;
             break;
         }
@@ -233,12 +234,12 @@ function boost_requirements($phase) {
           'value'       => $t('File system sub directory limit.'),
         );
       }
-      if ($robots && !stristr($robots, 'Disallow: /boost_stats.php')) {
+      if ($robots && !stristr($robots, 'Disallow: ' . $base_path . 'boost_stats.php')) {
         $requirements['boost_robots'] = array(
           'title'       => $t('Boost'),
-          'description' => $t('Your robots.txt file does not contain "Disallow: /boost_stats.php". This is needed in order to prevent the output of this from accidentally getting indexed by search engines.'),
+          'description' => $t('Your root robots.txt file does not contain "Disallow: !stats". This is needed in order to prevent the output of this from accidentally getting indexed by search engines.', array('!stats' => $base_path . 'boost_stats.php')),
           'severity'    => REQUIREMENT_WARNING,
-          'value'       => $t('"Disallow: /boost_stats.php" entry missing in robots.txt'),
+          'value'       => $t('"Disallow: !stats" entry missing in robots.txt', array('!stats' => $base_path . 'boost_stats.php')),
         );
       }
       // if the apache_get_modules function doesn't exist, skip this entirely
