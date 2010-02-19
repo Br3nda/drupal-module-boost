@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.306 2010/02/19 19:23:27 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.307 2010/02/19 19:38:48 mikeytown2 Exp $
 
 /**
  * @file
@@ -1576,7 +1576,7 @@ function boost_is_cacheable($path) {
 
   // Invoke hook_boost_is_cacheable($path)
   foreach (module_implements('boost_is_cacheable') as $module) {
-    if (($result = module_invoke($module, 'boost_is_cacheable', $path)) != NULL) {
+    if (($result = module_invoke($module, 'boost_is_cacheable', $path)) !== NULL) {
       if (!$result) {
         return FALSE;
       }
