@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.305 2010/02/19 18:55:02 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.306 2010/02/19 19:23:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -1540,7 +1540,7 @@ function boost_is_cacheable($path) {
       || preg_match('!^node/add!', $normal_path)
       || preg_match('!^openid!', $normal_path)
       || strpos($GLOBALS['_boost_query'], '/')
-      || strpos($GLOBALS['_boost_query'], '\\')
+      || strpos($GLOBALS['_boost_query'], "\\")
       || strpos($full, '..') !== FALSE
       || strpos($full, "\0") !== FALSE
       || count(explode('/', $path)) > BOOST_MAX_PATH_DEPTH
@@ -2863,19 +2863,20 @@ function boost_cache_write($filename, $buffer) {
  */
 function boost_cache_directory($host = NULL, $absolute = TRUE, $root_dir = NULL, $normal_dir = NULL) {
   global $base_url;
+  $temp_base_url = $base_url;
   $root_dir = is_null($root_dir) ? BOOST_ROOT_CACHE_DIR : $root_dir;
   $normal_dir = is_null($normal_dir) ? BOOST_NORMAL_DIR : $normal_dir;
-  if ($base_url == "http://") {
+  if ($temp_base_url == "http://") {
     if (!BOOST_MULTISITE_SINGLE_DB) {
-      $base_url = $base_url . str_replace($root_dir . '/', '', variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
+      $temp_base_url = $temp_base_url . str_replace($root_dir . '/', '', variable_get('boost_file_path', boost_cache_directory(NULL, FALSE)));
     }
     elseif (BOOST_NORMAL_DIR != '' && db_result(db_query("SELECT count(DISTINCT base_dir) FROM {boost_cache}")) == 1) {
-      $base_dir = db_result(db_query("SELECT DISTINCT base_dir FROM {boost_cache}"));
-      $base_url = $base_url . str_replace($root_dir . '/', '', $base_dir);
-      $base_url = $base_url . str_replace($normal_dir . '/', '', $base_dir);
+      $temp_base_url = db_result(db_query("SELECT DISTINCT base_dir FROM {boost_cache}"));
+      $temp_base_url = $temp_base_url . str_replace($root_dir . '/', '', $base_dir);
+      $temp_base_url = $temp_base_url . str_replace($normal_dir . '/', '', $base_dir);
     }
   }
-  if (@parse_url($base_url) === FALSE) {
+  if (@parse_url($temp_base_url) === FALSE) {
     //Error has been caught here
     if (BOOST_VERBOSE >= 1) {
       watchdog('boost', 'base_url is not set in your settings.php file. Please read Important Notes in boosts README.txt file.', array(), WATCHDOG_NOTICE);
@@ -2883,7 +2884,7 @@ function boost_cache_directory($host = NULL, $absolute = TRUE, $root_dir = NULL,
     return FALSE;
   }
 
-  $parts = parse_url($base_url);
+  $parts = parse_url($temp_base_url);
   $host = !empty($host) ? $host : $parts['host'];
   $parts['path'] = isset($parts['path']) ? $parts['path'] : '/';
   $subdir = implode('/', array_filter(explode('/', (!empty($base_path)) ? $base_path : $parts['path'])));
