@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.130 2010/01/24 18:25:46 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.131 2010/02/20 21:27:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -518,6 +518,12 @@ function boost_admin_boost_performance_page() {
       '#description'   => t('In order to deliver gzipped content independent of the header, this will test for gzip compression in a small iframe by sending it compressed content. This compressed content is javascript which creates a cookie with a note of gzip support. On the server side it checks for the cookie and then sends out gzipped content accordingly. See <a href="@url">Website Performance - Activate Gzip</a>. In short some firewalls/proxies mangle the gzip header; this gets around that. iframe is on non compressed version of the frontpage only.', array('@url' => 'http://actionable-stats.com/website-performance-activate-gzip')),
     );
   }
+  $form['advanced']['boost_insert_node_on_creation'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Insert node into boost_cache table on node creation'),
+    '#default_value' => variable_get('boost_insert_node_on_creation', FALSE),
+    '#description'   => t('Useful for the crawler, insert a "not cached" entry into the db on node creation; fully supports the domain access module.'),
+  );
   $form['advanced']['boost_permissions_file'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Files: Enter in a 4 digit number (octal) that will be used by !link. Example 0664', array('!link' => l(t('chmod()'), 'http://php.net/chmod'))),

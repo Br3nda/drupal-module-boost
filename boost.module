@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.308 2010/02/20 21:25:57 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.309 2010/02/20 21:27:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -501,12 +501,15 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
 
   switch ($op) {
     case 'insert':
+      // Run all cached views, looking for this new node
       if (BOOST_FLUSH_VIEWS_INSERT && module_exists('views')) {
         $GLOBALS['_boost_nid'] = $node->nid;
-        // Can not reliability call require_once inside a shutdown function; see http://drupal.org/node/652508
-        // views_include('view');
-        // views_include('query');
         register_shutdown_function('_boost_view_insert');
+      }
+      // Insert new node into boost_cache table
+      if (variable_get('boost_insert_node_on_creation', FALSE)) {
+        $GLOBALS['_boost_nid'] = $node->nid;
+        register_shutdown_function('_boost_cache_insert');
       }
       boost_expire_node($node);
       break;
@@ -531,6 +534,66 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
         }
       }
       break;
+  }
+}
+
+/**
+ * Shutdown function, gets called at the very end of node creation.
+ *
+ * Node is now created, thus we can get the node path and set the boost_cache
+ * table.
+ */
+function _boost_cache_insert() {
+  global $base_url, $base_path;
+  if (!isset($GLOBALS['_boost_nid'])) {
+    return FALSE;
+  }
+  // Ensure we're in the correct working directory, since some web servers (e.g. Apache) mess this up here.
+  chdir(dirname($_SERVER['SCRIPT_FILENAME']));
+
+  // Load node
+  $node = node_load($GLOBALS['_boost_nid']);
+  $router_item = array();
+  $router_item['page_callback'] = 'node';
+  $router_item['page_type'] = $node->type;
+  $router_item['page_id'] = $node->nid;
+
+  // Set DB defaults
+  $expire = 0;
+  $lifetime = -1;
+  $push = -1;
+  $timer = 0;
+  $timer_average = 0;
+  $extension = BOOST_FILE_EXTENSION;
+
+  // Get list of URL's if using domain access
+  $base_urls = array();
+  if (module_exists('domain') && isset($node->domains)) {
+    foreach ($node->domains as $domain_id) {
+      $domain = domain_lookup($domain_id);
+      if ($domain['valid'] == 1) {
+        if (isset($domain['path'])) {
+          $base_urls[] = $domain['path'] . $node->path;
+        }
+        foreach ($domain['aliases'] as $alias) {
+          if ($alias['redirect'] != 1) {
+            $temp_domain = array('scheme' => $domain['scheme'], 'subdomain' => $alias['pattern']);
+            $base_urls[] = domain_get_path($temp_domain) . $node->path;
+          }
+        }
+      }
+    }
+  }
+  else {
+    $base_urls[] = $base_url . $base_path . $node->path;
+  }
+
+  // Insert each url into the DB
+  foreach ($base_urls as $url) {
+    $parts = parse_url($url);
+    $file_path = boost_cache_directory($parts['host'], FALSE);
+    $filename = boost_file_path($node->path, FALSE, BOOST_FILE_EXTENSION, $file_path);
+    boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension, $url, $file_path);
   }
 }
 
@@ -2533,15 +2596,20 @@ function boost_db_prep($filename, $extension, $expire) {
  *   Average time Drupal has spent building this page.
  * @param $extension
  *   Filename extension: Used for content types.
+ * @param $url
+ *   Optional: Full URL of cached page
+ * @param $file_path
+ *   Optional: BOOST_FILE_PATH
  */
-function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension) {
+function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension, $url = NULL, $file_path = NULL) {
   global $base_root;
-  $url = $base_root . request_uri();
+  $url = is_null($url) ? $base_root . request_uri() : $url;
+  $file_path = is_null($file_path) ? BOOST_FILE_PATH : $file_path;
   $hash = md5($filename);
   $hash_url = md5($url);
-  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_type = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = '%s', extension = '%s', url = '%s', filename = '%s', hash_url = '%s' WHERE hash = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_type'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url, $filename, $hash_url, $hash);
+  db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_type = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = '%s', extension = '%s', url = '%s', filename = '%s', hash_url = '%s' WHERE hash = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_type'], $timer, $timer_average, $file_path, $router_item['page_id'], $extension, $url, $filename, $hash_url, $hash);
   if (!db_affected_rows()) {
-    @db_query("INSERT INTO {boost_cache} (hash, hash_url, filename, expire, lifetime, push, page_callback, page_type, timer, timer_average, base_dir, page_id, extension, url) VALUES ('%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', '%s', '%s', '%s')", $hash, $hash_url, $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_type'], $timer, $timer_average, BOOST_FILE_PATH, $router_item['page_id'], $extension, $url);
+    @db_query("INSERT INTO {boost_cache} (hash, hash_url, filename, expire, lifetime, push, page_callback, page_type, timer, timer_average, base_dir, page_id, extension, url) VALUES ('%s', '%s', '%s', %d, %d, %d, '%s', '%s', %d, %d, '%s', '%s', '%s', '%s')", $hash, $hash_url, $filename, $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_type'], $timer, $timer_average, $file_path, $router_item['page_id'], $extension, $url);
   }
 }
 
@@ -2905,10 +2973,12 @@ function boost_cache_directory($host = NULL, $absolute = TRUE, $root_dir = NULL,
  *   add query to path
  * @param $extension
  *   add extension to end of filename
+ * @param $file_path
+ *   Optional: BOOST_FILE_PATH
  *
  * $path = $GLOBALS['_boost_path'] most of the time
  */
-function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION) {
+function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION, $file_path = NULL) {
   //handling of url variables
   if ($GLOBALS['_boost_query'] != BOOST_CHAR) {
     if ($query) {
@@ -2930,8 +3000,9 @@ function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION
       ) {
     return FALSE;
   }
+  $file_path = is_null($file_path) ? BOOST_FILE_PATH : $file_path;
 
-  return implode('/', array(BOOST_FILE_PATH, $path . (is_null($extension) ? '' : $extension)));
+  return implode('/', array($file_path, $path . (is_null($extension) ? '' : $extension)));
 }
 
 /**
@@ -3418,8 +3489,6 @@ function _boost_page_have_error() {
  * TODO Better support of panels.
  */
 function _boost_get_menu_router() {
-  $router_item = menu_get_item();
-
   // Handle nodes
   if (arg(0) == 'node' && is_numeric(arg(1))) {
     $node = node_load(arg(1));
@@ -3444,6 +3513,8 @@ function _boost_get_menu_router() {
     $router_item['page_id'] = arg(1);
     return $router_item;
   }
+  // Load the menu item, page is not one of the defaults (nid, tid, uid).
+  $router_item = menu_get_item();
   // Handle views
   if ($router_item['page_callback'] == 'views_page') {
     $router_item['page_callback'] = 'view';
