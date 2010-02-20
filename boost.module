@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.307 2010/02/19 19:38:48 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.308 2010/02/20 21:25:57 mikeytown2 Exp $
 
 /**
  * @file
@@ -691,12 +691,16 @@ function boost_expire_node($node, $nid = 0) {
       menu_nodeapi($node, 'prepare');
     }
     $menu = menu_tree_all_data($node->menu['menu_name']);
+    $tempa = NULL;
+    $tempb = NULL;
     if (BOOST_FLUSH_MENU_ITEMS == 1) {
-      $links = boost_get_menu_structure($menu, FALSE, 'node/' . $node->nid);
+      $links = boost_get_menu_structure($menu, FALSE, 'node/' . $node->nid, NULL, $tempa, $tempb);
     }
     elseif (BOOST_FLUSH_MENU_ITEMS == 2) {
-      $links = boost_get_menu_structure($menu);
+      $links = boost_get_menu_structure($menu, NULL, NULL, NULL, $tempa, $tempb);
     }
+    unset($tempa);
+    unset($tempb);
     $paths = array_merge($links, $paths);
   }
 
@@ -788,11 +792,11 @@ function boost_expire_node($node, $nid = 0) {
  */
 function boost_get_menu_structure($menu, $found, $needle, $first, &$found_global, &$menu_out) {
   // Set Defaults
-  $found = isset($found) ? $found : TRUE;
-  $needle = isset($needle) ? $needle : '';
-  $first = isset($first) ? $first : TRUE;
+  $found = !is_null($found) ? $found : TRUE;
+  $needle = !is_null($needle) ? $needle : '';
+  $first = !is_null($first) ? $first : TRUE;
   $found_global = FALSE;
-  $menu_out = isset($menu_out) ? $menu_out : array();
+  $menu_out = !is_null($menu_out) ? $menu_out : array();
 
   // Get Siblings
   foreach ($menu as $item) {
