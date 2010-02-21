@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.131 2010/02/20 21:27:03 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.132 2010/02/21 09:22:49 mikeytown2 Exp $
 
 /**
  * @file
@@ -203,7 +203,7 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Do not cache if there is an alias for this URL.'),
     '#default_value' => variable_get('boost_cache_url_alais_src', FALSE),
-    '#description'   => t('Enableing this will prevent Boost from cacheing node/8 if node/8 is also mapped to a path like /about-us. If using Global Redirect enableing this is a good idea.'),
+    '#description'   => t('Enabling this will prevent Boost from caching node/8 if node/8 is also mapped to a path like /about-us. If using Global Redirect enabling this is a good idea.'),
   );
   $form['cacheability']['boost_cacheability_option'] = array(
     '#type'          => 'radios',
