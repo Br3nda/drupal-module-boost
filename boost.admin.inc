@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.132 2010/02/21 09:22:49 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.133 2010/03/17 05:43:15 mikeytown2 Exp $
 
 /**
  * @file
@@ -199,10 +199,10 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_HALT_ON_MESSAGES,
     '#description'   => t('Selected - Do not cache the page if there are Drupal messages. Not Selected - Cache pages even if it might contain a Drupal message.'),
   );
-  $form['cacheability']['boost_cache_url_alais_src'] = array(
+  $form['cacheability']['boost_cache_url_alias_src'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Do not cache if there is an alias for this URL.'),
-    '#default_value' => variable_get('boost_cache_url_alais_src', FALSE),
+    '#default_value' => variable_get('boost_cache_url_alias_src', FALSE),
     '#description'   => t('Enabling this will prevent Boost from caching node/8 if node/8 is also mapped to a path like /about-us. If using Global Redirect enabling this is a good idea.'),
   );
   $form['cacheability']['boost_cacheability_option'] = array(
@@ -808,14 +808,14 @@ function boost_admin_boost_performance_page() {
   $form['htaccess']['boost_apache_rfc2616'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Follow RFC2616 14.9.4'),
-    '#default_value' => variable_get('boost_apache_rfc2616', TRUE),
-    '#description'   => t('Bypass the boost cache when the headers contain a "no-cache" cache-control directive (ctrl-F5 in browser). Disable this to make boost always serve pages from the cache. Good time to disable this is right before your site goes into maintance mode.'),
+    '#default_value' => variable_get('boost_apache_rfc2616', FALSE),
+    '#description'   => t('Bypass the boost cache when the headers contain a "no-cache" cache-control directive (ctrl-F5 in browser). Disable this to make boost always serve pages from the cache. Good time to disable this is right before your site goes into maintenance mode. IE & this RFC do not work well together, recommend disabling it.'),
   );
   $form['htaccess']['boost_ignore_htaccess_warning'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Ignore .htaccess warning'),
     '#default_value' => variable_get('boost_ignore_htaccess_warning', FALSE),
-    '#description'   => t('Do not warn about missing or modified boost rules in the .htaccess file on the <a href="!link">status report page</a>. Enable this if you have a good reason to modify the boost rules in .htaccss.', array('!link' => url('admin/reports/status'))),
+    '#description'   => t('Do not warn about missing or modified boost rules in the .htaccess file on the <a href="!link">status report page</a>. Enable this if you have a good reason to modify the boost rules in .htaccess.', array('!link' => url('admin/reports/status'))),
   );
 
   // Clear database button
@@ -960,13 +960,13 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   $json = str_replace('.', '\\.', BOOST_JSON_EXTENSION);
   $gz   = str_replace('.', '\\.', BOOST_GZIP_EXTENSION);
 
-  // no slash
-  $_html = BOOST_FILE_EXTENSION;
-  $_xml = BOOST_XML_EXTENSION;
-  $_css = BOOST_CSS_EXTENSION;
-  $_js = BOOST_JS_EXTENSION;
-  $_json = BOOST_JSON_EXTENSION;
-  $_gz = BOOST_GZIP_EXTENSION;
+  // no dot
+  $_html = str_replace('.', '', BOOST_FILE_EXTENSION);
+  $_xml  = str_replace('.', '', BOOST_XML_EXTENSION);
+  $_css  = str_replace('.', '', BOOST_CSS_EXTENSION);
+  $_js   = str_replace('.', '', BOOST_JS_EXTENSION);
+  $_json = str_replace('.', '', BOOST_JSON_EXTENSION);
+  $_gz   = str_replace('.', '', BOOST_GZIP_EXTENSION);
 
   $char = BOOST_CHAR;
   $permanent_char = BOOST_PERM_CHAR;
@@ -992,27 +992,24 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
         break;
     }
   if (!BOOST_DISABLE_CLEAN_URL && (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON)) {
-    $files = '';
+    $files = array();
     if (BOOST_CACHE_HTML) {
-      $files .= "$html|";
-      if (BOOST_GZIP) {
-        $files .= "$html$gz|";
-      }
+      $files[] = $_html;
     }
     if (BOOST_CACHE_XML) {
-      $files .= "$xml|";
-      if (BOOST_GZIP) {
-        $files .= "$xml$gz|";
-      }
+      $files[] = $_xml;
     }
     if (BOOST_CACHE_JSON) {
-      $files .= "$json|";
-      if (BOOST_GZIP) {
-        $files .= "$json$gz|";
-      }
+      $files[] = $_json;
     }
-    $files = trim($files, '|');
-    $string .= "  <FilesMatch \"($files)$\">\n";
+    $files = '(' . implode('|' , $files) . ')';
+    if (BOOST_GZIP) {
+      $files = "$files|($files$gz)";
+    }
+    $string .= "  <FilesMatch \"\.($files)$\">\n";
+    $string .= "    <IfModule mod_expires.c>\n";
+    $string .= "      ExpiresDefault A1\n";
+    $string .= "    </IfModule>\n";
     $string .= "    <IfModule mod_headers.c>\n";
     $string .= "      Header set Expires \"Sun, 19 Nov 1978 05:00:00 GMT\"\n";
     $string .= "      Header set Cache-Control \"no-store, no-cache, must-revalidate, post-check=0, pre-check=0\"\n";
@@ -1024,64 +1021,64 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   }
   if (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_CSS || BOOST_CACHE_JS || BOOST_CACHE_JSON) {
     $string .= "  <IfModule mod_mime.c>\n";
-    $string .= BOOST_CACHE_HTML ? "    AddCharset utf-8 $_html\n" : '';
-    $string .= BOOST_CACHE_XML ?  "    AddCharset utf-8 $_xml\n" : '';
-    $string .= BOOST_CACHE_CSS ?  "    AddCharset utf-8 $_css\n" : '';
-    $string .= BOOST_CACHE_JS ?   "    AddCharset utf-8 $_js\n" : '';
-    $string .= BOOST_CACHE_JSON ? "    AddCharset utf-8 $_json\n" : '';
-    $string .= BOOST_GZIP ?       "    AddEncoding gzip $_gz\n" : '';
+    $string .= BOOST_CACHE_HTML ? "    AddCharset utf-8 .$_html\n" : '';
+    $string .= BOOST_CACHE_XML ?  "    AddCharset utf-8 .$_xml\n" : '';
+    $string .= BOOST_CACHE_CSS ?  "    AddCharset utf-8 .$_css\n" : '';
+    $string .= BOOST_CACHE_JS ?   "    AddCharset utf-8 .$_js\n" : '';
+    $string .= BOOST_CACHE_JSON ? "    AddCharset utf-8 .$_json\n" : '';
+    $string .= BOOST_GZIP ?       "    AddEncoding gzip .$_gz\n" : '';
     $string .= "  </IfModule>\n";
   }
   // Fix for versions of apache that do not respect the T='' RewriteRule
   $files = '';
   if (BOOST_CACHE_HTML) {
-    $files .= "$html|";
+    $files .= "$_html|";
     if (BOOST_GZIP) {
-      $files .= "$html$gz|";
+      $files .= "$_html$gz|";
     }
     $files = trim($files, '|');
-    $string .= "  <FilesMatch \"($files)$\">\n";
+    $string .= "  <FilesMatch \"\.($files)$\">\n";
     $string .= "    ForceType text/html\n";
     $string .= "  </FilesMatch>\n";
   }
   $files = '';
   if (BOOST_CACHE_XML) {
-    $files .= "$xml|";
+    $files .= "$_xml|";
     if (BOOST_GZIP) {
-      $files .= "$xml$gz|";
+      $files .= "$_xml$gz|";
     }
     $files = trim($files, '|');
-    $string .= "  <FilesMatch \"($files)$\">\n";
+    $string .= "  <FilesMatch \"\.($files)$\">\n";
     $string .= "    ForceType text/xml\n";
     $string .= "  </FilesMatch>\n";
   }
   $files = '';
   if (BOOST_CACHE_JSON) {
-    $files .= "$json|";
+    $files .= "$_json|";
     if (BOOST_GZIP) {
-      $files .= "$json$gz|";
+      $files .= "$_json$gz|";
     }
   }
   if (BOOST_CACHE_JS) {
-    $files .= "$js|";
+    $files .= "$_js|";
     if (BOOST_GZIP) {
-      $files .= "$js$gz|";
+      $files .= "$_js$gz|";
     }
   }
   if ($files != '') {
     $files = trim($files, '|');
-    $string .= "  <FilesMatch \"($files)$\">\n";
+    $string .= "  <FilesMatch \"\.($files)$\">\n";
     $string .= "    ForceType text/javascript\n";
     $string .= "  </FilesMatch>\n";
   }
   $files = '';
   if (BOOST_CACHE_CSS) {
-    $files .= "$css|";
+    $files .= "$_css|";
     if (BOOST_GZIP) {
-      $files .= "$css$gz|";
+      $files .= "$_css$gz|";
     }
     $files = trim($files, '|');
-    $string .= "  <FilesMatch \"($files)$\">\n";
+    $string .= "  <FilesMatch \"\.($files)$\">\n";
     $string .= "    ForceType text/css\n";
     $string .= "  </FilesMatch>\n";
   }
@@ -1128,7 +1125,7 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $string .= "  RewriteCond %{REQUEST_URI} (^$base_path(admin|$cache_dir|misc|modules|sites|system|openid|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
     $string .= "  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]\n";
     $string .= BOOST_LOOPBACK_BYPASS && BOOST_OVERWRITE_FILE ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
-    if (variable_get('boost_apache_rfc2616', TRUE)) {
+    if (variable_get('boost_apache_rfc2616', FALSE)) {
       $string .= "  RewriteCond %{HTTP:Pragma} no-cache [OR]\n";
       $string .= "  RewriteCond %{HTTP:Cache-Control} no-cache [OR]\n";
     }

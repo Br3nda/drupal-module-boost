@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.311 2010/03/17 03:55:08 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.312 2010/03/17 05:43:15 mikeytown2 Exp $
 
 /**
  * @file
@@ -1643,7 +1643,7 @@ function boost_is_cacheable($path) {
   }
 
   // Don't cache if path is in the source; but allow the front page to be cached
-  if (variable_get('boost_cache_url_alais_src', FALSE) && !$is_front && (int)db_result(db_query("SELECT count(*) FROM {url_alias} WHERE src = '%s'", $path)) > 0) {
+  if (variable_get('boost_cache_url_alias_src', FALSE) && !$is_front && (int)db_result(db_query("SELECT count(*) FROM {url_alias} WHERE src = '%s'", $path)) > 0) {
     return FALSE;
   }
 
@@ -3937,7 +3937,7 @@ function boost_db_multi_select_in($table, $field, $placeholder, $data) {
  *  output function arguments?
  *
  * @return $output string
- *  parced backtrace output
+ *  parsed backtrace output
  */
 function boost_backtrace($args = TRUE) {
   $output = '';
@@ -3962,7 +3962,7 @@ function boost_backtrace($args = TRUE) {
 }
 
 /**
- * Get the lenth of a string in bytes
+ * Get the length of a string in bytes
  *
  * @param $string
  *   get string length
@@ -4339,7 +4339,7 @@ function boost_crawler_run($expire = -1) {
  *  string - Content type header.
  */
 function boost_async_opp($output, $wait = TRUE, $content_type = "text/html; charset=utf-8", $length = 0) {
-  // Calculate Content Lenght
+  // Calculate Content Length
   if ($length == 0) {
     $output .= "\n";
     $length = (boost_strlen($output)-1);

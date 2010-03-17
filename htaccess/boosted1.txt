@@ -1,6 +1,9 @@
   ### BOOST START ###
   AddDefaultCharset utf-8
-  <FilesMatch "(\.html\.gz|\.html|\.xml\.gz|\.xml|\.json\.gz|\.json)$">
+  <FilesMatch "\.((html|xml|json)|((html|xml|json)\.gz))$">
+    <IfModule mod_expires.c>
+      ExpiresDefault A1
+    </IfModule>
     <IfModule mod_headers.c>
       Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
       Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
@@ -14,16 +17,16 @@
     AddCharset utf-8 .js
     AddEncoding gzip .gz
   </IfModule>
-  <FilesMatch "(\.html|\.html\.gz)$">
+  <FilesMatch "\.(html|html\.gz)$">
     ForceType text/html
   </FilesMatch>
-  <FilesMatch "(\.xml|\.xml\.gz)$">
+  <FilesMatch "\.(xml|xml\.gz)$">
     ForceType text/xml
   </FilesMatch>
-  <FilesMatch "(\.json|\.json\.gz|\.js|\.js\.gz)$">
+  <FilesMatch "\.((json|js)|((json|js)\.gz))$">
     ForceType text/javascript
   </FilesMatch>
-  <FilesMatch "(\.css|\.css\.gz)$">
+  <FilesMatch "\.(css|css\.gz)$">
     ForceType text/css
   </FilesMatch>
 
@@ -50,8 +53,6 @@
   RewriteCond %{REQUEST_METHOD} !^(GET|HEAD)$ [OR]
   RewriteCond %{REQUEST_URI} (^/(admin|cache|misc|modules|sites|system|openid|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]
   RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]
-  RewriteCond %{HTTP:Pragma} no-cache [OR]
-  RewriteCond %{HTTP:Cache-Control} no-cache [OR]
   RewriteCond %{HTTPS} on
   RewriteRule .* - [S=7]
 
@@ -76,4 +77,4 @@
 
   ### BOOST END ###
 
-# $Id: boosted1.txt,v 1.1.2.24 2009/12/05 18:50:29 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.25 2010/03/17 05:43:15 mikeytown2 Exp $

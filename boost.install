@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.91 2010/02/19 19:40:06 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.92 2010/03/17 05:43:15 mikeytown2 Exp $
 
 /**
  * @file
@@ -1486,5 +1486,21 @@ function boost_update_6126() {
   }
   else {
     return array(array('success' => TRUE, 'query' => t('boost-gzip-cookie-test.html.gz did not need to be reset')));
+  }
+}
+
+/**
+ * Update 6127 - Fix spelling error in variable name
+ */
+function boost_update_6127() {
+  if (variable_get('boost_cache_url_alias_src', -10) == -10) {
+    $value = variable_get('boost_cache_url_alais_src', FALSE);
+    variable_del('boost_cache_url_alais_src');
+    variable_set('boost_cache_url_alias_src', $value);
+    return array(array('success' => TRUE, 'query' => t('boost_cache_url_alais_src renamed to boost_cache_url_alias_src')));
+  }
+  else {
+    variable_del('boost_cache_url_alais_src');
+    return array(array('success' => TRUE, 'query' => t('boost_cache_url_alais_src removed; boost_cache_url_alias_src already set')));
   }
 }
