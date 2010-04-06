@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.133 2010/03/17 05:43:15 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.134 2010/04/06 22:45:39 mikeytown2 Exp $
 
 /**
  * @file
@@ -284,7 +284,13 @@ function boost_admin_boost_performance_page() {
     '#type'          => 'checkbox',
     '#title'         => t('Clear all cached views pages associated with a node on insert'),
     '#default_value' => BOOST_FLUSH_VIEWS_INSERT,
-    '#description'   => t('WARNING: This can be very slow, all views get run to find out where this node lives.'),
+    '#description'   => t('WARNING: This can be very slow, all views get run to find out where this node lives. Odds are it will not be slow, but if a node save takes a very long time with this enabled, you know why.'),
+  );
+  $form['expiration']['boost_flush_views_update'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Clear all cached views pages associated with a node on update'),
+    '#default_value' => BOOST_FLUSH_VIEWS_UPDATE,
+    '#description'   => t('WARNING: This can be very slow, all views get run to find out where this node lives. Odds are it will not be slow, but if a node save takes a very long time with this enabled, you know why.'),
   );
   $form['expiration']['boost_clear_cache_offline'] = array(
     '#type'          => 'checkbox',

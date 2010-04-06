@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.313 2010/04/06 19:51:51 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.314 2010/04/06 22:45:39 mikeytown2 Exp $
 
 /**
  * @file
@@ -69,6 +69,7 @@ define('BOOST_FLUSH_NODE_TERMS',     variable_get('boost_flush_node_terms', TRUE
 define('BOOST_FLUSH_MENU_ITEMS',     variable_get('boost_flush_menu_items', 0));
 define('BOOST_FLUSH_VIEWS',          variable_get('boost_flush_views', TRUE));
 define('BOOST_FLUSH_VIEWS_INSERT',   variable_get('boost_flush_views_insert', TRUE));
+define('BOOST_FLUSH_VIEWS_UPDATE',   variable_get('boost_flush_views_update', FALSE));
 define('BOOST_CLEAR_CACHE_OFFLINE',  variable_get('boost_clear_cache_offline', FALSE));
 define('BOOST_OVERWRITE_FILE',       variable_get('boost_overwrite_file', FALSE));
 define('BOOST_HALT_ON_ERRORS',       variable_get('boost_halt_on_errors', FALSE));
@@ -514,6 +515,12 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
       boost_expire_node($node);
       break;
     case 'update':
+      // Run all cached views, looking for this new node
+      if (BOOST_FLUSH_VIEWS_UPDATE && module_exists('views')) {
+        $GLOBALS['_boost_nid'] = $node->nid;
+        register_shutdown_function('_boost_view_insert');
+      }
+
       boost_expire_node($node);
       if (!$node->status) {
         boost_cache_expire_router($data, TRUE, TRUE);
