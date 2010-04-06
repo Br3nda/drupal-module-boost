@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.317 2010/04/06 22:52:41 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.318 2010/04/06 22:57:18 mikeytown2 Exp $
 
 /**
  * @file
@@ -3707,7 +3707,7 @@ function _boost_rmdir_rf($dirname, $flush = TRUE, $first = TRUE, $nuke = FALSE, 
   $now = _boost_microtime_float();
   $total_time = $now - $timer;
   if ($total_time > 59) {
-    $total_time = $now;
+    $timer = $now;
     //Ping Database to keep connection alive
     db_query("SHOW PROCESSLIST");
   }
