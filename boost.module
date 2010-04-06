@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.314 2010/04/06 22:45:39 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.315 2010/04/06 22:47:12 mikeytown2 Exp $
 
 /**
  * @file
@@ -718,7 +718,7 @@ function boost_expire_node($node, $nid = 0) {
 
   // Check node object
   if (empty($node->nid)) {
-    if (is_int($nid)) {
+    if (is_numeric($nid)) {
       $node->nid = $nid;
     }
     else {
@@ -744,7 +744,7 @@ function boost_expire_node($node, $nid = 0) {
     $tids = boost_taxonomy_node_get_tids($node->nid);
     $filenames = array();
     foreach ($tids as $tid) {
-      if (is_int($tid)) {
+      if (is_numeric($tid)) {
         if (BOOST_NO_DATABASE) {
           $paths['term' . $tid] = 'taxonomy/term/' . $tid;
         }
@@ -790,7 +790,7 @@ function boost_expire_node($node, $nid = 0) {
         }
       }
       foreach ($nids as $nid) {
-        if (is_int($nid)) {
+        if (is_numeric($nid)) {
           if (BOOST_NO_DATABASE) {
             $paths['reference' . $nid] = 'node/' . $nid;
           }
@@ -805,7 +805,7 @@ function boost_expire_node($node, $nid = 0) {
     if (module_exists('nodereferrer')) {
       $nids = nodereferrer_referrers($node->nid);
       foreach ($nids as $nid) {
-        if (is_int($nid['nid'])) {
+        if (is_numeric($nid['nid'])) {
           if (BOOST_NO_DATABASE) {
             $paths['referrer' . $nid['nid']] = 'node/' . $nid['nid'];
           }
@@ -1318,15 +1318,15 @@ function boost_block_db_rm_settings_form_submit(&$form_state, $form) {
   $router_item = $GLOBALS['_boost_router_item'];
 
   $data = array();
-  if (is_int($form['values']['id'])) {
+  if (is_numeric($form['values']['id'])) {
     boost_remove_settings_db($form['values']['id_value']);
     $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_type' => $router_item['page_type'], 'page_id' => $router_item['page_id']);
   }
-  if (is_int($form['values']['type'])) {
+  if (is_numeric($form['values']['type'])) {
     boost_remove_settings_db($form['values']['type_value']);
     $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback'], 'page_type' => $router_item['page_type']);
   }
-  if (is_int($form['values']['container'])) {
+  if (is_numeric($form['values']['container'])) {
     boost_remove_settings_db($form['values']['container_value']);
     $data[] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => $router_item['page_callback']);
   }
@@ -4012,7 +4012,7 @@ if (!function_exists('http_build_query')) {
   function http_build_query($data, $prefix='', $sep='', $key='') {
     $ret = array();
     foreach ((array)$data as $k => $v) {
-      if (is_int($k) && $prefix != NULL) {
+      if (is_numeric($k) && $prefix != NULL) {
         $k = urlencode($prefix . $k);
       }
       if ((!empty($key)) || ($key === 0)) {
