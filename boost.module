@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.315 2010/04/06 22:47:12 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.316 2010/04/06 22:51:16 mikeytown2 Exp $
 
 /**
  * @file
@@ -551,7 +551,6 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
  * table.
  */
 function _boost_cache_insert() {
-  global $base_url, $base_path;
   if (!isset($GLOBALS['_boost_nid'])) {
     return FALSE;
   }
@@ -573,26 +572,12 @@ function _boost_cache_insert() {
   $timer_average = 0;
   $extension = BOOST_FILE_EXTENSION;
 
-  // Get list of URL's if using domain access
+  // Get list of base urls for this node
   $base_urls = array();
-  if (module_exists('domain') && isset($node->domains)) {
-    foreach ($node->domains as $domain_id) {
-      $domain = domain_lookup($domain_id);
-      if ($domain['valid'] == 1) {
-        if (isset($domain['path'])) {
-          $base_urls[] = $domain['path'] . $node->path;
-        }
-        foreach ($domain['aliases'] as $alias) {
-          if ($alias['redirect'] != 1) {
-            $temp_domain = array('scheme' => $domain['scheme'], 'subdomain' => $alias['pattern']);
-            $base_urls[] = domain_get_path($temp_domain) . $node->path;
-          }
-        }
-      }
+  foreach (boost_get_base_urls($node) as $domain_id) {
+    foreach ($domain_id as $base) {
+      $base_urls[] = $base . $node->path;
     }
-  }
-  else {
-    $base_urls[] = $base_url . $base_path . $node->path;
   }
 
   // Insert each url into the DB
@@ -602,6 +587,41 @@ function _boost_cache_insert() {
     $filename = boost_file_path($node->path, FALSE, BOOST_FILE_EXTENSION, $file_path);
     boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension, $url, $file_path);
   }
+}
+
+/**
+ * Get all base url's where this node can appear
+ *
+ * @param $node
+ *   node object
+ * @return array
+ *   array($base_url . $base_path)
+ */
+function boost_get_base_urls(&$node) {
+  global $base_url, $base_path;
+
+  // Get list of URL's if using domain access
+  $base_urls = array();
+  if (module_exists('domain') && isset($node->domains)) {
+    foreach ($node->domains as $domain_id) {
+      $domain = domain_lookup($domain_id);
+      if ($domain['valid'] == 1) {
+        if (isset($domain['path'])) {
+          $base_urls[$domain_id][] = $domain['path'];
+        }
+        foreach ($domain['aliases'] as $alias) {
+          if ($alias['redirect'] != 1) {
+            $temp_domain = array('scheme' => $domain['scheme'], 'subdomain' => $alias['pattern']);
+            $base_urls[$domain_id][] = domain_get_path($temp_domain);
+          }
+        }
+      }
+    }
+  }
+  else {
+    $base_urls[0][] = $base_url . $base_path;
+  }
+  return $base_urls;
 }
 
 /**
@@ -616,6 +636,9 @@ function _boost_view_insert() {
   }
   // Ensure we're in the correct working directory, since some web servers (e.g. Apache) mess this up here.
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
+
+  $node = node_load($GLOBALS['_boost_nid']);
+  $base_urls = boost_get_base_urls($node);
 
   if (BOOST_FLUSH_ALL_MULTISITE) {
     $result = db_query("SELECT page_id, page_type FROM {boost_cache} WHERE page_callback = 'view' AND expire > 0 AND expire <> 434966400 GROUP BY page_id, page_type");
@@ -633,13 +656,27 @@ function _boost_view_insert() {
     $views[$key]['page_type'] = $boost['page_type'];
     $views[$key]['page_id'] = $boost['page_id'];
   }
+//   $results = db_query("SELECT id, name FROM {views_display} INNER JOIN {views_view} USING (vid) WHERE base_table = 'node'");
+//   while ($row = db_fetch_array($results)) {
+//     $key = $row['name'] . $row['id'];
+//     $views[$key]['page_type'] = $row['name'];
+//     $views[$key]['page_id'] = $row['id'];
+//   }
   $options = array(
       'operator' => '=',
       'value' => array(
         'value' => $GLOBALS['_boost_nid'],
-        'min' => '',
-        'max' => '',
       ),
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'relationship' => 'none',
+    );
+  $domain_options = array(
+      'operator' => '=',
       'group' => '0',
       'exposed' => FALSE,
       'expose' => array(
@@ -654,13 +691,53 @@ function _boost_view_insert() {
     $view->pre_execute();
     $view->set_items_per_page(1);
     $view->add_item($boost['page_id'], 'filter', 'node', 'nid', $options);
-    $view->execute();
-    $number_views++;
-    foreach ($view->result as $item) {
-      if ($item->nid == $GLOBALS['_boost_nid']) {
-        $hash = BOOST_FILE_PATH . 'view' . $boost['page_type'] . $boost['page_id'];
-        $data[$hash] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
-        $number_hits++;
+
+    // Check for domain access filter "Available on current domain"
+    $filters = $view->get_items('filter', $boost['page_id']);
+    if (isset($filters['current_all'])) {
+
+      // Remove domain access filter "Available on current domain"
+      $view->set_item($boost['page_id'], 'filter', 'current_all', NULL);
+      foreach ($node->domains as $domain_id) {
+
+        // Set domain access filter "Domain ID" to what's in the node
+        $domain_options['value']['value'] = $domain_id;
+        $view->set_item($boost['page_id'], 'filter', 'gid', NULL);
+        $view->add_item($boost['page_id'], 'filter', 'domain_access', 'gid', $domain_options);
+        $filters = $view->get_items('filter', $boost['page_id']);
+        $view->execute();
+        $number_views++;
+        foreach ($view->result as $item) {
+          if ($item->nid == $GLOBALS['_boost_nid']) {
+            foreach ($base_urls[$domain_id] as $url) {
+              $parts = parse_url($url);
+              $file_path = boost_cache_directory($parts['host'], FALSE);
+              $hash = $file_path . 'view' . $boost['page_type'] . $boost['page_id'];
+              $data[$hash] = array('base_dir' => $file_path, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
+              $number_hits++;
+            }
+          }
+        }
+        if ($boost['page_type'] == 'Homepage_stories' && $boost['page_id'] == 'page_1') {
+          watchdog('view', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($filters, TRUE)))));
+        }
+      }
+    }
+
+    // Run normal view search
+    else {
+      $filters = $view->get_items('filter', $boost['page_id']);
+      $view->execute();
+      $number_views++;
+      foreach ($view->result as $item) {
+        if ($item->nid == $GLOBALS['_boost_nid']) {
+          $hash = BOOST_FILE_PATH . 'view' . $boost['page_type'] . $boost['page_id'];
+          $data[$hash] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
+          $number_hits++;
+        }
+      }
+      if ($boost['page_type'] == 'Homepage_stories' && $boost['page_id'] == 'page_1') {
+        watchdog('view', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($filters, TRUE)))));
       }
     }
   }
