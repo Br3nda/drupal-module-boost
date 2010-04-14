@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.318 2010/04/06 22:57:18 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.319 2010/04/14 21:42:22 mikeytown2 Exp $
 
 /**
  * @file
@@ -1085,19 +1085,16 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
       return array(
         'status' => array(
           'info'   => t('Boost: Pages cache status'),
-          'region' => 'right',
           'weight' => 10,
           'cache'  => BLOCK_NO_CACHE,
         ),
         'config' => array(
           'info'   => t('Boost: Pages cache configuration'),
-          'region' => 'right',
           'weight' => 10,
           'cache'  => BLOCK_NO_CACHE,
         ),
         'stats' => array(
           'info'   => t('Boost: AJAX core statistics'),
-          'region' => 'right',
           'weight' => 10,
           'cache'  => BLOCK_NO_CACHE,
         ),
@@ -1105,23 +1102,25 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
     case 'configure':
       if ($delta == 'stats') {
         $form['boost_block_show_stats'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Display Statistics.'),
-        '#default_value' => variable_get('boost_block_show_stats', FALSE),
-        '#description' => t('If false, uses Javascript to hide the block via "parent().parent().hide()".'),
+          '#type' => 'checkbox',
+          '#title' => t('Display Statistics.'),
+          '#default_value' => variable_get('boost_block_show_stats', FALSE),
+          '#description' => t('If false, uses Javascript to hide the block via "parent().parent().hide()".'),
         );
         $form['boost_block_cache_stats_block'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Cache Statistics Block'),
-        '#default_value' => variable_get('boost_block_cache_stats_block', FALSE),
+          '#type' => 'checkbox',
+          '#title' => t('Cache Statistics Block'),
+          '#default_value' => variable_get('boost_block_cache_stats_block', FALSE),
         );
-      return $form;
+        return $form;
       }
+      break;
     case 'save':
       if ($delta == 'stats') {
         variable_set('boost_block_show_stats', $edit['boost_block_show_stats']);
         variable_set('boost_block_cache_stats_block', $edit['boost_block_cache_stats_block']);
       }
+      break;
     case 'view':
       $block = array();
       switch ($delta) {
@@ -1129,15 +1128,23 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
           // Don't show the block to anonymous users, nor on any pages that
           // aren't even cacheable to begin with (e.g. admin/*).
           if (!empty($user->uid) && boost_is_cacheable($GLOBALS['_boost_path'])) {
-            $output = t('This page is being served <strong>live</strong> to anonymous visitors, as it is not currently in the static page cache.');
+            $output = '';
 
-            if (boost_is_cached($GLOBALS['_boost_path'])) {
-              $filename = boost_file_path($GLOBALS['_boost_path']);
-              $ttl = boost_db_get_ttl($filename);
-              $generate = boost_get_generation_time($filename);
-              $output = '';
-              if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
-                $output .= t('Site Has Changed: %old<br />', array('%old' => boost_has_site_changed() ? 'True' : 'False'));
+            // Has anything on the site changed?
+            if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
+              $output .= t('Site Has Changed: %old<br />', array('%old' => boost_has_site_changed() ? 'True' : 'False'));
+            }
+
+            // Display Cached File Info
+            $filename = boost_file_path($GLOBALS['_boost_path']);
+            $ttl = boost_db_get_ttl($filename);
+            $generate = boost_get_generation_time($filename);
+            if ($generate !== FALSE) {
+              if (boost_is_cached($GLOBALS['_boost_path'])) {
+                $output .= $filename . ' <br />';
+              }
+              else {
+                $output .= $filename . '<br />Does not exist. <br />';
               }
               if ($ttl < 0) {
                 $output .= t('<strong>Expired: %interval ago</strong><br />', array('%interval' => format_interval(abs($ttl))));
@@ -1145,19 +1152,29 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
               else {
                 $output .= t('Expire In: %interval<br />', array('%interval' => format_interval(abs($ttl))));
               }
+
               $output .= t('Cache Generated: %time seconds<br />', array('%time' => round($generate, 2))) . ' ';
-              $output .=  drupal_get_form('boost_block_flush_form');
+              if (user_access('administer site configuration')) {
+                $output .= drupal_get_form('boost_block_flush_form');
+              }
+              $output .= '<br />';
             }
+            // If page is not cached, let user know.
+            else {
+              $output .= t('This page is being served <strong>live</strong> to anonymous visitors, as it is not currently in the static page cache.');
+            }
+
+            // Display any info about errors on this page
             $error = _boost_page_have_error();
             $drupal_msg = max(count(drupal_get_messages(NULL, FALSE)), $GLOBALS['_boost_message_count']);
 
             if ($error || (BOOST_HALT_ON_MESSAGES && $drupal_msg != 0)) {
-              $output = t('There are <strong>php errors</strong> or <strong>Drupal messages</strong> on this page, preventing boost from caching.') . ' ';
+              $output .= t('There are <strong>php errors</strong> or <strong>Drupal messages</strong> on this page, preventing boost from caching.') . ' ';
               if ($error) {
-                $output .= t('ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => boost_print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')));
+                $output .= t('ERROR: <pre>%error</pre> !link <br /> !performance', array('%error' => boost_print_r($error, TRUE), '!link' => l(t('Lookup Error Type'), 'http://php.net/errorfunc.constants'), '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')));
               }
               if (BOOST_HALT_ON_MESSAGES && $drupal_msg != 0) {
-                $output .= t('MESSAGES: %msg <br /> !performance', array('%msg' => $drupal_msg, '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance')));
+                $output .= t('MESSAGES: %msg <br /> !performance', array('%msg' => $drupal_msg, '!performance' => l(t('Turn Off Error Checking'), 'admin/settings/performance/boost')));
               }
             }
 
@@ -1165,14 +1182,16 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
             $block['content'] = theme('boost_cache_status', isset($ttl) ? $ttl : -1, $output);
           }
           break;
+
         case 'config':
           // Don't show the block to anonymous users, nor on any pages that
           // aren't even cacheable to begin with (e.g. admin/*).
-          if (!empty($user->uid) && boost_is_cacheable($GLOBALS['_boost_path']) && !BOOST_NO_DATABASE) {
+          if (user_access('administer site configuration') && boost_is_cacheable($GLOBALS['_boost_path']) && !BOOST_NO_DATABASE) {
             $block['subject'] = '';
             $block['content'] = theme('boost_cache_status', -1, drupal_get_form('boost_block_db_settings_form'));
           }
           break;
+
         case 'stats':
           $filename = 'boost_stats.php';
           $block = module_invoke('statistics', 'block', 'view', 0);
@@ -2207,9 +2226,11 @@ function boost_cache_kill($files, $force_flush = FALSE) {
     if (count($hashes)) {
       if ($force_flush || !BOOST_EXPIRE_NO_FLUSH) {
         boost_db_multi_update_set('boost_cache', 'expire', '%d', 0, 'hash', "'%s'", $hashes);
+        boost_db_multi_update_set('boost_cache', 'timer', '%d', 0, 'hash', "'%s'", $hashes);
       }
       else {
         boost_db_multi_update_set('boost_cache', 'expire', '%d', 434966400, 'hash', "'%s'", $hashes);
+        boost_db_multi_update_set('boost_cache', 'timer', '%d', 434966400, 'hash', "'%s'", $hashes);
         $count = db_affected_rows();
       }
     }
@@ -3102,7 +3123,7 @@ function boost_file_path($path, $query = TRUE, $extension = BOOST_FILE_EXTENSION
  */
 function boost_get_generation_time($filename) {
   $boost_db = boost_get_db($filename);
-  return $boost_db['timer_average'] != 0 ? $boost_db['timer_average']/1000.0 : FALSE;
+  return $boost_db['timer'] != 0 ? $boost_db['timer']/1000.0 : FALSE;
 }
 
 /**
