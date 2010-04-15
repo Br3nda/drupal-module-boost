@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.319 2010/04/14 21:42:22 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.320 2010/04/15 00:08:37 mikeytown2 Exp $
 
 /**
  * @file
@@ -718,9 +718,6 @@ function _boost_view_insert() {
             }
           }
         }
-        if ($boost['page_type'] == 'Homepage_stories' && $boost['page_id'] == 'page_1') {
-          watchdog('view', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($filters, TRUE)))));
-        }
       }
     }
 
@@ -735,9 +732,6 @@ function _boost_view_insert() {
           $data[$hash] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
           $number_hits++;
         }
-      }
-      if ($boost['page_type'] == 'Homepage_stories' && $boost['page_id'] == 'page_1') {
-        watchdog('view', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($filters, TRUE)))));
       }
     }
   }
