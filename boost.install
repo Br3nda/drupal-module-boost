@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.92 2010/03/17 05:43:15 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.93 2010/04/17 21:28:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -57,6 +57,14 @@ function boost_uninstall() {
   cache_clear_all('variables', 'cache');
   // Delete tables.
   drupal_uninstall_schema('boost');
+
+  module_load_include('inc', 'boost', 'boost.admin');
+  if (is_writable('robots.txt')) {
+    boost_update_robots_txt(FALSE);
+  }
+  if (is_writable('.htaccess')) {
+    boost_update_htaccess(FALSE);
+  }
 }
 
 /**

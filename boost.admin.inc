@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.134 2010/04/06 22:45:39 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.135 2010/04/17 21:28:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -889,6 +889,25 @@ function boost_admin_boost_performance_page_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Submit handler for boost_admin_htaccess_page
+ */
+function boost_admin_htaccess_page_submit($form, &$form_state) {
+  // Save Settings
+  $boost_autoupdate_robots_txt = $form_state['values']['boost_autoupdate_robots_txt'];
+  $boost_autoupdate_htaccess = $form_state['values']['boost_autoupdate_htaccess'];
+  variable_set('boost_autoupdate_robots_txt', $boost_autoupdate_robots_txt);
+  variable_set('boost_autoupdate_htaccess', $boost_autoupdate_htaccess);
+
+  // Act on settings
+  if (!empty($boost_autoupdate_robots_txt)) {
+    boost_update_robots_txt(BOOST_ENABLED);
+  }
+  if (!empty($boost_autoupdate_htaccess)) {
+    boost_update_htaccess(BOOST_ENABLED);
+  }
+}
+
 function boost_admin_site_offline_submit($form, &$form_state) {
   if (!empty($form_state['values']['site_offline']) && BOOST_CLEAR_CACHE_OFFLINE) {
     if (boost_cache_clear_all()) {
@@ -921,6 +940,47 @@ function boost_admin_themes_submit($form, &$form_state) {
 function boost_admin_htaccess_page() {
   $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
 
+  // Filesystem autoupdates
+  $form['autoupdate'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Auto patch .htaccess & robots.txt')
+  );
+  // robots.txt
+  $form['autoupdate']['boost_autoupdate_robots_txt'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Insert rule into robots.txt on Save'),
+  );
+  if (is_writable('robots.txt')) {
+    $form['autoupdate']['boost_autoupdate_robots_txt']['#description'] = t('If this box is checked, insert &quot;Disallow: /boost_stats.php&quot; into robots.txt if boost is enabled.');
+    $form['autoupdate']['boost_autoupdate_robots_txt']['#default_value'] = variable_get('boost_autoupdate_robots_txt', TRUE);
+  }
+  // If we cannot write to robots.txt, then don't allow autoupdate
+  else {
+    $form['autoupdate']['boost_autoupdate_robots_txt']['#description'] = t('This option is disabled because robots.txt is not writable. You must manually edit robots.txt if you have not done this step yet.');
+    $form['autoupdate']['boost_autoupdate_robots_txt']['#default_value'] = FALSE;
+    $form['autoupdate']['boost_autoupdate_robots_txt']['#disabled'] = TRUE;
+  }
+  // .htaccess
+  $form['autoupdate']['boost_autoupdate_htaccess'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Update .htaccess on Save'),
+  );
+  if (is_writable('.htaccess')) {
+    $form['autoupdate']['boost_autoupdate_htaccess']['#description'] = t('If this box is checked, update .htaccess with the generated Boost htaccess rules if Boost is enabled. Shown below is what will be inserted; editing the text below will have no impact on what gets written.');
+    $form['autoupdate']['boost_autoupdate_htaccess']['#default_value'] = variable_get('boost_autoupdate_htaccess', TRUE);
+  }
+  // If we cannot write to .htaccess, then don't allow autoupdate
+  else {
+    $form['autoupdate']['boost_autoupdate_htaccess']['#description'] = t('This option is disabled because .htaccess is not writable. You must manually edit .htaccess if you have updated your htaccess settings.');
+    $form['autoupdate']['boost_autoupdate_htaccess']['#default_value'] = FALSE;
+    $form['autoupdate']['boost_autoupdate_htaccess']['#disabled'] = TRUE;
+  }
+  // Only show button if something can be done.
+  if (is_writable('.htaccess') || is_writable('robots.txt')) {
+    $form['autoupdate']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
+  }
+
+
   $form['boost_generated'] = array(
     '#type'          => 'textarea',
     '#title'         => t('Generated Rules'),
@@ -929,6 +989,8 @@ function boost_admin_htaccess_page() {
     '#wysiwyg'       => FALSE,
     '#description'   => t("Copy this into your .htaccess file below <pre><tt>  # RewriteBase / </tt></pre> and above <pre><tt>  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'</tt></pre>"),
   );
+  $form['#submit'][] = 'boost_admin_htaccess_page_submit';
+
   return $form;
 }
 
@@ -1176,6 +1238,82 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
   $string .= "  ### BOOST END ###\n";
 
   return $string;
+}
+
+/**
+ * Helper function to update robots.txt
+ * Inserts or removes the line 'Disallow: /boost_stats.php'
+ *
+ * @TODO
+ *   Make this work with subdirectory installs
+ * @param $enable
+ *   Whether to patch robots.txt to work with boost.
+ * @return
+ *   TRUE or nonzero on success, FALSE if error
+ */
+function boost_update_robots_txt($enable, $verbose = TRUE) {
+  $payload = 'Disallow: /boost_stats.php';
+  $filename = 'robots.txt';
+  $result = TRUE;
+
+  $text = file_get_contents($filename);
+  if ($text) {
+    if ($enable && !stristr($text, $payload)) {
+      // Boost enabled: Insert payload into file
+      $result = file_put_contents($filename, $text . "\n" . $payload . "\n");
+      if ($verbose) {
+        drupal_set_message($result ?
+                           t('robots.txt patched for usage with boost') :
+                           t('Unable to write to robots.txt'));
+      }
+    }
+    else if (!$enable && stristr($text, $payload)) {
+      // Boost disabled: Remove payload from file
+      $text = preg_replace('|^[^D]*Disallow:[ ]*/boost_stats.php[^\n]*[\n]|im', "", $text);
+      $result = file_put_contents($filename, $text);
+      if ($verbose) {
+        drupal_set_message($result ?
+                           t('robots.txt unpatched because boost is disabled') :
+                           t('Unable to write to robots.txt'));
+      }
+    }
+  }
+  return $result;
+}
+
+/**
+ * Helper function to update htaccess
+ * Inserts or removes the autogenerated boost rules
+ *
+ * @TODO
+ *   Make this work with subdirectory installs
+ * @param $enable
+ *   Whether to patch .htaccess to work with boost.
+ * @return
+ *   TRUE or nonzero on success, FALSE if error
+ */
+function boost_update_htaccess($enable = TRUE, $verbose = TRUE) {
+  $filename = '.htaccess';
+  $text = file_get_contents($filename);
+
+  // Strip out the lines from BOOST START to BOOST END inclusive, if it exists
+  $text = preg_replace('/^[^#]*### BOOST START ###.*### BOOST END ###[^\n]*[\n]*/ims', "\n", $text);
+
+  // Inject the rules before '# Rewrite URLs of the form'
+  if ($enable) {
+    $rules = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
+    $text = preg_replace('/^[^#]*# Rewrite URLs of the form/im', "\n" . $rules . "$0", $text);
+  }
+
+  $result = file_put_contents($filename, $text);
+  if ($verbose) {
+    if ($result) {
+      drupal_set_message($enable ? t('Boost rules written to .htaccess') : t('Boost rules removed from .htaccess'));
+    }
+    else {
+      drupal_set_message(t('Unable to write to .htacess'), 'error');
+    }
+  }
 }
 
 /**
