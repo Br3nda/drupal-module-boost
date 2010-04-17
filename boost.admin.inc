@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.136 2010/04/17 21:57:22 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.137 2010/04/17 22:04:39 mikeytown2 Exp $
 
 /**
  * @file
@@ -1275,7 +1275,7 @@ function boost_update_robots_txt($enable, $verbose = TRUE) {
                            t('Unable to write to robots.txt'));
       }
     }
-    else if (!$enable && stristr($text, $payload)) {
+    elseif (!$enable && stristr($text, $payload)) {
       // Boost disabled: Remove payload from file
       $text = preg_replace('|^[^D]*Disallow:[ ]*/boost_stats.php[^\n]*[\n]|im', "", $text);
       $result = file_put_contents($filename, $text);
