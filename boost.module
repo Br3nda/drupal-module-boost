@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.321 2010/04/17 21:40:23 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.322 2010/04/17 21:43:29 mikeytown2 Exp $
 
 /**
  * @file
@@ -502,7 +502,9 @@ function boost_set_base_dir_in_array(&$data) {
  * Implementation of hook_nodeapi(). Acts on nodes defined by other modules.
  */
 function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
-  if (!BOOST_ENABLED) return;
+  if (!BOOST_ENABLED || !isset($node->nid)) {
+    return;
+  }
   $data[] = array('page_callback' => 'node', 'page_id' => $node->nid);
   boost_set_base_dir_in_array($data);
 
