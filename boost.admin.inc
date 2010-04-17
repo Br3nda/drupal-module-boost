@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.135 2010/04/17 21:28:44 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.136 2010/04/17 21:57:22 mikeytown2 Exp $
 
 /**
  * @file
@@ -817,6 +817,12 @@ function boost_admin_boost_performance_page() {
     '#default_value' => variable_get('boost_apache_rfc2616', FALSE),
     '#description'   => t('Bypass the boost cache when the headers contain a "no-cache" cache-control directive (ctrl-F5 in browser). Disable this to make boost always serve pages from the cache. Good time to disable this is right before your site goes into maintenance mode. IE & this RFC do not work well together, recommend disabling it.'),
   );
+  $form['htaccess']['boost_ssl_bypass'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Bypass the boost cache for ssl requests.'),
+    '#default_value' => variable_get('boost_ssl_bypass', TRUE),
+    '#description'   => t('Ticking this is recommended if you use the securepages module.'),
+  );
   $form['htaccess']['boost_ignore_htaccess_warning'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Ignore .htaccess warning'),
@@ -1188,16 +1194,18 @@ function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $documen
     $skip = BOOST_GZIP ? $skip*2+1 : $skip;
     $string .= "\n";
     $string .= "  # Caching for anonymous users\n";
-    $string .= "  # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR request came from this server OR https request\n";
+    $string .= "  # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR request came from this server" . (variable_get('boost_ssl_bypass', TRUE) ? " OR https request" : "") . "\n";
     $string .= "  RewriteCond %{REQUEST_METHOD} !^(GET|HEAD)$ [OR]\n";
     $string .= "  RewriteCond %{REQUEST_URI} (^$base_path(admin|$cache_dir|misc|modules|sites|system|openid|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
-    $string .= "  RewriteCond %{HTTP_COOKIE} DRUPAL_UID [OR]\n";
     $string .= BOOST_LOOPBACK_BYPASS && BOOST_OVERWRITE_FILE ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
     if (variable_get('boost_apache_rfc2616', FALSE)) {
       $string .= "  RewriteCond %{HTTP:Pragma} no-cache [OR]\n";
       $string .= "  RewriteCond %{HTTP:Cache-Control} no-cache [OR]\n";
     }
-    $string .= "  RewriteCond %{HTTPS} on\n";
+    if (variable_get('boost_ssl_bypass', TRUE)) {
+      $string .= "  RewriteCond %{HTTPS} on [OR]\n";
+    }
+    $string .= "  RewriteCond %{HTTP_COOKIE} DRUPAL_UID\n";
     $string .= "  RewriteRule .* - [S=$skip]\n";
     if (BOOST_GZIP) {
       $skip = (int)BOOST_CACHE_HTML + (int)BOOST_CACHE_XML + (int)BOOST_CACHE_JSON;
