@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.93 2010/04/17 21:28:44 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.94 2010/04/19 07:45:47 mikeytown2 Exp $
 
 /**
  * @file
@@ -59,12 +59,13 @@ function boost_uninstall() {
   drupal_uninstall_schema('boost');
 
   module_load_include('inc', 'boost', 'boost.admin');
-  if (is_writable('robots.txt')) {
+  if (is_writable('robots.txt') && variable_get('boost_autoupdate_robots_txt', FALSE)) {
     boost_update_robots_txt(FALSE);
   }
-  if (is_writable('.htaccess')) {
+  if (is_writable('.htaccess') && variable_get('boost_autoupdate_htaccess', FALSE)) {
     boost_update_htaccess(FALSE);
   }
+  drupal_set_message(t('Be sure to remove the boost rules from your .htaccess file.'), 'warning');
 }
 
 /**

@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.137 2010/04/17 22:04:39 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.138 2010/04/19 07:45:47 mikeytown2 Exp $
 
 /**
  * @file
@@ -944,49 +944,35 @@ function boost_admin_themes_submit($form, &$form_state) {
  * @see system_settings_form()
  */
 function boost_admin_htaccess_page() {
+  if (is_writable('robots.txt') || is_writable('.htaccess')) {
+    // Filesystem autoupdates
+    $form['autoupdate'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Auto patch .htaccess & robots.txt')
+    );
+    // robots.txt
+    if (is_writable('robots.txt')) {
+      $form['autoupdate']['boost_autoupdate_robots_txt'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Insert rule into robots.txt on Save'),
+        '#description' => t('If this box is checked, insert &quot;Disallow: /boost_stats.php&quot; into robots.txt if boost is enabled.'),
+        '#default_value' => variable_get('boost_autoupdate_robots_txt', FALSE),
+      );
+    }
+    // .htaccess
+    if (is_writable('.htaccess')) {
+      $form['autoupdate']['boost_autoupdate_htaccess'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Update .htaccess on Save'),
+        '#description' => t('If this box is checked, update .htaccess with the generated Boost htaccess rules if Boost is enabled. Shown below is what will be inserted; editing the text below will have no impact on what gets written.'),
+        '#default_value' => variable_get('boost_autoupdate_htaccess', FALSE),
+      );
+    }
+    $form['autoupdate']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration to file system'));
+  }
+
+  // Generated .htaccess output
   $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
-
-  // Filesystem autoupdates
-  $form['autoupdate'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Auto patch .htaccess & robots.txt')
-  );
-  // robots.txt
-  $form['autoupdate']['boost_autoupdate_robots_txt'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Insert rule into robots.txt on Save'),
-  );
-  if (is_writable('robots.txt')) {
-    $form['autoupdate']['boost_autoupdate_robots_txt']['#description'] = t('If this box is checked, insert &quot;Disallow: /boost_stats.php&quot; into robots.txt if boost is enabled.');
-    $form['autoupdate']['boost_autoupdate_robots_txt']['#default_value'] = variable_get('boost_autoupdate_robots_txt', TRUE);
-  }
-  // If we cannot write to robots.txt, then don't allow autoupdate
-  else {
-    $form['autoupdate']['boost_autoupdate_robots_txt']['#description'] = t('This option is disabled because robots.txt is not writable. You must manually edit robots.txt if you have not done this step yet.');
-    $form['autoupdate']['boost_autoupdate_robots_txt']['#default_value'] = FALSE;
-    $form['autoupdate']['boost_autoupdate_robots_txt']['#disabled'] = TRUE;
-  }
-  // .htaccess
-  $form['autoupdate']['boost_autoupdate_htaccess'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Update .htaccess on Save'),
-  );
-  if (is_writable('.htaccess')) {
-    $form['autoupdate']['boost_autoupdate_htaccess']['#description'] = t('If this box is checked, update .htaccess with the generated Boost htaccess rules if Boost is enabled. Shown below is what will be inserted; editing the text below will have no impact on what gets written.');
-    $form['autoupdate']['boost_autoupdate_htaccess']['#default_value'] = variable_get('boost_autoupdate_htaccess', TRUE);
-  }
-  // If we cannot write to .htaccess, then don't allow autoupdate
-  else {
-    $form['autoupdate']['boost_autoupdate_htaccess']['#description'] = t('This option is disabled because .htaccess is not writable. You must manually edit .htaccess if you have updated your htaccess settings.');
-    $form['autoupdate']['boost_autoupdate_htaccess']['#default_value'] = FALSE;
-    $form['autoupdate']['boost_autoupdate_htaccess']['#disabled'] = TRUE;
-  }
-  // Only show button if something can be done.
-  if (is_writable('.htaccess') || is_writable('robots.txt')) {
-    $form['autoupdate']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
-  }
-
-
   $form['boost_generated'] = array(
     '#type'          => 'textarea',
     '#title'         => t('Generated Rules'),
