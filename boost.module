@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.322 2010/04/17 21:43:29 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.323 2010/04/24 00:35:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -107,6 +107,37 @@ define('BOOST_PERM_FILE_PATH',       implode('/', array_filter(explode('/', str_
 define('BOOST_CRAWLER_BATCH_SIZE',   variable_get('boost_crawler_batch_size', min(15, ini_get('max_execution_time')/(2 * boost_average_time()))));
 define('BOOST_MAX_THREAD_TIME',      max(300, 2 * boost_average_time() * BOOST_CRAWLER_THREADS * BOOST_CRAWLER_BATCH_SIZE));
 
+// define doesn't work with an array
+$GLOBALS['_boost']['verbose_option_defaults'] = array(
+  'boost_init_404',
+  'boost_exit_headers',
+  'boost_cron_expire',
+  'boost_view_insert',
+  'boost_expire_node',
+  'boost_user_op',
+  'boost_user_delete',
+  'boost_block_flush_submit',
+  'boost_block_settings_submit',
+  'boost_block_rm_settings_submit',
+  'boost_ob_handler_info',
+  'boost_ob_handler_redirect',
+  'boost_cache_clear_all',
+  'boost_cache_flush_filename',
+  'boost_cache_expire_router',
+  'boost_cache_expire_all_db_list',
+  'boost_cache_expire_all_db_count',
+  'boost_cache_set_node_relationships',
+  'boost_crawler_run_stop',
+  'boost_crawler_run_rogue',
+  'boost_crawler_run_sleep',
+  'boost_crawler_run_shutdown',
+  'boost_crawler_run_kill',
+  'boost_crawler_run_startup',
+  'boost_crawler_run_restart',
+  'boost_crawler_run_done',
+  'boost_crawler_run_start',
+);
+$GLOBALS['_boost']['verbose_option_selected'] = array_flip(variable_get('boost_verbose_refined', $GLOBALS['_boost']['verbose_option_defaults']));
 
 //////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -157,7 +188,19 @@ function boost_views_pre_render(&$view) {
       if (is_numeric($item->nid)) {
         $node = node_load($item->nid);
         if (isset($node->type)) {
-          $GLOBALS['_boost_relationships'][] = array('child_page_callback' => 'node', 'child_page_type' => $node->type, 'child_page_id' => $item->nid);
+          $info = array(
+            'child_page_callback' => 'node',
+            'child_page_type' => $node->type,
+            'child_page_id' => $item->nid,
+          );
+          if (BOOST_VERBOSE >= 9) {
+            $info['debug'] = array(
+              'view-name' => $view->name,
+              'view-display' => $view->current_display,
+              'node-path' => $node->path,
+            );
+          }
+          $GLOBALS['_boost_relationships'][] = $info;
         }
       }
     }
@@ -176,7 +219,7 @@ function boost_views_pre_view(&$view) {
  * Implementation of hook_init(). Performs page setup tasks if page not cached.
  */
 function boost_init() {
-  global $user, $base_path;
+  global $user, $base_path, $_boost;
 
   $uid = isset($user->uid) ? $user->uid : 0;
   // Remove Boost cookie at logout if it still exists
@@ -208,7 +251,9 @@ function boost_init() {
   if ($path != '' && $_REQUEST['q'] == '' && !stristr($path, '.php') && isset($_SERVER['REDIRECT_STATUS']) && $_SERVER['REDIRECT_STATUS'] == 404) {
     $GLOBALS['conf']['cache'] = CACHE_DISABLED;
     $GLOBALS['_boost_cache_this'] = FALSE;
-    if (BOOST_VERBOSE >= 7) {
+
+
+    if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_init_404'])) {
       watchdog('boost', '404 received from server via redirect, going to send a 404. Info: !output', array('!output' => boost_print_r($_SERVER, TRUE, TRUE)));
     }
     drupal_not_found();
@@ -281,6 +326,7 @@ function boost_init() {
  * cached by Boost.
  */
 function boost_exit($destination = NULL) {
+  global $_boost;
   // Check that hook_exit() was invoked by drupal_goto() for a POST request:
   if (!empty($destination) && $_SERVER['REQUEST_METHOD'] == 'POST') {
 
@@ -309,6 +355,7 @@ function boost_exit($destination = NULL) {
       && headers_sent($filename, $linenum)
       && !boost_headers_contain('Location: ')
       && BOOST_VERBOSE >= 7
+      && isset($_boost['verbose_option_selected']['boost_exit_headers'])
       ) {
     watchdog('boost', 'boost_exit() Debug: Headers already sent in @filename on line @linenum. Asynchronous Operation will not be used.', array('@filename' => $filename, '@linenum' => $linenum));
   }
@@ -419,6 +466,7 @@ function boost_cron() {
   if (!BOOST_ENABLED) {
     return;
   }
+  global $_boost;
 
   $expire = TRUE;
   if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
@@ -426,7 +474,7 @@ function boost_cron() {
   }
   // Expire old content
   if (!BOOST_LOOPBACK_BYPASS && variable_get('boost_expire_cron', TRUE) && $expire && boost_cache_expire_all()) {
-    if (BOOST_VERBOSE >= 5) {
+    if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_cron_expire'])) {
       watchdog('boost', 'Expired stale files from static page cache.', array(), WATCHDOG_NOTICE);
     }
   }
@@ -642,6 +690,7 @@ function _boost_view_insert() {
   if (!isset($GLOBALS['_boost_nid'])) {
     return FALSE;
   }
+  global $_boost;
   // Ensure we're in the correct working directory, since some web servers (e.g. Apache) mess this up here.
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
 
@@ -746,7 +795,7 @@ function _boost_view_insert() {
   if ($data) {
     $flushed = boost_cache_expire_router($data);
   }
-  if (BOOST_VERBOSE >= 7) {
+  if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_view_insert'])) {
     watchdog('boost', 'Debug: _boost_view_insert() <br />!views Views Searched; !hits of them contain the new node and where thus flushed. As a result of this !flushed pages where expired from the boost cache.', array('!views' => $number_views, '!hits' => $number_hits, '!flushed' => $flushed));
   }
 }
@@ -792,6 +841,7 @@ function boost_votingapi_delete($votes) {
  *  node id
  */
 function boost_expire_node($node, $nid = 0) {
+  global $_boost;
   $data = array();
   $paths = array();
 
@@ -914,7 +964,7 @@ function boost_expire_node($node, $nid = 0) {
   if (!empty($paths)) {
     $flushed += boost_cache_expire_derivative($paths, TRUE);
   }
-  if (BOOST_VERBOSE >= 7) {
+  if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_expire_node'])) {
     watchdog('boost', 'Debug: boost_expire_node() <br />Node !nid was flushed resulting in !flushed pages being expired from the cache',  array('!nid' => $node->nid, '!flushed' => $flushed));
   }
 }
@@ -1038,9 +1088,8 @@ function boost_taxonomy($op, $type, $term = NULL) {
  * Implementation of hook_user(). Acts on user account actions.
  */
 function boost_user($op, &$edit, &$account, $category = NULL) {
-  global $user;
-
-  if (BOOST_VERBOSE >= 7) {
+  global $user, $_boost;
+  if (BOOST_VERBOSE >= 9 && isset($_boost['verbose_option_selected']['boost_user_op'])) {
     watchdog('boost', 'Debug: boost_user() <br />The %op operation was sent for user %user', array('%op' => $op, '%user' => $user->uid));
   }
   switch ($op) {
@@ -1068,7 +1117,7 @@ function boost_user($op, &$edit, &$account, $category = NULL) {
           boost_set_base_dir_in_array($data);
           $flushed = boost_cache_expire_router($data, TRUE, TRUE);
         }
-        if (BOOST_VERBOSE >= 7) {
+        if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_user_delete'])) {
           watchdog('boost', 'Debug: boost_user() <br />User !uid was deleted resulting in !flushed pages being expired from the cache',  array('!uid' => $account->uid, '!flushed' => $flushed));
         }
       }
@@ -1261,6 +1310,7 @@ function boost_block_flush_form() {
 }
 
 function boost_block_form_flush_submit(&$form_state, $form) {
+  global $_boost;
   $data = array();
   // Special front page handling
   if (!empty($form['values']['page_callback']) && $form['values']['page_callback'] == 'node_page_default' && BOOST_CACHE_XML) {
@@ -1276,7 +1326,7 @@ function boost_block_form_flush_submit(&$form_state, $form) {
     if (array_key_exists('path', $form['values'])) {
       $flushed += boost_cache_expire_derivative(array($form['values']['path']), TRUE, TRUE);
     }
-    if (BOOST_VERBOSE >= 7) {
+    if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_block_flush_submit'])) {
       $form_path = empty($form['values']['path']) ? '' : $form['values']['path'];
       watchdog('boost', 'Debug: boost_block_form_flush_submit() <br />Page !path was deleted resulting in !flushed pages being flushed from the cache',  array('!path' => $form_path, '!flushed' => $flushed));
     }
@@ -1288,7 +1338,7 @@ function boost_block_form_flush_submit(&$form_state, $form) {
     if (array_key_exists('path', $form['values'])) {
       $flushed += boost_cache_expire_derivative(array($form['values']['path']), TRUE);
     }
-    if (BOOST_VERBOSE >= 7) {
+    if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_block_flush_submit'])) {
       $form_path = empty($form['values']['path']) ? '' : $form['values']['path'];
       watchdog('boost', 'Debug: boost_block_form_flush_submit() <br />Page !path was expired resulting in !flushed pages being expired from the cache',  array('!path' => $form_path, '!flushed' => $flushed));
     }
@@ -1408,9 +1458,10 @@ function boost_block_db_settings_form() {
  * Sets page specific settings in the boost cache database.
  */
 function boost_block_db_settings_form_submit(&$form_state, $form) {
+  global $_boost;
   $flushed = boost_set_db_page_settings($form['values']['lifetime'], $form['values']['push'], $form['values']['selection']);
-  if (BOOST_VERBOSE >= 7) {
-    watchdog('boost', 'Debug: boost_block_db_rm_settings_form_submit() <br />!flushed pages being expired from the cache in order for the new settings to take effect.',  array('!flushed' => $flushed));
+  if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_block_settings_submit'])) {
+    watchdog('boost', 'Debug: boost_block_db_settings_form_submit() <br />!flushed pages being expired from the cache in order for the new settings to take effect.',  array('!flushed' => $flushed));
   }
 }
 
@@ -1418,6 +1469,7 @@ function boost_block_db_settings_form_submit(&$form_state, $form) {
  * Removes page specific settings in the boost cache database.
  */
 function boost_block_db_rm_settings_form_submit(&$form_state, $form) {
+  global $_boost;
   $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
   $router_item = $GLOBALS['_boost_router_item'];
 
@@ -1438,7 +1490,7 @@ function boost_block_db_rm_settings_form_submit(&$form_state, $form) {
   if ($data) {
     $flushed = boost_cache_expire_router($data);
   }
-  if (BOOST_VERBOSE >= 7) {
+  if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_block_rm_settings_submit'])) {
     watchdog('boost', 'Debug: boost_block_db_rm_settings_form_submit() <br />!flushed pages being expired from the cache in order for the new settings to take effect.', array('!flushed' => $flushed));
   }
 }
@@ -1526,6 +1578,7 @@ function theme_boost_cache_status($ttl, $text) {
  * PHP output buffering callback for static page caching.
  */
 function _boost_ob_handler() {
+  global $_boost;
   $buffer = ob_get_contents();
   // If Compressed data was given to us decompress it
   if (boost_headers_contain('gzip')) {
@@ -1568,7 +1621,7 @@ function _boost_ob_handler() {
   if (!empty($decompressed_buffer)) {
     $status = boost_get_http_status();
     $types = boost_get_content_type();
-    if (BOOST_VERBOSE >= 7) {
+    if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_ob_handler_info'])) {
       watchdog('boost', 'Debug: _boost_ob_handler() <br />HTTP Info: !status - !types <br />Path: !path <br />Content Container: !callback <br />Content Type: !type <br />ID: !id <br />Cache This: !cache.', array('!status' => $status, '!types' => implode(', ', $types), '!path' => boost_file_path($GLOBALS['_boost_path']), '!callback' => $GLOBALS['_boost_router_item']['page_callback'], '!type' => $GLOBALS['_boost_router_item']['page_type'], '!id' => $GLOBALS['_boost_router_item']['page_id'], '!cache' => $GLOBALS['_boost_cache_this'] ? 'TRUE' : 'FALSE'));
     }
     $types = array_pop($types);
@@ -1618,7 +1671,7 @@ function _boost_ob_handler() {
   // Remove cached items when a redirect happens
   if (empty($GLOBALS['_boost_router_item']['page_callback']) && boost_headers_contain('Location: ')) {
     $types = boost_get_content_type();
-    if (BOOST_VERBOSE >= 7) {
+    if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_ob_handler_redirect'])) {
       watchdog('boost', 'Debug: _boost_ob_handler() <br />HTTP Info: Location redirect for !types <br />Path: !path', array('!status' => $status, '!types' => implode(', ', $types), '!path' => boost_file_path($GLOBALS['_boost_path'])));
     }
     $types = array_pop($types);
@@ -1820,10 +1873,11 @@ function boost_is_cached($path) {
  * Deletes all files currently in the cache.
  */
 function boost_cache_clear_all() {
+  global $_boost;
   if (variable_get('boost_ignore_flush', 0) == 0) {
     boost_cache_clear_all_db();
     boost_cache_delete(TRUE);
-    if (BOOST_VERBOSE >= 5) {
+    if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_cache_clear_all'])) {
       watchdog('boost', 'Flushed ALL files from static page cache.', array(), WATCHDOG_NOTICE);
     }
     return TRUE;
@@ -2085,6 +2139,7 @@ function boost_cache_expire_by_filename($paths, $wildcard = TRUE, $force_flush) 
  *   If true get all chached files that start with this path.
  */
 function boost_cache_flush_by_filename($filenames, $force_flush = FALSE) {
+  global $_boost;
   $files = array();
   if ($filenames) {
     $filenames = array_unique($filenames);
@@ -2092,7 +2147,7 @@ function boost_cache_flush_by_filename($filenames, $force_flush = FALSE) {
       $files[] = array('filename' => $filename);
     }
     $counter = boost_cache_kill($files);
-    if (BOOST_VERBOSE >= 9) {
+    if (BOOST_VERBOSE >= 9 && isset($_boost['verbose_option_selected']['boost_cache_flush_filename'])) {
       watchdog('boost', 'Debug: boost_cache_flush_by_filename() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $filenames)));
     }
     return $counter;
@@ -2122,6 +2177,7 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
   if (!is_array($router_items)) {
     return FALSE;
   }
+  global $_boost;
   $count = 0;
   $files = $list = array();
 
@@ -2171,7 +2227,7 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
 
     while ($info = db_fetch_array($result)) {
       $files[] = $info;
-      if (BOOST_VERBOSE >= 9) {
+      if (BOOST_VERBOSE >= 9 && isset($_boost['verbose_option_selected']['boost_cache_expire_router'])) {
         $list[] = $info['filename'];
       }
     }
@@ -2183,7 +2239,7 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
       boost_remove_db($files);
     }
   }
-  if (BOOST_VERBOSE >= 9) {
+  if (BOOST_VERBOSE >= 9 && isset($_boost['verbose_option_selected']['boost_cache_expire_router'])) {
     watchdog('boost', 'Debug: boost_cache_expire_router() <br />Following files where flushed: <br />!list<br /><br />Input: <br /> !input', array('!list' => implode('<br />', $list), '!input' => boost_print_r($router_items, TRUE, TRUE)));
   }
   return $count;
@@ -2285,6 +2341,7 @@ function boost_cache_expire_all() {
  * TODO del empty dirs if enabled
  */
 function boost_cache_expire_all_db() {
+  global $_boost;
   $list = $files = array();
   if (BOOST_FLUSH_ALL_MULTISITE) {
     $result = db_query("SELECT filename, hash, base_dir FROM {boost_cache} WHERE expire BETWEEN 1 AND %d", BOOST_TIME);
@@ -2294,7 +2351,7 @@ function boost_cache_expire_all_db() {
   }
   while ($boost = db_fetch_array($result)) {
     $files[] = $boost;
-    if (BOOST_VERBOSE >= 9) {
+    if (BOOST_VERBOSE >= 9 && isset($_boost['verbose_option_selected']['boost_cache_expire_all_db_list'])) {
       $list[] = $boost['filename'];
     }
   }
@@ -2305,10 +2362,10 @@ function boost_cache_expire_all_db() {
     // TO-DO: del empty dirs.
   }
 
-  if (BOOST_VERBOSE >= 9) {
+  if (BOOST_VERBOSE >= 9 && isset($_boost['verbose_option_selected']['boost_cache_expire_all_db_list'])) {
     watchdog('boost', 'Debug: boost_cache_expire_all_db() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $list)));
   }
-  elseif (BOOST_VERBOSE >= 7) {
+  elseif (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_verbose_refined'])) {
     watchdog('boost', 'Debug: boost_cache_expire_all_db() <br />!num files where flushed', array('!num' => $count));
   }
   return TRUE;
@@ -2526,7 +2583,7 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
  * If Optional is not set it will use values in $GLOBALS['_boost_router_item']
  */
 function boost_cache_set_node_relationships($relationships) {
-  global $base_root;
+  global $base_root, $_boost;
   $url = $base_root . request_uri();
   $hash_url = md5($url);
   $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
@@ -2587,8 +2644,15 @@ function boost_cache_set_node_relationships($relationships) {
 
 
   $removed = boost_cache_prune_node_relationship($hash_url);
-  if (BOOST_VERBOSE >= 7) {
-    watchdog('boost', 'Debug: boost_cache_set_node_relationships() <br />!num of !total given entries to the boost_cache_relationships table added or updated; !removed entries removed due to them being outdated.', array('!num' => $counter, '!total' => count($GLOBALS['_boost_relationships']), '!removed' => $removed));
+  if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_cache_set_node_relationships'])) {
+    watchdog('boost', 'Debug: boost_cache_set_node_relationships() <br />!num of !total given entries to the boost_cache_relationships table added or updated; !removed entries removed due to them being outdated. !dump',
+      array(
+        '!num' => $counter,
+        '!total' => count($GLOBALS['_boost_relationships']),
+        '!removed' => $removed,
+        '!dump' => str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($relationships, TRUE)))),
+      )
+    );
   }
   unset($GLOBALS['_boost_relationships']);
   return TRUE;
@@ -4147,7 +4211,7 @@ if (!function_exists('http_build_query')) {
  *  Has the site changed, if so get expire column
  */
 function boost_crawler_run($expire = -1) {
-  Global $base_url;
+  Global $base_url, $_boost;
   $this_thread = (isset($_GET['thread']) && is_numeric($_GET['thread'])) ? $_GET['thread'] : NULL;
   $total_threads = (isset($_GET['total']) && is_numeric($_GET['total'])) ? $_GET['total'] : NULL;
   $expire = ($expire == -1 && isset($_GET['expire']) && is_numeric($_GET['expire'])) ? $_GET['expire'] : $expire;
@@ -4177,7 +4241,7 @@ function boost_crawler_run($expire = -1) {
       // Clock out
       _boost_variable_set('boost_crawler_thread_num_' . $this_thread , 0);
       db_unlock_tables();
-      if (BOOST_VERBOSE >= 5) {
+      if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_stop'])) {
         watchdog('boost', 'Crawler - Thread %num stopped.', array('%num' => $this_thread));
       }
       ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
@@ -4187,7 +4251,7 @@ function boost_crawler_run($expire = -1) {
 
     // Kill this thread if it doesn't have a thread number assigned to it.
     if (!isset($this_thread)) {
-      if (BOOST_VERBOSE >= 5) {
+      if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_rogue'])) {
         watchdog('boost', 'Crawler - Rogue thread killed.');
       }
       exit;
@@ -4211,7 +4275,7 @@ function boost_crawler_run($expire = -1) {
         exit;
       }
       _boost_variable_set('boost_crawler_sleeping', TRUE);
-      if (BOOST_VERBOSE >= 5) {
+      if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_sleep'])) {
         watchdog('boost', 'Crawler Sleep for 15 seconds');
       }
       sleep(15);
@@ -4228,7 +4292,7 @@ function boost_crawler_run($expire = -1) {
         exit;
       }
       _boost_variable_set('boost_crawler_sleeping', TRUE);
-      if (BOOST_VERBOSE >= 5) {
+      if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_shutdown'])) {
         watchdog('boost', 'Crawler sleeping for @x seconds, do to forced shutdown.', array('@x' => 2 * BOOST_CRAWLER_THREADS * BOOST_CRAWLER_BATCH_SIZE));
       }
       $i = BOOST_CRAWLER_BATCH_SIZE;
@@ -4260,7 +4324,7 @@ function boost_crawler_run($expire = -1) {
     // Sanity Check
     if (abs($threads) > BOOST_CRAWLER_THREADS) {
       // Kill this thread
-      if (BOOST_VERBOSE >= 5) {
+      if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_kill'])) {
         watchdog('boost', 'Crawler - Thread %num of %total Killed.', array('%num' => $this_thread, '%total' => $total_threads));
       }
       ini_set('max_execution_time', $GLOBALS['_boost_max_execution_time']);
@@ -4274,7 +4338,7 @@ function boost_crawler_run($expire = -1) {
       _boost_variable_set('boost_crawler_number_of_threads', (int)$threads);
       // Clock in
       _boost_variable_set('boost_crawler_thread_num_' . $this_thread , BOOST_TIME);
-      if (BOOST_VERBOSE >= 5) {
+      if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_startup'])) {
           watchdog('boost', 'Crawler - Thread @num of @total started', array('@num' => 1, '@total' => $threads));
       }
     }
@@ -4287,7 +4351,7 @@ function boost_crawler_run($expire = -1) {
         _boost_variable_set('boost_crawler_thread_num_' . $threads, BOOST_TIME);
         db_unlock_tables();
         boost_async_call_crawler($self, $threads, _boost_variable_get('boost_crawler_number_of_threads'), $expire);
-        if (BOOST_VERBOSE >= 5) {
+        if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_startup'])) {
             watchdog('boost', 'Crawler - Thread @num of @total started', array('@num' => $threads, '@total' => _boost_variable_get('boost_crawler_number_of_threads')));
         }
         _boost_set_time_limit(0);
@@ -4302,7 +4366,7 @@ function boost_crawler_run($expire = -1) {
       // Clock out
       if (isset($this_thread)) {
         _boost_variable_set('boost_crawler_thread_num_' . $this_thread , 0);
-        if (BOOST_VERBOSE >= 5) {
+        if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_kill'])) {
           watchdog('boost', 'Crawler - Thread %num of %total Killed.', array('%num' => $this_thread, '%total' => $total_threads));
         }
       }
@@ -4315,7 +4379,7 @@ function boost_crawler_run($expire = -1) {
           ) {
         variable_set('boost_crawler_number_of_tries', (int)_boost_variable_get('boost_crawler_number_of_tries') + 1);
         _boost_variable_set('boost_crawler_number_of_threads', 1);
-        if (BOOST_VERBOSE >= 5) {
+        if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_restart'])) {
           watchdog('boost', 'Crawler - Restarting with 1 thread, to try & get the stubborn urls cached.');
         }
         boost_async_call_crawler($self, 1, 1, $expire);
@@ -4348,7 +4412,7 @@ function boost_crawler_run($expire = -1) {
       // Clock out
       _boost_variable_set('boost_crawler_thread_num_' . $this_thread , 0);
       db_unlock_tables();
-      if (BOOST_VERBOSE >= 5) {
+      if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_done'])) {
         watchdog('boost', 'Crawler - Thread %num of %total Done.', array('%num' => $this_thread, '%total' => $total_threads));
       }
       // Re init crawler if it missed some, try 3 times
@@ -4358,7 +4422,7 @@ function boost_crawler_run($expire = -1) {
           ) {
         variable_set('boost_crawler_number_of_tries', (int)_boost_variable_get('boost_crawler_number_of_tries') + 1);
         _boost_variable_set('boost_crawler_number_of_threads', 1);
-        if (BOOST_VERBOSE >= 5) {
+        if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_restart'])) {
           watchdog('boost', 'Crawler - Restarting with 1 thread, to try & get the stubborn urls cached.');
         }
         boost_async_call_crawler($self, 1, 1, $expire);
@@ -4414,7 +4478,7 @@ function boost_crawler_run($expire = -1) {
   }
   elseif (variable_get('cron_semaphore', FALSE) == TRUE) {
     // This function called from cron; reset & call self.
-    if (BOOST_VERBOSE >= 5) {
+    if (BOOST_VERBOSE >= 5 && isset($_boost['verbose_option_selected']['boost_crawler_run_start'])) {
       watchdog('boost', 'Crawler Start %self', array('%self' => $self));
     }
     db_query('TRUNCATE {boost_crawler}');

@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.138 2010/04/19 07:45:47 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.139 2010/04/24 00:35:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -71,7 +71,7 @@ function boost_admin_clear_cache_submit($form, &$form_state) {
  * @see system_settings_form()
  */
 function boost_admin_boost_performance_page() {
-  Global $base_path;
+  Global $base_path, $_boost;
 
   $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800, 52*604800), 'format_interval');
   //$period[0] = '<' . t('none') . '>';
@@ -553,6 +553,48 @@ function boost_admin_boost_performance_page() {
       7 => t('7 Debug Mode: Output a lot of extra info.'),
       9 => t('9 Debug Overkill: Output what is getting expired.'),
     ),
+  );
+  $form['advanced']['verbose'] = array(
+    '#type'          => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+    '#title'         => t('Watchdog Verbose Settings'),
+  );
+  $options = array(
+    'boost_init_404' => t('L7 - 404 received from server via redirect. boost_init()'),
+    'boost_exit_headers' => t('L7 - Headers already sent. boost_exit()'),
+    'boost_cron_expire' => t('L5 - Expired stale files from static page cache. boost_cron()'),
+    'boost_view_insert' => t('L7 - Views Searched; X contain new node. _boost_view_insert()'),
+    'boost_expire_node' => t('L7 - Node was flushed; resulting in X pages being expired. boost_expire_node()'),
+    'boost_user_op' => t('L9 - X operation sent to hook_user. boost_user()'),
+    'boost_user_delete' => t('L7 - UID was deleted resulting in X pages being expired. boost_user()'),
+    'boost_block_flush_submit' => t('L7 - Path was deleted/expired resulting in X pages being expired. boost_block_form_flush_submit()'),
+    'boost_block_settings_submit' => t('L7 - X pages where expired from cache so new settings take effect. boost_block_db_settings_form_submit()'),
+    'boost_block_rm_settings_submit' => t('L7 - X pages where expired from cache so new settings take effect. boost_block_db_rm_settings_form_submit()'),
+    'boost_ob_handler_info' => t('L7 - Info about page in boosts output buffer. _boost_ob_handler()'),
+    'boost_ob_handler_redirect' => t('L7 - Browser redirect detected; remove cache entry for this path. _boost_ob_handler()'),
+    'boost_cache_clear_all' => t('L5 - Flushed ALL files from static page cache. boost_cache_clear_all()'),
+    'boost_cache_flush_filename' => t('L9 - The Following files where flushed. boost_cache_flush_by_filename()'),
+    'boost_cache_expire_router' => t('L9 - The Following files where flushed. boost_cache_expire_router()'),
+    'boost_cache_expire_all_db_list' => t('L9  - Following files where flushed. boost_cache_expire_all_db()'),
+    'boost_cache_expire_all_db_count' => t('L7  - X files where flushed. boost_cache_expire_all_db()'),
+    'boost_cache_set_node_relationships' => t('L7 - X entries to the boost_cache_relationships table added or updated. boost_cache_set_node_relationships()'),
+    'boost_crawler_run_stop' => t('L5 - Thread stopped. boost_crawler_run()'),
+    'boost_crawler_run_rogue' => t('L5 - Rogue thread killed. boost_crawler_run()'),
+    'boost_crawler_run_sleep' => t('L5 - Crawler Sleep for 15 seconds. boost_crawler_run()'),
+    'boost_crawler_run_shutdown' => t('L5 - Crawler sleeping for X seconds, do to forced shutdown. boost_crawler_run()'),
+    'boost_crawler_run_kill' => t('L5 - Thread X of X Killed. boost_crawler_run()'),
+    'boost_crawler_run_startup' => t('L5 - Thread X of X started. boost_crawler_run()'),
+    'boost_crawler_run_restart' => t('L5 - Restarting with 1 thread. boost_crawler_run()'),
+    'boost_crawler_run_done' => t('L5 - Thread X of X Done. boost_crawler_run()'),
+    'boost_crawler_run_start' => t('L5 - Crawler Start X. boost_crawler_run()'),
+  );
+  $form['advanced']['verbose']['boost_verbose_refined'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Watchdog Verbose Refinement'),
+    '#default_value' => variable_get('boost_verbose_refined', $_boost['verbose_option_defaults']),
+    '#options' => $options,
+    '#description' => t('Enable/Disable certian watchdog messages.'),
   );
   if (ini_get('safe_mode')) {
     $form['advanced']['boost_ignore_safe_warning'] = array(
