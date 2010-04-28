@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.323 2010/04/24 00:35:44 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.324 2010/04/28 18:22:26 mikeytown2 Exp $
 
 /**
  * @file
@@ -104,7 +104,7 @@ define('BOOST_FILE_PATH',            BOOST_MULTISITE_SINGLE_DB ? boost_cache_dir
 define('BOOST_GZIP_FILE_PATH',       implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_GZIP_DIR . '/', BOOST_FILE_PATH)))));
 define('BOOST_PERM_GZIP_FILE_PATH',  implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_GZ_DIR . '/', BOOST_FILE_PATH)))));
 define('BOOST_PERM_FILE_PATH',       implode('/', array_filter(explode('/', str_replace(BOOST_ROOT_CACHE_DIR . '/' . BOOST_NORMAL_DIR, BOOST_ROOT_CACHE_DIR . '/' . BOOST_PERM_NORMAL_DIR . '/', BOOST_FILE_PATH)))));
-define('BOOST_CRAWLER_BATCH_SIZE',   variable_get('boost_crawler_batch_size', min(15, ini_get('max_execution_time')/(2 * boost_average_time()))));
+define('BOOST_CRAWLER_BATCH_SIZE',   variable_get('boost_crawler_batch_size', min(15, (ini_get('max_execution_time') + 0.1)/(2 * boost_average_time()))));
 define('BOOST_MAX_THREAD_TIME',      max(300, 2 * boost_average_time() * BOOST_CRAWLER_THREADS * BOOST_CRAWLER_BATCH_SIZE));
 
 // define doesn't work with an array
@@ -4791,7 +4791,7 @@ function boost_crawler_threads_alive() {
  * Return average page generation time.
  */
 function boost_average_time() {
-  return variable_get('boost_crawler_average_generation', 5000)/1000;
+  return (variable_get('boost_crawler_average_generation', 5000)/1000 + 0.1);
 }
 
 /**
