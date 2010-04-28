@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.326 2010/04/28 18:38:43 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.327 2010/04/28 21:40:03 mikeytown2 Exp $
 
 /**
  * @file
@@ -152,6 +152,7 @@ $GLOBALS['_boost']['verbose_option_selected'] = array_flip(variable_get('boost_v
 //$GLOBALS['_boost_router_item'] = '';
 //$GLOBALS['_boost_relationships'] = '';
 //$GLOBALS['_boost_nid'] = '';
+//$_boost
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -556,6 +557,7 @@ function boost_set_base_dir_in_array(&$data) {
  * Implementation of hook_nodeapi(). Acts on nodes defined by other modules.
  */
 function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
+  global $_boost;
   if (!BOOST_ENABLED || !isset($node->nid)) {
     return;
   }
@@ -567,23 +569,26 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
       // Run all cached views, looking for this new node
       if (BOOST_FLUSH_VIEWS_INSERT && module_exists('views')) {
         $GLOBALS['_boost_nid'] = $node->nid;
+        $_boost['new_nodes'][$node->nid] = $node->nid;
         register_shutdown_function('_boost_view_insert');
       }
       // Insert new node into boost_cache table
       if (variable_get('boost_insert_node_on_creation', FALSE)) {
         $GLOBALS['_boost_nid'] = $node->nid;
+        $_boost['new_nodes'][$node->nid] = $node->nid;
         register_shutdown_function('_boost_cache_insert');
       }
-      boost_expire_node($node);
       break;
     case 'update':
       // Run all cached views, looking for this new node
       if (BOOST_FLUSH_VIEWS_UPDATE && module_exists('views')) {
         $GLOBALS['_boost_nid'] = $node->nid;
+        $_boost['new_nodes'][$node->nid] = $node->nid;
         register_shutdown_function('_boost_view_insert');
       }
 
       boost_expire_node($node);
+      // if node is not published, delete it.
       if (!$node->status) {
         boost_cache_expire_router($data, TRUE, TRUE);
       }
@@ -593,6 +598,7 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
       boost_cache_expire_router($data, TRUE, TRUE);
       break;
     case 'presave':
+      // If path changes remove old path entry from database
       // Logic taken from path_redirect_node_presave()
       if (!empty($node->path)) {
         $node_path = 'node/'. $node->nid;
@@ -613,41 +619,47 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
  * table.
  */
 function _boost_cache_insert() {
-  if (!isset($GLOBALS['_boost_nid'])) {
+  global $_boost;
+  if (empty($_boost['new_nodes'])) {
     return FALSE;
   }
   // Ensure we're in the correct working directory, since some web servers (e.g. Apache) mess this up here.
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
 
   // Load node
-  $node = node_load($GLOBALS['_boost_nid']);
-  $router_item = array();
-  $router_item['page_callback'] = 'node';
-  $router_item['page_type'] = $node->type;
-  $router_item['page_id'] = $node->nid;
-
-  // Set DB defaults
-  $expire = 0;
-  $lifetime = -1;
-  $push = -1;
-  $timer = 0;
-  $timer_average = 0;
-  $extension = BOOST_FILE_EXTENSION;
-
-  // Get list of base urls for this node
-  $base_urls = array();
-  foreach (boost_get_base_urls($node) as $domain_id) {
-    foreach ($domain_id as $base) {
-      $base_urls[] = $base . $node->path;
+  foreach ($_boost['new_nodes'] as $nid) {
+    $node = node_load($nid);
+    if (!$node) {
+      continue;
     }
-  }
+    $router_item = array();
+    $router_item['page_callback'] = 'node';
+    $router_item['page_type'] = $node->type;
+    $router_item['page_id'] = $node->nid;
 
-  // Insert each url into the DB
-  foreach ($base_urls as $url) {
-    $parts = parse_url($url);
-    $file_path = boost_cache_directory($parts['host'], FALSE);
-    $filename = boost_file_path($node->path, FALSE, BOOST_FILE_EXTENSION, $file_path);
-    boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension, $url, $file_path);
+    // Set DB defaults
+    $expire = 0;
+    $lifetime = -1;
+    $push = -1;
+    $timer = 0;
+    $timer_average = 0;
+    $extension = BOOST_FILE_EXTENSION;
+
+    // Get list of base urls for this node
+    $base_urls = array();
+    foreach (boost_get_base_urls($node) as $domain_id) {
+      foreach ($domain_id as $base) {
+        $base_urls[] = $base . $node->path;
+      }
+    }
+
+    // Insert each url into the DB
+    foreach ($base_urls as $url) {
+      $parts = parse_url($url);
+      $file_path = boost_cache_directory($parts['host'], FALSE);
+      $filename = boost_file_path($node->path, FALSE, BOOST_FILE_EXTENSION, $file_path);
+      boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer, $timer_average, $extension, $url, $file_path);
+    }
   }
 }
 
@@ -693,116 +705,123 @@ function boost_get_base_urls(&$node) {
  * cached views for newly created node. Expires the outdated views from the cache.
  */
 function _boost_view_insert() {
-  if (!isset($GLOBALS['_boost_nid'])) {
+  global $_boost;
+  if (empty($_boost['new_nodes'])) {
     return FALSE;
   }
-  global $_boost;
   // Ensure we're in the correct working directory, since some web servers (e.g. Apache) mess this up here.
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
 
-  $node = node_load($GLOBALS['_boost_nid']);
-  $base_urls = boost_get_base_urls($node);
+  watchdog('test', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($_boost['new_nodes'], TRUE)))));
 
-  if (BOOST_FLUSH_ALL_MULTISITE) {
-    $result = db_query("SELECT page_id, page_type FROM {boost_cache} WHERE page_callback = 'view' AND expire > 0 AND expire <> 434966400 GROUP BY page_id, page_type");
-  }
-  else {
-    $result = db_query("SELECT page_id, page_type FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = 'view' AND expire > 0 AND expire <> 434966400 GROUP BY page_id, page_type", BOOST_FILE_PATH);
-  }
+  foreach ($_boost['new_nodes'] as $nid) {
+    $node = node_load($nid);
+    if (!$node) {
+      continue;
+    }
+    $base_urls = boost_get_base_urls($node);
 
-  $data = array();
-  $number_views = 0;
-  $number_hits = 0;
-  $views = array();
-  while ($boost = db_fetch_array($result)) {
-    $key = $boost['page_type'] . $boost['page_id'];
-    $views[$key]['page_type'] = $boost['page_type'];
-    $views[$key]['page_id'] = $boost['page_id'];
-  }
-//   $results = db_query("SELECT id, name FROM {views_display} INNER JOIN {views_view} USING (vid) WHERE base_table = 'node'");
-//   while ($row = db_fetch_array($results)) {
-//     $key = $row['name'] . $row['id'];
-//     $views[$key]['page_type'] = $row['name'];
-//     $views[$key]['page_id'] = $row['id'];
-//   }
-  $options = array(
-      'operator' => '=',
-      'value' => array(
-        'value' => $GLOBALS['_boost_nid'],
-      ),
-      'group' => '0',
-      'exposed' => FALSE,
-      'expose' => array(
-        'operator' => FALSE,
-        'label' => '',
-      ),
-      'relationship' => 'none',
-    );
-  $domain_options = array(
-      'operator' => '=',
-      'group' => '0',
-      'exposed' => FALSE,
-      'expose' => array(
-        'operator' => FALSE,
-        'label' => '',
-      ),
-      'relationship' => 'none',
-    );
-  foreach ($views as $boost) {
-    $view = views_get_view($boost['page_type']);
-    $view->set_display($boost['page_id']);
-    $view->pre_execute();
-    $view->set_items_per_page(1);
-    $view->add_item($boost['page_id'], 'filter', 'node', 'nid', $options);
+    if (BOOST_FLUSH_ALL_MULTISITE) {
+      $result = db_query("SELECT page_id, page_type FROM {boost_cache} WHERE page_callback = 'view' AND expire > 0 AND expire <> 434966400 GROUP BY page_id, page_type");
+    }
+    else {
+      $result = db_query("SELECT page_id, page_type FROM {boost_cache} WHERE base_dir = '%s' AND page_callback = 'view' AND expire > 0 AND expire <> 434966400 GROUP BY page_id, page_type", BOOST_FILE_PATH);
+    }
 
-    // Check for domain access filter "Available on current domain"
-    $filters = $view->get_items('filter', $boost['page_id']);
-    if (isset($filters['current_all'])) {
+    $data = array();
+    $number_views = 0;
+    $number_hits = 0;
+    $views = array();
+    while ($boost = db_fetch_array($result)) {
+      $key = $boost['page_type'] . $boost['page_id'];
+      $views[$key]['page_type'] = $boost['page_type'];
+      $views[$key]['page_id'] = $boost['page_id'];
+    }
+  //   $results = db_query("SELECT id, name FROM {views_display} INNER JOIN {views_view} USING (vid) WHERE base_table = 'node'");
+  //   while ($row = db_fetch_array($results)) {
+  //     $key = $row['name'] . $row['id'];
+  //     $views[$key]['page_type'] = $row['name'];
+  //     $views[$key]['page_id'] = $row['id'];
+  //   }
+    $options = array(
+        'operator' => '=',
+        'value' => array(
+          'value' => $nid,
+        ),
+        'group' => '0',
+        'exposed' => FALSE,
+        'expose' => array(
+          'operator' => FALSE,
+          'label' => '',
+        ),
+        'relationship' => 'none',
+      );
+    $domain_options = array(
+        'operator' => '=',
+        'group' => '0',
+        'exposed' => FALSE,
+        'expose' => array(
+          'operator' => FALSE,
+          'label' => '',
+        ),
+        'relationship' => 'none',
+      );
+    foreach ($views as $boost) {
+      $view = views_get_view($boost['page_type']);
+      $view->set_display($boost['page_id']);
+      $view->pre_execute();
+      $view->set_items_per_page(1);
+      $view->add_item($boost['page_id'], 'filter', 'node', 'nid', $options);
 
-      // Remove domain access filter "Available on current domain"
-      $view->set_item($boost['page_id'], 'filter', 'current_all', NULL);
-      foreach ($node->domains as $domain_id) {
+      // Check for domain access filter "Available on current domain"
+      $filters = $view->get_items('filter', $boost['page_id']);
+      if (isset($filters['current_all'])) {
 
-        // Set domain access filter "Domain ID" to what's in the node
-        $domain_options['value']['value'] = $domain_id;
-        $view->set_item($boost['page_id'], 'filter', 'gid', NULL);
-        $view->add_item($boost['page_id'], 'filter', 'domain_access', 'gid', $domain_options);
-        $filters = $view->get_items('filter', $boost['page_id']);
-        $view->execute();
-        $number_views++;
-        foreach ($view->result as $item) {
-          if ($item->nid == $GLOBALS['_boost_nid']) {
-            foreach ($base_urls[$domain_id] as $url) {
-              $parts = parse_url($url);
-              $file_path = boost_cache_directory($parts['host'], FALSE);
-              $hash = $file_path . 'view' . $boost['page_type'] . $boost['page_id'];
-              $data[$hash] = array('base_dir' => $file_path, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
-              $number_hits++;
+        // Remove domain access filter "Available on current domain"
+        $view->set_item($boost['page_id'], 'filter', 'current_all', NULL);
+        foreach ($node->domains as $domain_id) {
+
+          // Set domain access filter "Domain ID" to what's in the node
+          $domain_options['value']['value'] = $domain_id;
+          $view->set_item($boost['page_id'], 'filter', 'gid', NULL);
+          $view->add_item($boost['page_id'], 'filter', 'domain_access', 'gid', $domain_options);
+          $filters = $view->get_items('filter', $boost['page_id']);
+          $view->execute();
+          $number_views++;
+          foreach ($view->result as $item) {
+            if ($item->nid == $nid) {
+              foreach ($base_urls[$domain_id] as $url) {
+                $parts = parse_url($url);
+                $file_path = boost_cache_directory($parts['host'], FALSE);
+                $hash = $file_path . 'view' . $boost['page_type'] . $boost['page_id'];
+                $data[$hash] = array('base_dir' => $file_path, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
+                $number_hits++;
+              }
             }
           }
         }
       }
-    }
 
-    // Run normal view search
-    else {
-      $filters = $view->get_items('filter', $boost['page_id']);
-      $view->execute();
-      $number_views++;
-      foreach ($view->result as $item) {
-        if ($item->nid == $GLOBALS['_boost_nid']) {
-          $hash = BOOST_FILE_PATH . 'view' . $boost['page_type'] . $boost['page_id'];
-          $data[$hash] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
-          $number_hits++;
+      // Run normal view search
+      else {
+        $filters = $view->get_items('filter', $boost['page_id']);
+        $view->execute();
+        $number_views++;
+        foreach ($view->result as $item) {
+          if ($item->nid == $nid) {
+            $hash = BOOST_FILE_PATH . 'view' . $boost['page_type'] . $boost['page_id'];
+            $data[$hash] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
+            $number_hits++;
+          }
         }
       }
     }
-  }
-  if ($data) {
-    $flushed = boost_cache_expire_router($data);
-  }
-  if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_view_insert'])) {
-    watchdog('boost', 'Debug: _boost_view_insert() <br />!views Views Searched; !hits of them contain the new node and where thus flushed. As a result of this !flushed pages where expired from the boost cache.', array('!views' => $number_views, '!hits' => $number_hits, '!flushed' => $flushed));
+    if ($data) {
+      $flushed = boost_cache_expire_router($data);
+    }
+    if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_view_insert'])) {
+      watchdog('boost', 'Debug: _boost_view_insert() <br />!views Views Searched; !hits of them contain the new node and where thus flushed. As a result of this !flushed pages where expired from the boost cache.', array('!views' => $number_views, '!hits' => $number_hits, '!flushed' => $flushed));
+    }
   }
 }
 
