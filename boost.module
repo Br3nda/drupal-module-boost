@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.325 2010/04/28 18:31:06 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.326 2010/04/28 18:38:43 mikeytown2 Exp $
 
 /**
  * @file
@@ -219,7 +219,13 @@ function boost_views_pre_view(&$view) {
  * Implementation of hook_init(). Performs page setup tasks if page not cached.
  */
 function boost_init() {
-  global $user, $base_path, $_boost;
+  global $user, $base_path, $base_root, $base_url;
+
+  // Force lowercase host name
+  $base_root = strtolower($base_root);
+  $parts = parse_url($base_url);
+  $parts['host'] = strtolower($parts['host']);
+  $base_url = boost_glue_url($parts);
 
   $uid = isset($user->uid) ? $user->uid : 0;
   // Remove Boost cookie at logout if it still exists
