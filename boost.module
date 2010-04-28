@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.327 2010/04/28 21:40:03 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.328 2010/04/28 21:57:32 mikeytown2 Exp $
 
 /**
  * @file
@@ -677,7 +677,10 @@ function boost_get_base_urls(&$node) {
   // Get list of URL's if using domain access
   $base_urls = array();
   if (module_exists('domain') && isset($node->domains)) {
-    foreach ($node->domains as $domain_id) {
+    foreach ($node->domains as $key => $domain_id) {
+      if ($key != $domain_id) {
+        continue;
+      }
       $domain = domain_lookup($domain_id);
       if ($domain['valid'] == 1) {
         if (isset($domain['path'])) {
