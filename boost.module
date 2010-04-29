@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.328 2010/04/28 21:57:32 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.329 2010/04/29 20:55:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -2613,6 +2613,9 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
 function boost_cache_set_node_relationships($relationships) {
   global $base_root, $_boost;
   $url = $base_root . request_uri();
+  if (variable_get('boost_store_url_percent_enc', FALSE)) {
+    $url = urldecode(rawurlencode($url));
+  }
   $hash_url = md5($url);
   $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
   $router_item = $GLOBALS['_boost_router_item'];
@@ -2816,6 +2819,9 @@ function boost_put_db($filename, $expire, $lifetime, $push, $router_item, $timer
   $url = is_null($url) ? $base_root . request_uri() : $url;
   $file_path = is_null($file_path) ? BOOST_FILE_PATH : $file_path;
   $hash = md5($filename);
+  if (variable_get('boost_store_url_percent_enc', FALSE)) {
+    $url = urldecode(rawurlencode($url));
+  }
   $hash_url = md5($url);
   db_query("UPDATE {boost_cache} SET expire = %d, lifetime = %d, push = %d, page_callback = '%s', page_type = '%s', timer = %d, timer_average = %d, base_dir = '%s', page_id = '%s', extension = '%s', url = '%s', filename = '%s', hash_url = '%s' WHERE hash = '%s'", $expire, $lifetime, $push, $router_item['page_callback'], $router_item['page_type'], $timer, $timer_average, $file_path, $router_item['page_id'], $extension, $url, $filename, $hash_url, $hash);
   if (!db_affected_rows()) {
