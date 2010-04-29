@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.329 2010/04/29 20:55:44 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.330 2010/04/29 21:58:47 mikeytown2 Exp $
 
 /**
  * @file
@@ -664,6 +664,24 @@ function _boost_cache_insert() {
 }
 
 /**
+ * Get domains the node is currently published to
+ *
+ * @param $node
+ *   node object
+ * @return array
+ *   array('$gid' => $gid)
+ */
+function boost_get_domains(&$node) {
+  $domains = array();
+  $result = db_query("SELECT gid FROM {domain_access} WHERE nid = %d", $node->nid);
+  while ($row = db_fetch_array($result)) {
+    $gid = $row['gid'];
+    $domains[$gid] = $gid;
+  }
+  return $domains;
+}
+
+/**
  * Get all base url's where this node can appear
  *
  * @param $node
@@ -676,11 +694,21 @@ function boost_get_base_urls(&$node) {
 
   // Get list of URL's if using domain access
   $base_urls = array();
+  $domains = array();
   if (module_exists('domain') && isset($node->domains)) {
+    // Get domains from node object
     foreach ($node->domains as $key => $domain_id) {
       if ($key != $domain_id) {
         continue;
       }
+      $domains[$domain_id] = $domain_id;
+    }
+    // Get domains from database
+    foreach (boost_get_domains(&$node) as $domain_id) {
+      $domains[$domain_id] = $domain_id;
+    }
+    // Get aliases and set base url
+    foreach ($domains as $domain_id) {
       $domain = domain_lookup($domain_id);
       if ($domain['valid'] == 1) {
         if (isset($domain['path'])) {
@@ -898,15 +926,35 @@ function boost_expire_node($node, $nid = 0) {
 
   // Get taxonomy terms and flush
   if (module_exists('taxonomy') && BOOST_FLUSH_NODE_TERMS) {
+    // Get old terms from DB
     $tids = boost_taxonomy_node_get_tids($node->nid);
+    // Get new terms from node object
+    if (!empty($node->taxonomy)) {
+      foreach ($node->taxonomy as $vocab) {
+        foreach ($vocab as $term) {
+          $tids[$term] = $term;
+        }
+      }
+    }
     $filenames = array();
     foreach ($tids as $tid) {
       if (is_numeric($tid)) {
+        // Get list of base urls for this node
+        $base_dirs = array();
+        foreach (boost_get_base_urls($node) as $domain_id) {
+          foreach ($domain_id as $base) {
+            $parts = parse_url($base);
+            $base_dirs[] = boost_cache_directory($parts['host'], FALSE);
+          }
+        }
+
         if (BOOST_NO_DATABASE) {
           $paths['term' . $tid] = 'taxonomy/term/' . $tid;
         }
         else {
-          $data['term' . $tid] = array('page_callback' => 'taxonomy', 'page_id' => $tid);
+          foreach ($base_dirs as $base_dir) {
+            $data['term' . $tid . $base_dir] = array('page_callback' => 'taxonomy', 'page_id' => $tid, 'base_dir' => $base_dir);
+          }
         }
       }
     }
@@ -1092,7 +1140,7 @@ function boost_taxonomy_node_get_tids($nid) {
   $result = db_query(db_rewrite_sql('SELECT t.tid FROM {term_node} r INNER JOIN {term_data} t ON r.tid = t.tid INNER JOIN {vocabulary} v ON t.vid = v.vid WHERE r.vid = %d ORDER BY v.weight, t.weight, t.name', 't', 'tid'), $vid);
   $tids = array();
   while ($term = db_result($result)) {
-    $tids[] = $term;
+    $tids[$term] = $term;
   }
   return $tids;
 }
@@ -3382,7 +3430,7 @@ function boost_cache_css_js_files($buffer) {
  * human readable DHTML-based print_r alternative, see http://krumo.sourceforge.net/
  *
  * Support for printing of objects as well as the $return parameter functionality
- * added by Fredrik Wollsén (fredrik dot motin at gmail), to make it work as a drop-in
+ * added by Fredrik (fredrik dot motin at gmail), to make it work as a drop-in
  * replacement for print_r (Except for that this function does not output
  * parenthesis around element groups... ;) )
  *
