@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.331 2010/04/29 23:44:13 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.332 2010/05/01 01:27:45 mikeytown2 Exp $
 
 /**
  * @file
@@ -566,6 +566,7 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
 
   switch ($op) {
     case 'insert':
+      boost_expire_node($node);
       // Run all cached views, looking for this new node
       if (BOOST_FLUSH_VIEWS_INSERT && module_exists('views')) {
         $GLOBALS['_boost_nid'] = $node->nid;
@@ -579,24 +580,26 @@ function boost_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
         register_shutdown_function('_boost_cache_insert');
       }
       break;
+
     case 'update':
+      boost_expire_node($node);
       // Run all cached views, looking for this new node
       if (BOOST_FLUSH_VIEWS_UPDATE && module_exists('views')) {
         $GLOBALS['_boost_nid'] = $node->nid;
         $_boost['new_nodes'][$node->nid] = $node->nid;
         register_shutdown_function('_boost_view_insert');
       }
-
-      boost_expire_node($node);
       // if node is not published, delete it.
       if (!$node->status) {
         boost_cache_expire_router($data, TRUE, TRUE);
       }
       break;
+
     case 'delete':
       boost_expire_node($node);
       boost_cache_expire_router($data, TRUE, TRUE);
       break;
+
     case 'presave':
       // If path changes remove old path entry from database
       // Logic taken from path_redirect_node_presave()
@@ -725,11 +728,6 @@ function boost_get_base_urls(&$node) {
   }
   else {
     $base_urls[0][] = $base_url . $base_path;
-  }
-  foreach ($base_urls as $key => $url) {
-    $parts = parse_url($url);
-    $parts['host'] = strtolower($parts['host']);
-    $base_urls[$key] = boost_glue_url($parts);
   }
   return $base_urls;
 }
@@ -2205,6 +2203,11 @@ function boost_cache_expire_by_filename($paths, $wildcard = TRUE, $force_flush) 
 
     // Merge arrays
     $filenames = array_filter(array_merge($filenames, $html, $xml, $json));
+  }
+
+  // Remove double slash from filename if it exists.
+  foreach ($filenames as $key => $filename) {
+    $filenames[$key] = implode('/', array_filter(explode('/',$filename)));
   }
 
   // Flush expired files
