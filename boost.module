@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.333 2010/05/03 04:31:37 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.334 2010/05/03 06:16:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -58,7 +58,7 @@ define('BOOST_MAX_PATH_DEPTH',       10);
 // Advanced Settings
 define('BOOST_CHECK_BEFORE_CRON_EXPIRE', variable_get('boost_check_before_cron_expire', FALSE));
 define('BOOST_PRE_PROCESS_FUNCTION', variable_get('boost_pre_process_function', ''));
-define('BOOST_FLUSH_ALL_MULTISITE',  variable_get('boost_flush_all_multisite', FALSE));
+define('BOOST_FLUSH_ALL_MULTISITE',  variable_get('boost_flush_all_multisite', TRUE));
 define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE));
 define('BOOST_AGGRESSIVE_COOKIE',     variable_get('boost_aggressive_cookie', TRUE));
 define('BOOST_ASYNCHRONOUS_OUTPUT',  variable_get('boost_asynchronous_output', TRUE));
