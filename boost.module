@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.335 2010/05/03 07:23:00 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.336 2010/05/04 19:52:16 mikeytown2 Exp $
 
 /**
  * @file
@@ -3768,21 +3768,25 @@ function _boost_get_menu_router() {
   $router_item['page_callback'] = '';
   $router_item['page_type'] = '';
   $router_item['page_id'] = '';
+
+  // Get all args
+  $args = arg();
+
   // Handle nodes
-  if (arg(0) == 'node' && is_numeric(arg(1))) {
-    $node = node_load(arg(1));
+  if ($args[0] == 'node' && is_numeric($args[1])) {
+    $node = node_load($args[1]);
     $router_item['page_callback'] = 'node';
-    $router_item['page_id'] = arg(1);
+    $router_item['page_id'] = $args[1];
     if ($node) {
       $router_item['page_type'] = $node->type;
     }
     return $router_item;
   }
   // Handle taxonomy
-  if (arg(0) == 'taxonomy' && is_numeric(arg(2))) {
-    $term = taxonomy_get_term(arg(2));
+  if ($args[0] == 'taxonomy' && is_numeric($args[2])) {
+    $term = taxonomy_get_term($args[2]);
     $router_item['page_callback'] = 'taxonomy';
-    $router_item['page_id'] = arg(2);
+    $router_item['page_id'] = $args[2];
     if ($term) {
       $vocab = taxonomy_vocabulary_load($term->vid);
       $router_item['page_type'] = $vocab->name;
@@ -3790,10 +3794,10 @@ function _boost_get_menu_router() {
     return $router_item;
   }
   // Handle users
-  if (arg(0) == 'user' && is_numeric(arg(1))) {
-    $router_item['page_type'] = $vocab->name;
+  if ($args[0] == 'user' && is_numeric($args[1])) {
+    $user = user_load($args[1]);
     $router_item['page_callback'] = 'user';
-    $router_item['page_id'] = arg(1);
+    $router_item['page_id'] = $args[1];
     if ($user !== FALSE) {
       $router_item['page_type'] = implode(', ', $user->roles);
     }
