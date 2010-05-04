@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.338 2010/05/04 21:28:14 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.339 2010/05/04 21:34:32 mikeytown2 Exp $
 
 /**
  * @file
@@ -3805,6 +3805,10 @@ function _boost_get_menu_router() {
 
   // Get all args
   $args = arg();
+  // Prevent array warnings
+  $args[0] = empty($args[0]) ? '' : $args[0];
+  $args[1] = empty($args[1]) ? '' : $args[1];
+  $args[2] = empty($args[2]) ? '' : $args[2];
 
   // Handle nodes
   if ($args[0] == 'node' && is_numeric($args[1])) {
