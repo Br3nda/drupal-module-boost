@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.336 2010/05/04 19:52:16 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.337 2010/05/04 21:21:40 mikeytown2 Exp $
 
 /**
  * @file
@@ -175,6 +175,41 @@ function boost_help($path, $arg) {
 }
 
 /**
+ * Get some basic node attribues from the database given node id.
+ *
+ * @param $nid
+ *  node ID
+ * @return node object
+ *  node->nid
+ *  node->type
+ *  node->language
+ *  node->path
+ *  node->domain
+ */
+function boost_node_get_basics($nid) {
+  static $nodes = array();
+
+  // Is the node statically cached?
+  if (isset($nodes[$nid])) {
+    return $nodes[$nid];
+  }
+
+  // Retrieve node nid, type, language.
+  $op = 'load';
+  $node = db_fetch_object(db_query("SELECT nid, type, language FROM {node} WHERE nid = %d", $nid));
+  // Get path info
+  if (module_exists('path')) {
+    path_nodeapi($node, $op, NULL, NULL);
+  }
+  // Get domain access info
+  if (module_exists('domain')) {
+    domain_nodeapi($node, $op, NULL, NULL);
+  }
+  $nodes[$nid] = $node;
+  return $nodes[$nid];
+}
+
+/**
  * Implementation of hook_views_pre_render().
  *
  * This is called right before the render process. Used to grab the NID's listed
@@ -187,7 +222,8 @@ function boost_views_pre_render(&$view) {
   if (!is_null($view) && $GLOBALS['_boost_cache_this'] && !BOOST_NO_DATABASE) {
     foreach ($view->result as $item) {
       if (is_numeric($item->nid)) {
-        $node = node_load($item->nid);
+
+        $node = boost_node_get_basics($nid);
         if (isset($node->type)) {
           $info = array(
             'child_page_callback' => 'node',
@@ -631,7 +667,7 @@ function _boost_cache_insert() {
 
   // Load node
   foreach ($_boost['new_nodes'] as $nid) {
-    $node = node_load($nid);
+    $node = boost_node_get_basics($nid);
     if (!$node) {
       continue;
     }
@@ -746,10 +782,8 @@ function _boost_view_insert() {
   // Ensure we're in the correct working directory, since some web servers (e.g. Apache) mess this up here.
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
 
-  watchdog('test', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($_boost['new_nodes'], TRUE)))));
-
   foreach ($_boost['new_nodes'] as $nid) {
-    $node = node_load($nid);
+    $node = boost_node_get_basics($nid);
     if (!$node) {
       continue;
     }
@@ -3774,7 +3808,7 @@ function _boost_get_menu_router() {
 
   // Handle nodes
   if ($args[0] == 'node' && is_numeric($args[1])) {
-    $node = node_load($args[1]);
+    $node = boost_node_get_basics($nid);;
     $router_item['page_callback'] = 'node';
     $router_item['page_id'] = $args[1];
     if ($node) {
