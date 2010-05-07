@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.94 2010/04/19 07:45:47 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.95 2010/05/07 01:26:29 mikeytown2 Exp $
 
 /**
  * @file
@@ -385,6 +385,7 @@ function boost_tree_directory($dir, $limit = 31000) {
   $files = scandir($dir);
 
   // Only keep directories
+  $dirs = array();
   foreach ($files as $file) {
     if (is_dir($dir . '/' . $file) && $file != '.' && $file != '..') {
       $dirs[] = $file;
