@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.345 2010/05/11 22:09:10 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.346 2010/05/13 03:39:43 mikeytown2 Exp $
 
 /**
  * @file
@@ -839,7 +839,7 @@ function _boost_view_insert() {
         'relationship' => 'none',
       );
     $domain_options = array(
-        'operator' => '=',
+        'operator' => 'in',
         'group' => '0',
         'exposed' => FALSE,
         'expose' => array(
@@ -851,10 +851,10 @@ function _boost_view_insert() {
 
     // Loop through each view in the boost cache
     foreach ($views as $boost) {
-      $view = views_get_view($boost['page_type']);
+      unset($view);
+      $view = views_get_view($boost['page_type'], TRUE);
       $view->set_display($boost['page_id']);
-      $view->pre_execute();
-      $view->set_items_per_page(1);
+      // Filter to just this nid
       $view->add_item($boost['page_id'], 'filter', 'node', 'nid', $options);
 
       // Check for domain access filter "Available on current domain"
@@ -863,20 +863,36 @@ function _boost_view_insert() {
 
         // Remove domain access filter "Available on current domain"
         $view->set_item($boost['page_id'], 'filter', 'current_all', NULL);
+        $view->set_item($boost['page_id'], 'filter', 'domain_id', NULL);
+        $view->set_item($boost['page_id'], 'filter', 'gid', NULL);
         foreach ($node->domains as $key => $domain_id) {
           // Skip invalid domain ID's
           if ($key != $domain_id) {
             continue;
           }
           // Set domain access filter "Domain ID" to what's in the node
+          unset($domain_options['value']);
           // New
           $domain_options['value']['value'] = $domain_id;
           // Old
           //$domain_options['value'][$domain_id] = $domain_id;
           $view->set_item($boost['page_id'], 'filter', 'gid', NULL);
           $view->add_item($boost['page_id'], 'filter', 'domain_access', 'gid', $domain_options);
+          //$filters = $view->get_items('filter', $boost['page_id']);
 
+          $view->pre_execute();
           $view->execute();
+
+          // Hack to run view again since there is a bug with views.
+          // http://drupal.org/node/797496
+          $hack = db_query($view->build_info['query'], $view->build_info['query_args']);
+          $results = array();
+          while($row = db_fetch_object($hack)) {
+            $results[] = $row;
+          }
+          $view->result = $results;
+
+          // Increment Counter
           $number_views++;
 
           foreach ($view->result as $item) {
@@ -885,7 +901,12 @@ function _boost_view_insert() {
                 $parts = parse_url($url);
                 $file_path = boost_cache_directory($parts['host'], FALSE);
                 $hash = $file_path . 'view' . $boost['page_type'] . $boost['page_id'];
-                $data[$hash] = array('base_dir' => $file_path, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
+                $data[$hash] = array(
+                  'base_dir' => $file_path,
+                  'page_callback' => 'view',
+                  'page_type' => $boost['page_type'],
+                  'page_id' => $boost['page_id'],
+                );
                 $number_hits++;
               }
             }
@@ -901,7 +922,12 @@ function _boost_view_insert() {
         foreach ($view->result as $item) {
           if ($item->nid == $nid) {
             $hash = BOOST_FILE_PATH . 'view' . $boost['page_type'] . $boost['page_id'];
-            $data[$hash] = array('base_dir' => BOOST_FILE_PATH, 'page_callback' => 'view', 'page_type' => $boost['page_type'], 'page_id' => $boost['page_id']);
+            $data[$hash] = array(
+              'base_dir' => BOOST_FILE_PATH,
+              'page_callback' => 'view',
+              'page_type' => $boost['page_type'],
+              'page_id' => $boost['page_id'],
+            );
             $number_hits++;
           }
         }
