@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.347 2010/05/19 01:36:12 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.348 2010/05/19 01:49:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -1862,6 +1862,10 @@ function _boost_ob_handler() {
 
     // Get Redirect from DB for current path; Old URL.
     $old_path_system = $GLOBALS['_boost_path'];
+    if ($new_path_system === $old_path_system) {
+      // drupal goto was a false redirect, do nothing in short.
+      $old_path_system .= '?';
+    }
     if (module_exists('path_redirect')) {
       $path_redirects = boost_path_redirect_load(array('source' => $GLOBALS['_boost_path']));
       if (isset($path_redirects)) {
