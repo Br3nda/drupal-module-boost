@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.349 2010/05/26 18:19:59 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.350 2010/06/02 16:39:06 mikeytown2 Exp $
 
 /**
  * @file
@@ -1169,6 +1169,7 @@ function boost_expire_node($node, $nid = 0) {
  */
 function boost_get_menu_structure($menu, $found, $needle, $first, &$found_global, &$menu_out) {
   // Set Defaults
+  $structure = array();
   $found = !is_null($found) ? $found : TRUE;
   $needle = !is_null($needle) ? $needle : '';
   $first = !is_null($first) ? $first : TRUE;
@@ -1200,7 +1201,7 @@ function boost_get_menu_structure($menu, $found, $needle, $first, &$found_global
         }
       }
       boost_get_menu_structure($sub_menu, $needle, $found, FALSE, $found_global, $menu_out);
-      $structure[$item['link']['link_path']][] = $sub;
+      $structure[$item['link']['link_path']][] = $sub_menu;
       if ($item['link']['page_callback'] != '' && $found_global) {
         // Get Parent of kid
         $menu_out[] = $item['link']['link_path'];
