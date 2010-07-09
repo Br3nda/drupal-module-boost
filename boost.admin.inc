@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.143 2010/05/22 18:40:18 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.144 2010/07/09 18:14:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -491,6 +491,12 @@ function boost_admin_boost_performance_page() {
     '#default_value' => BOOST_PRE_PROCESS_FUNCTION,
     '#maxlength'     => 255,
     '#description'   => t('The name of a PHP function used to pre-process the contents of each page before writing them out to static files. The function is called with the contents of the page passed as a string argument, and its return value is used as the data written out to the disk.'),
+  );
+  $form['advanced']['boost_exit_in_hook_exit'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Exit() inside of boost_exit'),
+    '#default_value' => BOOST_EXIT_IN_HOOK_EXIT,
+    '#description'   => t('If using ubercart disable this setting.'),
   );
   $form['advanced']['boost_aggressive_cookie'] = array(
     '#type'          => 'checkbox',
