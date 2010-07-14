@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.356 2010/07/12 19:02:38 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.357 2010/07/14 17:24:58 mikeytown2 Exp $
 
 /**
  * @file
@@ -737,10 +737,12 @@ function boost_get_domains(&$node) {
  *
  * @param $node
  *   node object
+ * @param $reset
+ *  A boolean flag to clear the static variable if necessary.
  * @return array
  *   array(0 => array(0 => $base_url . '/'))
  */
-function boost_get_base_urls(&$node) {
+function boost_get_base_urls(&$node, $reset = FALSE) {
   global $base_url, $base_path;
 
   // Get list of URL's if using domain access
@@ -760,7 +762,7 @@ function boost_get_base_urls(&$node) {
     }
     // Get aliases and set base url
     foreach ($domains as $domain_id) {
-      $domain = domain_lookup($domain_id);
+      $domain = domain_lookup($domain_id, NULL, $reset);
       if ($domain['valid'] == 1) {
         if (isset($domain['path'])) {
           $base_urls[$domain_id][] = $domain['path'];
