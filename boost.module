@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.360 2010/07/25 05:45:00 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.361 2010/08/05 08:55:54 mikeytown2 Exp $
 
 /**
  * @file
@@ -2454,7 +2454,7 @@ function boost_cache_flush_by_filename($filenames, $force_flush = FALSE) {
     foreach ($filenames as $filename) {
       $files[] = array('filename' => $filename);
     }
-    $counter = boost_cache_kill($files);
+    $counter = boost_cache_kill($files, $force_flush);
     if (BOOST_VERBOSE >= 9 && isset($_boost['verbose_option_selected']['boost_cache_flush_filename'])) {
       watchdog('boost', 'Debug: boost_cache_flush_by_filename() <br />Following files where flushed: <br />!list', array('!list' => implode('<br />', $filenames)));
     }
