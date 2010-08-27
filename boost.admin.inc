@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.147 2010/08/27 17:29:34 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.148 2010/08/27 17:53:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -856,7 +856,7 @@ function boost_admin_boost_performance_page() {
   }
 
   // Apache .htaccess settings generation
-  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
+  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{HTTP_HOST}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
   $form['htaccess'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Boost Apache .htaccess settings generation'),
@@ -865,7 +865,7 @@ function boost_admin_boost_performance_page() {
   $form['htaccess']['boost_server_name_http_host'] = array(
     '#type'          => 'radios',
     '#title'         => t('Servers URL or Name'),
-    '#default_value' => variable_get('boost_server_name_http_host', '%{SERVER_NAME}'),
+    '#default_value' => variable_get('boost_server_name_http_host', '%{HTTP_HOST}'),
     '#options'       => array(
       '%{SERVER_NAME}' => '%{SERVER_NAME}',
       '%{HTTP_HOST}' => '%{HTTP_HOST}',
@@ -1128,14 +1128,14 @@ function boost_admin_htaccess_page() {
   }
 
   // Generated .htaccess output
-  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
+  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{HTTP_HOST}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
   $form['boost_generated'] = array(
     '#type'          => 'textarea',
     '#title'         => t('Generated Rules'),
     '#default_value' => $htaccess,
     '#rows'          => count(explode("\n", $htaccess))+1,
     '#wysiwyg'       => FALSE,
-    '#description'   => t("Copy this into your .htaccess file below <pre><tt>  # RewriteBase / </tt></pre> and above <pre><tt>  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'</tt></pre>"),
+    '#description'   => t("Copy this into your .htaccess file below <pre><tt>  # RewriteBase / </tt></pre> and above <pre><tt>  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'</tt></pre><br />Note that the generated rules' settings can be configure at !link under 'Boost Apache .htaccess settings generation' section.", array('!link' => l('admin/settings/performance/boost', 'admin/settings/performance/boost'))),
   );
   $form['#submit'][] = 'boost_admin_htaccess_page_submit';
 
@@ -1157,7 +1157,7 @@ function boost_admin_htaccess_page() {
  * @param $html
  *   html document file extension
  */
-function boost_admin_generate_htaccess($server_name = '%{SERVER_NAME}', $document_root = '%{DOCUMENT_ROOT}') {
+function boost_admin_generate_htaccess($server_name = '%{HTTP_HOST}', $document_root = '%{DOCUMENT_ROOT}') {
   Global $base_path;
   $drupal_subdir = rtrim($base_path, '/');
 
@@ -1453,7 +1453,7 @@ function boost_update_htaccess($enable = TRUE, $verbose = TRUE) {
 
   // Inject the rules before '# Rewrite URLs of the form'
   if ($enable) {
-    $rules = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{SERVER_NAME}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
+    $rules = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{HTTP_HOST}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
     $text = preg_replace('/^[^#]*# Rewrite URLs of the form/im', "\n" . $rules . "$0", $text);
   }
 
