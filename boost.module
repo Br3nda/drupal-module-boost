@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.364 2010/08/11 19:20:34 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.365 2010/08/27 17:29:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -35,6 +35,9 @@ define('BOOST_CACHE_CSS',            variable_get('boost_cache_css', TRUE));
 define('BOOST_CACHE_JS',             variable_get('boost_cache_js', TRUE));
 define('BOOST_CACHEABILITY_OPTION',  variable_get('boost_cacheability_option', 0));
 define('BOOST_CACHEABILITY_PAGES',   variable_get('boost_cacheability_pages', ''));
+
+// Views
+define('BOOST_VIEWS_LIST_BEHAVIOR',  variable_get('boost_views_list_behavior', 0));
 
 // Dir & File Structure
 define('BOOST_ROOT_CACHE_DIR',       variable_get('boost_root_cache_dir', 'cache'));
@@ -186,6 +189,7 @@ function boost_help($path, $arg) {
  *  node->language
  *  node->path
  *  node->domain
+ *  node->tids
  */
 function boost_node_get_basics($nid) {
   static $nodes = array();
@@ -206,6 +210,10 @@ function boost_node_get_basics($nid) {
   if (module_exists('domain')) {
     domain_nodeapi($node, $op, NULL, NULL);
   }
+  // Get taxonomy tid info
+  if (module_exists('taxonomy')) {
+    $node->tids = boost_taxonomy_node_get_tids($node->nid);
+  }
   $nodes[$nid] = $node;
   return $nodes[$nid];
 }
@@ -220,29 +228,132 @@ function boost_node_get_basics($nid) {
  *  reference to the view being worked on
  */
 function boost_views_pre_render(&$view) {
-  if (!is_null($view) && $GLOBALS['_boost_cache_this'] && !BOOST_NO_DATABASE) {
-    foreach ($view->result as $item) {
-      if (is_numeric($item->nid)) {
+  // return if not a view, page not going to be cached, or if database turned off
+  if (is_null($view) || !$GLOBALS['_boost_cache_this'] || BOOST_NO_DATABASE) {
+    return;
+  }
 
-        $node = boost_node_get_basics($item->nid);
-        if (isset($node->type)) {
-          $info = array(
-            'child_page_callback' => 'node',
-            'child_page_type' => $node->type,
-            'child_page_id' => $item->nid,
-          );
-          if (BOOST_VERBOSE >= 9) {
-            $info['debug'] = array(
-              'view-name' => $view->name,
-              'view-display' => $view->current_display,
-              'node-path' => $node->path,
-            );
-          }
-          $GLOBALS['_boost_relationships'][] = $info;
+  // return if view doesn't belong in the set of views to search
+  $views = boost_views_get_valid_array();
+  $hash = $view->name . ' - ' . $view->current_display;
+  if (!array_key_exists($hash, $views)) {
+    return;
+  }
+
+  foreach ($view->result as $item) {
+    // skip if nid is not a number
+    if (!is_numeric($item->nid)) {
+      continue;
+    }
+
+    $node = boost_node_get_basics($item->nid);
+    // skip if node type is not set
+    if (!isset($node->type)) {
+      continue;
+    }
+    // set data
+    $info = array(
+      'child_page_callback' => 'node',
+      'child_page_type' => $node->type,
+      'child_page_id' => $item->nid,
+    );
+    if (BOOST_VERBOSE >= 9) {
+      $info['debug'] = array(
+        'view-name' => $view->name,
+        'view-display' => $view->current_display,
+        'node-path' => $node->path,
+      );
+    }
+    // send to global
+    $GLOBALS['_boost_relationships'][] = $info;
+  }
+}
+
+/**
+ * Genrate a list of views based off of defaults.
+ *
+ * Views that have a path, can be cached by boost & anonymous users can access
+ *
+ * @return array
+ *    (view_name . ' - ' . display_name . ' - /' . path => Enabled/Disabled)
+ */
+function boost_views_generate_default_list() {
+  $account = user_load(0);
+  $views = views_get_all_views();
+  $enabled = array();
+  $disabled = array();
+  foreach ($views as $view_name => $view) {
+    // disabled views get nothing.
+    if (!empty($view->disabled)) {
+      unset($views[$view_name]);
+      continue;
+    }
+
+    $view->init_display();
+    foreach ($view->display as $display_id => $display) {
+      // Make sure view has a path
+      // Anonymous users can access view
+      if (isset($display->display_options['path']) && $view->access($display_id, $account)) {
+        $path = $display->display_options['path'];
+        $hash = $view_name . ' - ' . $display_id . ' - /' . $path;
+        // Path is cacheable via boost & does not take arguments
+        if (boost_is_cacheable($path) && !stristr($path, '%')) {
+          $enabled[$hash] = $hash;
+        }
+        // Path is not cacheable via boost
+        else {
+          $disabled[$hash] = 0;
         }
       }
     }
   }
+  ksort($disabled);
+  natcasesort($enabled);
+  $checkboxes = array_merge(array('line-break' => 0), $disabled, $enabled);
+  return $checkboxes;
+}
+
+/**
+ * Genrate a list of valid views that boost will search for new content.
+ *
+ * @return array
+ */
+function boost_views_get_valid_list($fresh = FALSE) {
+  // Load saved default values; if not saved, save it.
+  $defaults = variable_get('boost_views_list_default', FALSE);
+  if (!$defaults || $fresh) {
+    $defaults = boost_views_generate_default_list();
+    variable_set('boost_views_list_default', $defaults);
+  }
+
+  // Load custom settings
+  $list = variable_get('boost_views_list_custom', array());
+  // Load defaults. http://php.net/operators.array
+  $list += $defaults;
+
+
+  return $list;
+}
+
+/**
+ * Genrate a list of valid views that boost will search for new content.
+ *
+ * @return array
+ */
+function boost_views_get_valid_array() {
+  $list = boost_views_get_valid_list();
+  $views = array();
+  foreach ($list as $hash => $enabled) {
+    if ($enabled) {
+      $info = explode(' - ', $hash);
+      $page_type = $info[0];
+      $page_id = $info[1];
+      $key = $page_type . ' - ' . $page_id;
+      $views[$key]['page_type'] = $page_type;
+      $views[$key]['page_id'] = $page_id;
+    }
+  }
+  return $views;
 }
 
 /**
@@ -521,6 +632,12 @@ function boost_cron() {
   }
   global $_boost;
 
+  // Check for new views on cron
+  if (BOOST_VIEWS_LIST_BEHAVIOR == 0) {
+    $defaults = boost_views_generate_default_list();
+    variable_set('boost_views_list_default', $defaults);
+  }
+
   $expire = TRUE;
   if (BOOST_CHECK_BEFORE_CRON_EXPIRE) {
     $expire = boost_has_site_changed(TRUE);
@@ -726,6 +843,9 @@ function _boost_cache_insert() {
  *   array('$gid' => $gid)
  */
 function boost_get_domains(&$node) {
+  if (empty($node->nid)) {
+    return array();
+  }
   $domains = array();
   $result = db_query("SELECT gid FROM {domain_access} WHERE nid = %d", $node->nid);
   while ($row = db_fetch_array($result)) {
@@ -809,7 +929,7 @@ function _boost_view_insert($debug = FALSE, $nid = FALSE) {
   // Ensure we're in the correct working directory, since some web servers (e.g. Apache) mess this up here.
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
 
-  // Get all views that are not expired
+  // Get all views that are not expired in database
   if (BOOST_FLUSH_ALL_MULTISITE) {
     $result = db_query("SELECT page_id, page_type FROM {boost_cache} WHERE page_callback = 'view' AND expire > 0 AND expire <> 434966400 GROUP BY page_id, page_type");
   }
@@ -827,12 +947,17 @@ function _boost_view_insert($debug = FALSE, $nid = FALSE) {
     $views[$key]['page_type'] = $boost['page_type'];
     $views[$key]['page_id'] = $boost['page_id'];
   }
-  //   $results = db_query("SELECT id, name FROM {views_display} INNER JOIN {views_view} USING (vid) WHERE base_table = 'node'");
-  //   while ($row = db_fetch_array($results)) {
-  //     $key = $row['name'] . $row['id'];
-  //     $views[$key]['page_type'] = $row['name'];
-  //     $views[$key]['page_id'] = $row['id'];
-  //   }
+  // Get list of views that might contain the new content.
+  $views += boost_views_get_valid_array();
+
+  // Get all domains into the base_urls array
+  foreach (domain_domains() as $key => $value) {
+    $domains[$key] = $key;
+  }
+  $fake_node = new stdClass();
+  $fake_node->domains = $domains;
+  $base_urls = boost_get_base_urls($fake_node);
+  unset($fake_node);
 
   // Loop through each node
   foreach ($_boost['new_nodes'] as $nid) {
@@ -840,7 +965,12 @@ function _boost_view_insert($debug = FALSE, $nid = FALSE) {
     if (!$node) {
       continue;
     }
-    $base_urls = boost_get_base_urls($node);
+    // Get terms for future usage (/taxonomy/term/% view)
+    $tids = boost_taxonomy_node_get_tids($node->nid);
+    if (isset($_boost['nid-' . $node->nid]['tids'])) {
+      $tids += $_boost['nid-' . $node->nid]['tids'];
+    }
+
     $options = array(
         'operator' => '=',
         'value' => array(
@@ -854,17 +984,6 @@ function _boost_view_insert($debug = FALSE, $nid = FALSE) {
         ),
         'relationship' => 'none',
       );
-    $domain_options = array(
-        'operator' => 'in',
-        'group' => '0',
-        'exposed' => FALSE,
-        'expose' => array(
-          'operator' => FALSE,
-          'label' => '',
-        ),
-        'relationship' => 'none',
-      );
-
     // Loop through each view in the boost cache
     foreach ($views as $boost) {
       unset($view);
@@ -872,84 +991,81 @@ function _boost_view_insert($debug = FALSE, $nid = FALSE) {
       if (!is_object($view)) {
         continue;
       }
-      $view->set_display($boost['page_id']);
-      // Filter to just this nid
-      $view->add_item($boost['page_id'], 'filter', 'node', 'nid', $options);
 
-      // Check for domain access filter "Available on current domain"
-      $filters = $view->get_items('filter', $boost['page_id']);
-      if (isset($filters['current_all'])) {
-
-        // Remove domain access filter "Available on current domain"
-        $view->set_item($boost['page_id'], 'filter', 'current_all', NULL);
-        $view->set_item($boost['page_id'], 'filter', 'domain_id', NULL);
-        $view->set_item($boost['page_id'], 'filter', 'gid', NULL);
-        foreach ($node->domains as $key => $domain_id) {
-          // Skip invalid domain ID's
-          if ($key != $domain_id) {
+      $domains = array();
+      $domain_filter = FALSE;
+      if (module_exists('domain')) {
+        // Check for domain access filters
+        $filters = $view->get_items('filter', $boost['page_id']);
+        if (isset($filters['current_all']) || isset($filters['gid']) || isset($filters['domain_id'])) {
+          // Only need to check the view for domains this node is published to
+          $domains = $node->domains;
+          foreach ($domains as $key => $value) {
+            if ($key != $value) {
+              unset($domains[$key]);
+            }
+          }
+          $domain_filter = TRUE;
+        }
+      }
+      if (!$domain_filter) {
+        // boost_get_base_urls uses 0 if domain access is not installed
+        $domains = array(0 => 0);
+      }
+      $first = TRUE;
+      foreach ($domains as $key => $domain_id) {
+        // View has to be reloaded inorder for hook_views_query_substitutions
+        // to work correctly because this is in a loop
+        if (!$first) {
+          unset($view);
+          $view = views_get_view($boost['page_type'], TRUE);
+          if (!is_object($view)) {
             continue;
           }
-          // Set domain access filter "Domain ID" to what's in the node
-          unset($domain_options['value']);
-          // New
-          $domain_options['value']['value'] = $domain_id;
-          // Old
-          //$domain_options['value'][$domain_id] = $domain_id;
-          $view->set_item($boost['page_id'], 'filter', 'gid', NULL);
-          $view->add_item($boost['page_id'], 'filter', 'domain_access', 'gid', $domain_options);
-          //$filters = $view->get_items('filter', $boost['page_id']);
+        }
+        $first = FALSE;
+        $view->set_display($boost['page_id']);
+        // Filter to just this nid
+        $view->add_item($boost['page_id'], 'filter', 'node', 'nid', $options);
+        // Set ***CURRENT_DOMAIN*** variable
+        // See domain_views_query_substitutions()
+        if ($domain_filter) {
+          domain_set_domain($domain_id, TRUE);
+        }
 
-          $view->pre_execute();
-          $view->execute();
+        $view->pre_execute();
+        $view->execute();
 
-          // Hack to run view again since there is a bug with views.
-          // http://drupal.org/node/797496
-          $hack = db_query($view->build_info['query'], $view->build_info['query_args']);
-          $results = array();
-          while($row = db_fetch_object($hack)) {
-            $results[] = $row;
-          }
-          $view->result = $results;
+        // Increment Counter
+        $number_views++;
 
-          // Increment Counter
-          $number_views++;
-
-          foreach ($view->result as $item) {
-            if ($item->nid == $nid) {
-              foreach ($base_urls[$domain_id] as $url) {
-                $parts = parse_url($url);
-                $file_path = boost_cache_directory($parts['host'], FALSE);
-                $hash = $file_path . 'view' . $boost['page_type'] . $boost['page_id'];
-                $data[$hash] = array(
-                  'base_dir' => $file_path,
-                  'page_callback' => 'view',
-                  'page_type' => $boost['page_type'],
-                  'page_id' => $boost['page_id'],
-                );
-                $number_hits++;
+        foreach ($view->result as $item) {
+          if ($item->nid == $nid) {
+            foreach ($base_urls as $key => $value) {
+              $save = TRUE;
+              if ($domain_filter && $key != $domain_id) {
+                $save = FALSE;
+              }
+              if ($save) {
+                foreach ($value as $url) {
+                  $parts = parse_url($url);
+                  $file_path = boost_cache_directory($parts['host'], FALSE);
+                  $hash = $file_path . 'view' . $boost['page_type'] . $boost['page_id'];
+                  $data[$hash] = array(
+                    'base_dir' => $file_path,
+                    'page_callback' => 'view',
+                    'page_type' => $boost['page_type'],
+                    'page_id' => $boost['page_id'],
+                  );
+                  $number_hits++;
+                }
               }
             }
           }
         }
       }
-
-      // Run normal view search
-      else {
-        $filters = $view->get_items('filter', $boost['page_id']);
-        $view->execute();
-        $number_views++;
-        foreach ($view->result as $item) {
-          if ($item->nid == $nid) {
-            $hash = BOOST_FILE_PATH . 'view' . $boost['page_type'] . $boost['page_id'];
-            $data[$hash] = array(
-              'base_dir' => BOOST_FILE_PATH,
-              'page_callback' => 'view',
-              'page_type' => $boost['page_type'],
-              'page_id' => $boost['page_id'],
-            );
-            $number_hits++;
-          }
-        }
+      if ($domain_filter) {
+        domain_reset_domain(TRUE);
       }
     }
   }
@@ -1063,29 +1179,65 @@ function boost_expire_node($node, $nid = 0, $debug = FALSE) {
         }
       }
     }
-    $filenames = array();
-    foreach ($tids as $tid) {
-      if (is_numeric($tid)) {
-        // Get list of base urls for this node
-        $base_dirs = array();
-        foreach (boost_get_base_urls($node) as $domain_id) {
-          foreach ($domain_id as $base) {
-            $parts = parse_url($base);
-            $base_dirs[] = boost_cache_directory($parts['host'], FALSE);
+    // See if the taxonony/term/% path is a view containing domain access restrictions
+    if (module_exists('domain')) {
+      $list = boost_views_get_valid_list();
+      foreach ($list as $hash => $enabled) {
+        $info = explode(' - ', $hash);
+        if ($info[2] == '/taxonomy/term/%') {
+          // Load View
+          $view = views_get_view($info[0], TRUE);
+          if (!is_object($view)) {
+            continue;
+          }
+
+          // Check for domain access filter "Available on current domain"
+          $filters = $view->get_items('filter', $info[1]);
+          if (!isset($filters['current_all']) && !isset($filters['gid']) && !isset($filters['domain_id'])) {
+            foreach (domain_domains() as $key => $value) {
+              $domains[$key] = $key;
+            }
+            $fake_node = new stdClass();
+            $fake_node->domains = $domains;
+            break;
           }
         }
+      }
+    }
+    if (!isset($fake_node)) {
+      $fake_node = $node;
+    }
 
+    // Get list of base urls for this node
+    $base_dirs = array();
+    foreach (boost_get_base_urls($fake_node) as $domain_id) {
+      foreach ($domain_id as $base) {
+        $parts = parse_url($base);
+        $base_dirs[] = boost_cache_directory($parts['host'], FALSE);
+      }
+    }
+    unset($fake_node);
+    // Set each tid in the data array
+    foreach ($tids as $tid) {
+      if (is_numeric($tid)) {
         if (BOOST_NO_DATABASE) {
           $paths['term' . $tid] = 'taxonomy/term/' . $tid;
         }
         else {
           foreach ($base_dirs as $base_dir) {
-            $data['term' . $tid . $base_dir] = array('page_callback' => 'taxonomy', 'page_id' => $tid, 'base_dir' => $base_dir);
+            $data['term:' . $tid . ' base:' . $base_dir] = array(
+              'page_callback' => 'taxonomy',
+              'page_id' => $tid,
+              'base_dir' => $base_dir,
+            );
           }
         }
       }
     }
+    // Save all term IDs into the global scope
+    $_boost['nid-' . $node->nid]['tids'] = $tids;
   }
+
 
   // Get menu and flush related items in the menu.
   if (BOOST_FLUSH_MENU_ITEMS !=0) {
@@ -1154,9 +1306,9 @@ function boost_expire_node($node, $nid = 0, $debug = FALSE) {
     $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
     $router_item = $GLOBALS['_boost_router_item'];
     $relationship = array();
-    $relationship[] = array('page_callback' => $router_item['page_callback'], 'page_type' => $router_item['page_type'], 'page_id' => $router_item['page_id']);
-    boost_set_base_dir_in_array($data);
-    $data = array_merge($data, boost_cache_get_node_relationships($relationship));
+    $relationship[] = array('page_callback' => 'node', 'page_type' => $node->type, 'page_id' => $node->nid);
+    $relationships = boost_cache_get_node_relationships($relationship);
+    $data = array_merge($data, $relationships);
   }
 
   // Flush the cache
@@ -1446,7 +1598,8 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
               else {
                 $output .= t('Expire In: %interval<br />', array('%interval' => format_interval(abs($ttl))));
               }
-
+              $tim = boost_db_get_cache_age($filename);
+              $output .= t('Cache Age: %time<br />', array('%time' => format_interval($tim)));
               $output .= t('Cache Generated: %time seconds<br />', array('%time' => round($generate, 2))) . ' ';
               if (user_access('administer site configuration')) {
                 $output .= drupal_get_form('boost_block_flush_form');
@@ -2050,6 +2203,7 @@ function boost_is_cacheable($path) {
   //  the user login/registration/password/reset pages
   //  any admin pages
   //  comment reply pages
+  //  boost_stats.php
   //  any shopping cart pages
   //  node add page
   //  openid login page
@@ -2062,6 +2216,7 @@ function boost_is_cacheable($path) {
       || preg_match('!^user/(login|register|password|reset)!', $normal_path)
       || preg_match('!^admin!', $normal_path)
       || preg_match('!comment/reply$!', $normal_path)
+      || preg_match('!boost_stats.php$!', $normal_path)
       || preg_match('!^cart!', $normal_path)
       || preg_match('!^node/add!', $normal_path)
       || preg_match('!^openid!', $normal_path)
@@ -2558,7 +2713,7 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
     }
 
     while ($info = db_fetch_array($result)) {
-      $files[] = $info;
+      $files[$info['hash']] = $info;
       if (BOOST_VERBOSE >= 9 && isset($_boost['verbose_option_selected']['boost_cache_expire_router'])) {
         $list[] = $info['filename'];
       }
@@ -3034,7 +3189,7 @@ function boost_cache_get_node_relationships($relationships) {
     }
 
     while ($info = db_fetch_array($result)) {
-      $hash = 'relationship' . $info['base_dir'] . $info['page_callback'] . $info['page_type'] . $info['page_id'];
+      $hash = 'relationship base:' . $info['base_dir'] . ' ' . $info['page_callback'] . ' ' . $info['page_type'] . ' ' . $info['page_id'];
       $results[$hash] = $info;
     }
   }
@@ -3434,15 +3589,19 @@ function boost_cache_write($filename, $buffer) {
         }
         // Erase old file
         if (BOOST_OVERWRITE_FILE) {
-          @unlink($filename);
+          @rename($filename, $tempfile . 'old');
         }
         // Put temp file in its final location
         if (@rename($tempfile, $filename) === FALSE) {
+          @unlink($tempfile);
+          @rename($tempfile . 'old', $filename);
           if (BOOST_VERBOSE >= 5) {
             watchdog('boost', 'Unable to rename file: %temp  to  %file<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%temp' => $tempfile, '%file' => $filename, '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
           }
-          @unlink($tempfile);
           return FALSE;
+        }
+        elseif (BOOST_OVERWRITE_FILE) {
+          @unlink($tempfile . 'boost');
         }
       }
     }
@@ -3569,8 +3728,16 @@ function boost_file_get_ttl($filename) {
   return BOOST_CACHE_LIFETIME - boost_file_get_age($filename);
 }
 function boost_db_get_ttl($filename) {
-  $boost_db = boost_get_db($filename);
   return boost_db_get_age($filename) - BOOST_TIME;
+}
+function boost_db_get_cache_age($filename) {
+  $boost_db = boost_get_db($filename);
+  $lifetime = BOOST_CACHE_LIFETIME;
+  if ($boost_db['lifetime'] != -1) {
+    $lifetime = $boost_db['lifetime'];
+  }
+  $time = BOOST_TIME - ($boost_db['expire'] - $lifetime);
+  return $time;
 }
 
 /**

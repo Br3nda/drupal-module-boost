@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.146 2010/08/11 19:09:43 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.147 2010/08/27 17:29:34 mikeytown2 Exp $
 
 /**
  * @file
@@ -256,6 +256,50 @@ function boost_admin_boost_performance_page() {
     '#wysiwyg'       => FALSE,
   );
 
+  // Views intergration
+  if (module_exists('views')) {
+    $form['views'] = array(
+      '#type'          => 'fieldset',
+      '#title'         => t('Boost settings for views'),
+    );
+    $form['views']['boost_flush_views'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Clear all cached views pages associated with a node on update/delete'),
+      '#default_value' => BOOST_FLUSH_VIEWS,
+      '#description'   => t(''),
+    );
+    $form['views']['boost_flush_views_insert'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Clear all cached views pages associated with a node on insert'),
+      '#default_value' => BOOST_FLUSH_VIEWS_INSERT,
+      '#description'   => t('WARNING: This can be very slow, all views get run to find out where this node lives. Odds are it will not be slow, but if a node save takes a very long time with this enabled, you know why.'),
+    );
+    $form['views']['boost_flush_views_update'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Clear all cached views pages associated with a node on update'),
+      '#default_value' => BOOST_FLUSH_VIEWS_UPDATE,
+      '#description'   => t('WARNING: This can be very slow, all views get run to find out where this node lives. Odds are it will not be slow, but if a node save takes a very long time with this enabled, you know why.'),
+    );
+    $form['views']['boost_views_list_behavior'] = array(
+      '#type'          => 'radios',
+      '#title'         => t('New views behavior'),
+      '#default_value' => BOOST_VIEWS_LIST_BEHAVIOR,
+      '#options'       => array(
+        0 => t('Run code on cron to check if boost should use the view'),
+        1 => t('View is not tracked by boost until enabled'),
+      ),
+      '#description'   => t('This setting mainly effects new views.'),
+    );
+    $views = boost_views_get_valid_list(TRUE);
+    $form['views']['boost_views_list_custom'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Views to run when looking for content relationships'),
+      '#default_value' => $views,
+      '#options' => array_combine(array_keys($views), array_keys($views)),
+      '#description' => t('Leave these at the defaults unless you have a good reason to change it. Non-default settings should be at the top of this list.'),
+    );
+  }
+
   // Cache expiration settings
   $form['expiration'] = array(
     '#type'          => 'fieldset',
@@ -310,24 +354,6 @@ function boost_admin_boost_performance_page() {
       1 => t('Only Flush Menu Parents, Siblings & Children'),
       2 => t('Flushes Entire Menu Tree'),
     ),
-  );
-  $form['expiration']['boost_flush_views'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Clear all cached views pages associated with a node on update/delete'),
-    '#default_value' => BOOST_FLUSH_VIEWS,
-    '#description'   => t(''),
-  );
-  $form['expiration']['boost_flush_views_insert'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Clear all cached views pages associated with a node on insert'),
-    '#default_value' => BOOST_FLUSH_VIEWS_INSERT,
-    '#description'   => t('WARNING: This can be very slow, all views get run to find out where this node lives. Odds are it will not be slow, but if a node save takes a very long time with this enabled, you know why.'),
-  );
-  $form['expiration']['boost_flush_views_update'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Clear all cached views pages associated with a node on update'),
-    '#default_value' => BOOST_FLUSH_VIEWS_UPDATE,
-    '#description'   => t('WARNING: This can be very slow, all views get run to find out where this node lives. Odds are it will not be slow, but if a node save takes a very long time with this enabled, you know why.'),
   );
   $form['expiration']['boost_clear_cache_offline'] = array(
     '#type'          => 'checkbox',
@@ -942,11 +968,43 @@ function boost_admin_boost_performance_page() {
 
   // Form validation
   $form['#validate'][] = 'boost_admin_boost_performance_page_validate';
+  $form['#submit'][] = 'boost_admin_boost_performance_page_submit';
   return system_settings_form($form);
 }
 
 /**
- * validate system_themes_form form submissions.
+ * submit boost_admin_boost_performance_page form submissions.
+ */
+function boost_admin_boost_performance_page_submit($form, &$form_state) {
+  $op = isset($form_state['values']['op']) ? $form_state['values']['op'] : '';
+  $key = 'boost_views_list_custom';
+
+  if ($op == t('Reset to defaults')) {
+    variable_del($key);
+  }
+  else {
+    $defaults = boost_views_generate_default_list();
+    $new = $form_state['values'][$key];
+    $disable = array_diff($defaults, $new);
+    $enable = array_diff($new, $defaults);
+    $values = $enable;
+    foreach ($disable as $hash => $value) {
+      $values[$hash] = $new[$hash];
+    }
+    unset($values['line-break']);
+
+    if ($values) {
+      variable_set($key, $values);
+    }
+    else {
+      variable_del($key);
+    }
+  }
+  unset($form_state['values'][$key]);
+}
+
+/**
+ * validate boost_admin_boost_performance_page form submissions.
  */
 function boost_admin_boost_performance_page_validate($form, &$form_state) {
   $boost_previously = variable_get('boost_enabled', '');
