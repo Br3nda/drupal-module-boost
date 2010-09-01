@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.368 2010/08/29 03:17:51 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.369 2010/09/01 23:33:00 mikeytown2 Exp $
 
 /**
  * @file
@@ -3050,7 +3050,26 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
     // Special handling of the front page for aggressive gzip test
     if ($path == '' && BOOST_AGGRESSIVE_GZIP && $extension == BOOST_FILE_EXTENSION) {
       _boost_generate_gzip_test_file();
-      boost_cache_write($filename, _boost_inject_code($data, '<div style="width:0px; height:0px; border:0px; position:absolute; top:-1000px; z-index:10;"><object classid="clsid:25336920-03F9-11CF-8FD0-00AA00686F13" type="text/html" data="/boost-gzip-cookie-test.html" style="width:0px; height:0px; border:0px; position:absolute; top:-1000px; z-index:10;"></object></div>' . "\n"));
+      boost_cache_write($filename, _boost_inject_code($data,
+'<script type="text/javascript">
+function boost_gzip_test_ready() {
+  if(boost_xhr.readyState != 4) {
+    setTimeout(boost_gzip_test_ready, 1000);
+  }
+  else if (boost_xhr.getResponseHeader("Content-Encoding") == "gzip" && boost_xhr.responseText.indexOf("</html>") != -1) {
+    var date = new Date();
+    var days = 14;
+    date.setTime(date.getTime() + (days * 24*60*60*1000));
+    expires = "; expires=" + date.toUTCString();
+    document.cookie = "boost-gzip=true" + expires + "; path=/"
+  }
+}
+
+var boost_xhr = $.ajax({
+  url: Drupal.settings.basePath + "boost-gzip-cookie-test.html",
+});
+boost_gzip_test_ready();
+</script>' . "\n"));
     }
     else {
       boost_cache_write($filename, $data);
@@ -4409,15 +4428,7 @@ function _boost_generate_gzip_test_file() {
     $string = <<<ETO
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
   "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><title>Gzip Test</title>
-<script type="text/javascript">
-var date = new Date();
-var days = 14;
-date.setTime(date.getTime() + (days * 24*60*60*1000));
-expires = '; expires=' + date.toUTCString();
-document.cookie = 'boost-gzip=true' + expires + '; path=/'
-</script>
-</head><body style="border:0;overflow:visible"><h1>It works!</h1></body></html>
+<html><head><meta name="robots" content="noindex, nofollow" /><title> </title></head><body> </body></html>
 ETO;
     _boost_write_file_chmod($filename, gzencode($string, 9));
   }
