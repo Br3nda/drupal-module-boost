@@ -31,16 +31,16 @@
   </FilesMatch>
 
   # Gzip Cookie Test
-  RewriteRule ^(.*)boost-gzip-cookie-test\.html  $1cache/perm/boost-gzip-cookie-test\.html\.gz [L,T=text/html]
+  RewriteRule ^(.*)boost-gzip-cookie-test\.html  $1cache/perm/boost-gzip-cookie-test\.html\.gz [L,T=text/html,E=no-gzip:1]
 
   # GZIP - Cached css & js files
   RewriteCond %{HTTP_COOKIE} !(boost-gzip)
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=2]
   RewriteCond %{DOCUMENT_ROOT}/cache/perm/%{SERVER_NAME}%{REQUEST_URI}_\.css\.gz -s
-  RewriteRule .* cache/perm/%{SERVER_NAME}%{REQUEST_URI}_\.css\.gz [L,QSA,T=text/css]
+  RewriteRule .* cache/perm/%{SERVER_NAME}%{REQUEST_URI}_\.css\.gz [L,QSA,T=text/css,E=no-gzip:1]
   RewriteCond %{DOCUMENT_ROOT}/cache/perm/%{SERVER_NAME}%{REQUEST_URI}_\.js\.gz -s
-  RewriteRule .* cache/perm/%{SERVER_NAME}%{REQUEST_URI}_\.js\.gz [L,QSA,T=text/javascript]
+  RewriteRule .* cache/perm/%{SERVER_NAME}%{REQUEST_URI}_\.js\.gz [L,QSA,T=text/javascript,E=no-gzip:1]
 
   # NORMAL - Cached css & js files
   RewriteCond %{DOCUMENT_ROOT}/cache/perm/%{SERVER_NAME}%{REQUEST_URI}_\.css -s
@@ -61,11 +61,11 @@
   RewriteCond %{HTTP:Accept-encoding} !gzip
   RewriteRule .* - [S=3]
   RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz -s
-  RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz [L,T=text/html]
+  RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html\.gz [L,T=text/html,E=no-gzip:1]
   RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml\.gz -s
-  RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml\.gz [L,T=text/xml]
+  RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.xml\.gz [L,T=text/xml,E=no-gzip:1]
   RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.json\.gz -s
-  RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.json\.gz [L,T=text/javascript]
+  RewriteRule .* cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.json\.gz [L,T=text/javascript,E=no-gzip:1]
 
   # NORMAL
   RewriteCond %{DOCUMENT_ROOT}/cache/normal/%{SERVER_NAME}%{REQUEST_URI}_%{QUERY_STRING}\.html -s
@@ -77,4 +77,4 @@
 
   ### BOOST END ###
 
-# $Id: boosted1.txt,v 1.1.2.26 2010/09/01 23:33:00 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.27 2010/09/01 23:38:11 mikeytown2 Exp $

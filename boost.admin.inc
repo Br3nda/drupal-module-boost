@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.149 2010/09/01 23:33:00 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.150 2010/09/01 23:38:11 mikeytown2 Exp $
 
 /**
  * @file
@@ -1303,7 +1303,7 @@ function boost_admin_generate_htaccess($server_name = '%{HTTP_HOST}', $document_
   if (BOOST_AGGRESSIVE_GZIP) {
     $string .= "\n";
     $string .= "  # Gzip Cookie Test\n";
-    $string .= "  RewriteRule ^(.*)boost-gzip-cookie-test\.html  $1$cache_dir$permanent_dir_gzip" . "boost-gzip-cookie-test\.html\.gz [L,T=text/html]\n";
+    $string .= "  RewriteRule ^(.*)boost-gzip-cookie-test\.html  $1$cache_dir$permanent_dir_gzip" . "boost-gzip-cookie-test\.html\.gz [L,T=text/html,E=no-gzip:1]\n";
   }
   if (BOOST_CACHE_CSS || BOOST_CACHE_JS) {
     if (BOOST_GZIP) {
@@ -1315,11 +1315,11 @@ function boost_admin_generate_htaccess($server_name = '%{HTTP_HOST}', $document_
       $string .= "  RewriteRule .* - [S=$skip]\n";
       if (BOOST_CACHE_CSS) {
         $string .= "  RewriteCond $document_root$base_path$cache_dir$permanent_dir_gzip$server_name%{REQUEST_URI}$permanent_char$css$gz -s\n";
-        $string .= "  RewriteRule .* $cache_dir$permanent_dir_gzip$server_name%{REQUEST_URI}$permanent_char$css$gz [L,QSA,T=text/css]\n";
+        $string .= "  RewriteRule .* $cache_dir$permanent_dir_gzip$server_name%{REQUEST_URI}$permanent_char$css$gz [L,QSA,T=text/css,E=no-gzip:1]\n";
       }
       if (BOOST_CACHE_JS) {
         $string .= "  RewriteCond $document_root$base_path$cache_dir$permanent_dir_gzip$server_name%{REQUEST_URI}$permanent_char$js$gz -s\n";
-        $string .= "  RewriteRule .* $cache_dir$permanent_dir_gzip$server_name%{REQUEST_URI}$permanent_char$js$gz [L,QSA,T=text/javascript]\n";
+        $string .= "  RewriteRule .* $cache_dir$permanent_dir_gzip$server_name%{REQUEST_URI}$permanent_char$js$gz [L,QSA,T=text/javascript,E=no-gzip:1]\n";
       }
     }
     $string .= "\n";
@@ -1360,15 +1360,15 @@ function boost_admin_generate_htaccess($server_name = '%{HTTP_HOST}', $document_
       $string .= "  RewriteRule .* - [S=$skip]\n";
       if (BOOST_CACHE_HTML) {
         $string .= "  RewriteCond $document_root$base_path$cache_dir$gzip_dir$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz -s\n";
-        $string .= "  RewriteRule .* $cache_dir$gzip_dir$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz [L,T=text/html]\n";
+        $string .= "  RewriteRule .* $cache_dir$gzip_dir$server_name%{REQUEST_URI}$char%{QUERY_STRING}$html$gz [L,T=text/html,E=no-gzip:1]\n";
       }
       if (BOOST_CACHE_XML) {
         $string .= "  RewriteCond $document_root$base_path$cache_dir$gzip_dir$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz -s\n";
-        $string .= "  RewriteRule .* $cache_dir$gzip_dir$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz [L,T=text/xml]\n";
+        $string .= "  RewriteRule .* $cache_dir$gzip_dir$server_name%{REQUEST_URI}$char%{QUERY_STRING}$xml$gz [L,T=text/xml,E=no-gzip:1]\n";
       }
       if (BOOST_CACHE_JSON) {
         $string .= "  RewriteCond $document_root$base_path$cache_dir$gzip_dir$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json$gz -s\n";
-        $string .= "  RewriteRule .* $cache_dir$gzip_dir$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json$gz [L,T=text/javascript]\n";
+        $string .= "  RewriteRule .* $cache_dir$gzip_dir$server_name%{REQUEST_URI}$char%{QUERY_STRING}$json$gz [L,T=text/javascript,E=no-gzip:1]\n";
       }
     }
     $string .= "\n";
