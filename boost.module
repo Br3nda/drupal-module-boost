@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.369 2010/09/01 23:33:00 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.370 2010/09/03 22:16:25 mikeytown2 Exp $
 
 /**
  * @file
@@ -1953,7 +1953,7 @@ ETO;
   // site-wide code
   drupal_add_js($site_js, 'inline', 'footer');
   // no script code
-  $page_ns = '<noscript><div style="display:inline;"><img src="' . $base_path . $filename . '?nocache=1' . '&amp;nid='. $nid . '&amp;title='. $title . '&amp;q='. $q . '" alt="" /></div></noscript>';
+  $page_ns = '<noscript><div style="display:inline;"><img src="' . $base_path . $filename . '?nocache=1' . '&amp;nid='. $nid . '&amp;title='. $title . '&amp;qq='. $q . '" alt="" /></div></noscript>';
 
   return $page_ns;
 }
