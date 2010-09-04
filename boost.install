@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.96 2010/05/11 22:13:02 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.97 2010/09/04 19:30:15 mikeytown2 Exp $
 
 /**
  * @file
@@ -350,7 +350,7 @@ function boost_chk_htaccess_doc($htaccess) {
     }
   }
   if (BOOST_GZIP && BOOST_AGGRESSIVE_GZIP) {
-    if (!strstr($htaccess, "RewriteRule boost-gzip-cookie-test\.")) {
+    if (!strstr($htaccess, "RewriteRule ^(.*)boost-gzip-cookie-test\.")) {
       return FALSE;
     }
     $rules = 1;
