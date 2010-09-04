@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.151 2010/09/04 00:37:16 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.152 2010/09/04 00:42:16 mikeytown2 Exp $
 
 /**
  * @file
@@ -1343,7 +1343,7 @@ function boost_admin_generate_htaccess($server_name = '%{HTTP_HOST}', $document_
     $string .= "  # Caching for anonymous users\n";
     $string .= "  # Skip boost IF not get request OR uri has wrong dir OR cookie is set OR request came from this server" . (variable_get('boost_ssl_bypass', TRUE) ? " OR https request" : "") . "\n";
     $string .= "  RewriteCond %{REQUEST_METHOD} !^(GET|HEAD)$ [OR]\n";
-    $string .= "  RewriteCond %{REQUEST_URI} (^$base_path(admin|$cache_dir|misc|modules|sites|system|openid|themes|node/add))|(/(comment/reply|edit|user|user/(login|password|register))$) [OR]\n";
+    $string .= "  RewriteCond %{REQUEST_URI} (^$base_path(admin|$cache_dir|misc|modules|sites|system|openid|themes|node/add|comment/reply))|(/(edit|user|user/(login|password|register))$) [OR]\n";
     $string .= BOOST_LOOPBACK_BYPASS && BOOST_OVERWRITE_FILE ? "  RewriteCond %{REMOTE_ADDR} ^$server_ip$ [OR]\n" : '';
     if (variable_get('boost_apache_rfc2616', FALSE)) {
       $string .= "  RewriteCond %{HTTP:Pragma} no-cache [OR]\n";
