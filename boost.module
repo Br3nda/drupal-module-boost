@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.371 2010/09/04 00:37:16 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.372 2010/09/05 06:41:28 mikeytown2 Exp $
 
 /**
  * @file
@@ -291,19 +291,32 @@ function boost_views_generate_default_list() {
 
     $view->init_display();
     foreach ($view->display as $display_id => $display) {
-      // Make sure view has a path
       // Anonymous users can access view
-      if (isset($display->display_options['path']) && $view->access($display_id, $account)) {
+      if (!$view->access($display_id, $account)) {
+        continue;
+      }
+      $hash = $view_name . ' - ' . $display_id;
+
+      // Use the default view
+      if (strcmp($display_id, 'default') == 0) {
+        $enabled[$hash] = $hash;
+      }
+      // View with a path
+      elseif (isset($display->display_options['path'])) {
         $path = $display->display_options['path'];
         $hash = $view_name . ' - ' . $display_id . ' - /' . $path;
         // Path is cacheable via boost & does not take arguments
         if (boost_is_cacheable($path) && !stristr($path, '%')) {
           $enabled[$hash] = $hash;
         }
-        // Path is not cacheable via boost
+        // Path is not cacheable via boost or view takes arguments
         else {
           $disabled[$hash] = 0;
         }
+      }
+      // All other displays mark as disabled
+      else {
+        $disabled[$hash] = 0;
       }
     }
   }
