@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.373 2010/09/07 00:19:26 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.374 2010/09/07 02:48:59 mikeytown2 Exp $
 
 /**
  * @file
@@ -219,6 +219,38 @@ function boost_node_get_basics($nid) {
 }
 
 /**
+ * Implementation of hook_ctools_render_alter().
+ *
+ * Needed to get the nodes that are inside of a panel's contex
+ */
+function boost_ctools_render_alter($info, $page, $args, $contexts, $task, $subtask, $handler) {
+  foreach ($handler->conf['display']->context as $context) {
+    if ($context->type == 'node') {
+      $node = $context->data;
+      // skip if node type is not set
+      if (!isset($node->type)) {
+        continue;
+      }
+      // set data
+      $relationship = array(
+        'child_page_callback' => 'node',
+        'child_page_type' => $node->type,
+        'child_page_id' => $node->nid,
+      );
+      if (BOOST_VERBOSE >= 9) {
+        $relationship['debug'] = array(
+          'panel-task' => $handler->task,
+          'panel-subtask' => $handler->subtask,
+          'node-path' => $node->path,
+        );
+      }
+      // send to global
+      $GLOBALS['_boost_relationships'][] = $relationship;
+    }
+  }
+}
+
+/**
  * Implementation of hook_views_pre_render().
  *
  * This is called right before the render process. Used to grab the NID's listed
@@ -252,20 +284,20 @@ function boost_views_pre_render(&$view) {
       continue;
     }
     // set data
-    $info = array(
+    $relationship = array(
       'child_page_callback' => 'node',
       'child_page_type' => $node->type,
       'child_page_id' => $item->nid,
     );
     if (BOOST_VERBOSE >= 9) {
-      $info['debug'] = array(
+      $relationship['debug'] = array(
         'view-name' => $view->name,
         'view-display' => $view->current_display,
         'node-path' => $node->path,
       );
     }
     // send to global
-    $GLOBALS['_boost_relationships'][] = $info;
+    $GLOBALS['_boost_relationships'][] = $relationship;
   }
 }
 
@@ -4207,7 +4239,7 @@ function _boost_page_have_error() {
 /**
  * Implementation of hook_boost_menu_router().
  *
- * TODO Better support of panels.
+ * TODO Better support for arguments.
  *
  * @param $router_item
  *   info about this request
@@ -4262,11 +4294,14 @@ function boost_boost_menu_router($router_item) {
 
   // Handle panels
   if ($router_item['page_callback'] == 'page_manager_page_execute') {
-    $router_item['page_type'] = array_shift($router_item['page_arguments']);
-    if (db_table_exists('page_manager_pages')) {
-      $pid = db_fetch_array(db_query_range("SELECT pid FROM {page_manager_pages} WHERE name = '%s'", $router_item['page_type'], 0, 1));
+    $subtask_id = array_shift($router_item['page_arguments']);
+    $page = page_manager_page_load($subtask_id);
+    $task = page_manager_get_task($page->task);
+    if ($function = ctools_plugin_get_function($task, 'page callback')) {
+      $router_item['page_callback'] = $function;
     }
-    $router_item['page_id'] = $pid ? $pid['pid'] : 0;
+    $router_item['page_type'] = $page->task;
+    $router_item['page_id'] = $page->name;
     return $router_item;
   }
 
