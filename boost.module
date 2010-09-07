@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.372 2010/09/05 06:41:28 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.373 2010/09/07 00:19:26 mikeytown2 Exp $
 
 /**
  * @file
@@ -1322,8 +1322,7 @@ function boost_expire_node($node, $nid = 0, $debug = FALSE) {
 
   // Get views containing this node and flush.
   if (BOOST_FLUSH_VIEWS && module_exists('views')) {
-    $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-    $router_item = $GLOBALS['_boost_router_item'];
+    $router_item = _boost_get_menu_router();
     $relationship = array();
     $relationship[] = array('page_callback' => 'node', 'page_type' => $node->type, 'page_id' => $node->nid);
     $relationships = boost_cache_get_node_relationships($relationship);
@@ -1574,8 +1573,7 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
           // aren't even cacheable to begin with (e.g. admin/*).
           if (!empty($user->uid) && boost_is_cacheable($GLOBALS['_boost_path'])) {
             $output = '';
-            $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-            $router_item = $GLOBALS['_boost_router_item'];
+            $router_item = _boost_get_menu_router();
             if ($router_item['page_callback'] == 'node') {
               $node = node_load(arg(1));
               $data = boost_expire_node($node, $node->nid, TRUE);
@@ -1689,8 +1687,7 @@ function boost_block($op = 'list', $delta = 0, $edit = array()) {
 }
 
 function boost_block_flush_form() {
-  $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-  $router_item = $GLOBALS['_boost_router_item'];
+  $router_item = _boost_get_menu_router();
   $form['boost_clear']['page_callback'] = array(
     '#type' => 'hidden',
     '#value' => $router_item['page_callback'],
@@ -1767,8 +1764,7 @@ function boost_block_db_settings_form() {
   $period[0] = '<' . t('none') . '>';
   $period[-1] = t('default');
   //$info = boost_get_db(boost_file_path($GLOBALS['_boost_path']));
-  $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-  $router_item = $GLOBALS['_boost_router_item'];
+  $router_item = _boost_get_menu_router();
   $settings = boost_get_settings_db($router_item);
   $default = 0;
   foreach ($settings as $key => $value) {
@@ -1885,8 +1881,7 @@ function boost_block_db_settings_form_submit(&$form_state, $form) {
  */
 function boost_block_db_rm_settings_form_submit(&$form_state, $form) {
   global $_boost;
-  $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-  $router_item = $GLOBALS['_boost_router_item'];
+  $router_item = _boost_get_menu_router();
 
   $data = array();
   if (is_numeric($form['values']['id'])) {
@@ -2007,9 +2002,9 @@ function _boost_ob_handler() {
   chdir(dirname($_SERVER['SCRIPT_FILENAME']));
 
   // Very late cache canceling
-  $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-  if (   $GLOBALS['_boost_router_item']['page_callback'] == 'search404_page'
-      || $GLOBALS['_boost_router_item']['page_callback'] == 'fivestar_vote'
+  $router_item = _boost_get_menu_router();
+  if (   $router_item['page_callback'] == 'search404_page'
+      || $router_item['page_callback'] == 'fivestar_vote'
       ) {
     $GLOBALS['_boost_cache_this'] = FALSE;
   }
@@ -2037,7 +2032,7 @@ function _boost_ob_handler() {
     $status = boost_get_http_status();
     $types = boost_get_content_type();
     if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_ob_handler_info'])) {
-      watchdog('boost', 'Debug: _boost_ob_handler() <br />HTTP Info: !status - !types <br />Path: !path <br />Content Container: !callback <br />Content Type: !type <br />ID: !id <br />Cache This: !cache.', array('!status' => $status, '!types' => implode(', ', $types), '!path' => boost_file_path($GLOBALS['_boost_path']), '!callback' => $GLOBALS['_boost_router_item']['page_callback'], '!type' => $GLOBALS['_boost_router_item']['page_type'], '!id' => $GLOBALS['_boost_router_item']['page_id'], '!cache' => $GLOBALS['_boost_cache_this'] ? 'TRUE' : 'FALSE'));
+      watchdog('boost', 'Debug: _boost_ob_handler() <br />HTTP Info: !status - !types <br />Path: !path <br />Content Container: !callback <br />Content Type: !type <br />ID: !id <br />Cache This: !cache.', array('!status' => $status, '!types' => implode(', ', $types), '!path' => boost_file_path($GLOBALS['_boost_path']), '!callback' => $router_item['page_callback'], '!type' => $router_item['page_type'], '!id' => $router_item['page_id'], '!cache' => $GLOBALS['_boost_cache_this'] ? 'TRUE' : 'FALSE'));
     }
     $types = array_pop($types);
     if (stristr($types, 'text/javascript') && BOOST_CACHE_JSON) {
@@ -2992,8 +2987,8 @@ function boost_cache_set($path, $data, $extension = BOOST_FILE_EXTENSION) {
   }
 
   // Get custom expiration time if set
-  $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-  $settings = boost_get_settings_db($GLOBALS['_boost_router_item']);
+  $router_item = _boost_get_menu_router();
+  $settings = boost_get_settings_db($router_item);
   $expire = -2;
   foreach ($settings as $value) {
     if ($value != NULL) {
@@ -3122,8 +3117,7 @@ function boost_cache_set_node_relationships($relationships) {
     $url = urldecode(rawurlencode($url));
   }
   $hash_url = md5($url);
-  $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-  $router_item = $GLOBALS['_boost_router_item'];
+  $router_item = _boost_get_menu_router();
   if (!is_array($relationships)) {
     return FALSE;
   }
@@ -3167,7 +3161,7 @@ function boost_cache_set_node_relationships($relationships) {
     }
 
     // Create the primary key
-    $hash = md5($data['base_dir'] . $data['page_callback'] . $data['page_type'] . $data['page_id'] . $data['child_page_callback'] . $data['child_page_type'] . $data['child_page_id']);
+    $hash = md5($data['base_dir'] . $data['page_callback'] . $data['page_type'] . $data['page_id'] . $data['child_page_callback'] . $data['child_page_type'] . $data['child_page_id'] . $hash_url);
 
     // Insert data into database
     db_query("UPDATE {boost_cache_relationships} SET base_dir = '%s', page_callback = '%s', page_type = '%s', page_id = '%s', child_page_callback = '%s', child_page_type = '%s', child_page_id = '%s', hash_url = '%s', timestamp = '%d' WHERE hash = '%s'", $data['base_dir'], $data['page_callback'], $data['page_type'], $data['page_id'], $data['child_page_callback'], $data['child_page_type'], $data['child_page_id'], $hash_url, BOOST_TIME, $hash);
@@ -3263,8 +3257,7 @@ function boost_cache_prune_node_relationship($hash_url) {
  *  Cache expiration time in seconds (UNIX time).
  */
 function boost_db_prep($filename, $extension, $expire) {
-  $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-  $router_item = $GLOBALS['_boost_router_item'];
+  $router_item = _boost_get_menu_router();
   $timer = timer_read('page');
   $timer_average = $timer;
   $lifetime = -1;
@@ -3411,8 +3404,7 @@ function boost_remove_settings_db($csid) {
  *   At what level does this effect cache expiration
  */
 function boost_set_db_page_settings($lifetime, $push, $scope) {
-  $GLOBALS['_boost_router_item'] = isset($GLOBALS['_boost_router_item']) ? $GLOBALS['_boost_router_item'] : _boost_get_menu_router();
-  $router_item = $GLOBALS['_boost_router_item'];
+  $router_item = _boost_get_menu_router();
   $filename = boost_file_path($GLOBALS['_boost_path']);
   $info = boost_get_db($filename);
   if (!$info) {
@@ -4213,39 +4205,33 @@ function _boost_page_have_error() {
 }
 
 /**
- * Gets page_callback & page_arguments from menu_router table
+ * Implementation of hook_boost_menu_router().
  *
- * Allows for any content type to have it's own cache expiration.
  * TODO Better support of panels.
+ *
+ * @param $router_item
+ *   info about this request
+ *
+ * @return array
+ *   return the $router_item array with 'page_callback', 'page_type', 'page_id' set
+ *   return NULL if you didn't get a match
  */
-function _boost_get_menu_router() {
-  // Declare array keys
-  $router_item['page_callback'] = '';
-  $router_item['page_type'] = '';
-  $router_item['page_id'] = '';
-
-  // Get all args
-  $args = arg();
-  // Prevent array warnings
-  $args[0] = empty($args[0]) ? '' : $args[0];
-  $args[1] = empty($args[1]) ? '' : $args[1];
-  $args[2] = empty($args[2]) ? '' : $args[2];
-
+function boost_boost_menu_router($router_item) {
   // Handle nodes
-  if ($args[0] == 'node' && is_numeric($args[1])) {
-    $node = boost_node_get_basics($args[1]);;
+  if ($router_item['args'][0] == 'node' && is_numeric($router_item['args'][1])) {
+    $node = boost_node_get_basics($router_item['args'][1]);
     $router_item['page_callback'] = 'node';
-    $router_item['page_id'] = $args[1];
+    $router_item['page_id'] = $router_item['args'][1];
     if ($node) {
       $router_item['page_type'] = $node->type;
     }
     return $router_item;
   }
   // Handle taxonomy
-  if ($args[0] == 'taxonomy' && is_numeric($args[2])) {
-    $term = taxonomy_get_term($args[2]);
+  if ($router_item['args'][0] == 'taxonomy' && is_numeric($router_item['args'][2])) {
+    $term = taxonomy_get_term($router_item['args'][2]);
     $router_item['page_callback'] = 'taxonomy';
-    $router_item['page_id'] = $args[2];
+    $router_item['page_id'] = $router_item['args'][2];
     if ($term) {
       $vocab = taxonomy_vocabulary_load($term->vid);
       $router_item['page_type'] = $vocab->name;
@@ -4253,21 +4239,15 @@ function _boost_get_menu_router() {
     return $router_item;
   }
   // Handle users
-  if ($args[0] == 'user' && is_numeric($args[1])) {
-    $user = user_load($args[1]);
+  if ($router_item['args'][0] == 'user' && is_numeric($router_item['args'][1])) {
+    $user = user_load($router_item['args'][1]);
     $router_item['page_callback'] = 'user';
-    $router_item['page_id'] = $args[1];
+    $router_item['page_id'] = $router_item['args'][1];
     if ($user !== FALSE) {
       $router_item['page_type'] = implode(', ', $user->roles);
     }
     return $router_item;
   }
-  // Load the menu item, page is not one of the defaults (nid, tid, uid).
-  $router_item = menu_get_item();
-  if (!isset($router_item['page_id'])) {
-    $router_item['page_id'] = '';
-  }
-
   // Handle views
   if ($router_item['page_callback'] == 'views_page') {
     $router_item['page_callback'] = 'view';
@@ -4280,42 +4260,139 @@ function _boost_get_menu_router() {
     return $router_item;
   }
 
-  // Try to handle everything else
-  if (is_array($router_item['page_arguments'])) {
-    foreach ($router_item['page_arguments'] as $string) {
-      if (is_string($string)) {
-        $router_item['page_type'] = $string;
-        break;
-      }
-    }
-  }
-  // Set empty if page_arguments is an empty object.
-  if (!isset($router_item['page_type']) && empty($router_item['page_arguments'])) {
-    $router_item['page_type'] = '';
-  }
-  // Set to first object in array if page_arguments is still an array and cast it as an string.
-  if (!isset($router_item['page_type']) && is_array($router_item['page_arguments'])) {
-    if (is_object($router_item['page_arguments'][0])) {
-      $router_item['page_type'] = (string)get_class($router_item['page_arguments'][0]);
-    }
-    else {
-      $router_item['page_type'] = (string)$router_item['page_arguments'][0];
-    }
-  }
-
-
   // Handle panels
-  if (strstr($router_item['page_callback'], 'page_execute')) {
-    if (db_table_exists('delegator_pages')) {
-      $pid = db_fetch_array(db_query_range("SELECT pid FROM {delegator_pages} WHERE name = '%s'", $router_item['page_type'], 0, 1));
-    }
-    elseif (db_table_exists('page_manager_pages')) {
+  if ($router_item['page_callback'] == 'page_manager_page_execute') {
+    $router_item['page_type'] = array_shift($router_item['page_arguments']);
+    if (db_table_exists('page_manager_pages')) {
       $pid = db_fetch_array(db_query_range("SELECT pid FROM {page_manager_pages} WHERE name = '%s'", $router_item['page_type'], 0, 1));
     }
     $router_item['page_id'] = $pid ? $pid['pid'] : 0;
+    return $router_item;
+  }
+
+  // Try to handle everything else
+  elseif (is_array($router_item['page_arguments'])) {
+    foreach ($router_item['page_arguments'] as $string) {
+      if (is_string($string) && empty($router_item['page_type'])) {
+        $router_item['page_type'] = $string;
+      }
+      elseif (is_string($string)) {
+        $router_item['page_id'] .= $string;
+      }
+    }
+  }
+  // If router doesn't hold the the arguments, get them from the URL.
+  if (empty($router_item['page_type'])) {
+    $router_item['page_type'] = $router_item['extra_arguments'];
+  }
+  elseif (empty($router_item['page_id'])) {
+    $router_item['page_id'] = $router_item['extra_arguments'];
+  }
+
+  // Try populating with the query string
+  if (empty($router_item['page_type'])) {
+    $router_item['page_type'] = $query;
+  }
+  elseif (empty($router_item['page_id'])) {
+    $router_item['page_id'] = $query;
   }
 
   return $router_item;
+}
+
+/**
+ * Gets menu router contex
+ *
+ * Allows for any content type to have it's own cache expiration among other things.
+ *
+ * $GLOBALS['_boost_router_item'] gets set in this function
+ *
+ * @param $path
+ *   Internal path
+ * @param $get_array
+ *   $_GET
+ * @param $reset
+ *   Reset static variable
+ * @return array
+ *   Important keys to return
+ *    'page_callback'
+ *    'page_type'
+ *    'page_id'
+ *    'page_number'
+ */
+function _boost_get_menu_router($path = NULL, $get_array = NULL, $reset = FALSE) {
+  // Store result in static
+  static $menu_router = array();
+  if ($reset) {
+    $menu_router = array();
+  }
+  if ($get_array === NULL) {
+    $get_array = $_GET;
+  }
+
+  // Get query string & page number
+  $query = array();
+  $page = 0;
+  foreach ($get_array as $key => $val) {
+    if ($key != 'q' && $key != 'destination' && $key != 'page' && !empty($val)) {
+      $query[$key] = $val;
+    }
+    if ($key == 'page' && is_numeric($val)) {
+      $page = $val;
+    }
+  }
+  $query = str_replace('&amp;', '&', urldecode(http_build_query($query)));
+
+  // Static Index
+  $index = $path ? $path . $query : 0 . $query;
+  if (!empty($menu_router[$index])) {
+    return $menu_router[$index];
+  }
+
+  // Declare array keys
+  $router_item = array();
+  $router_item['page_type'] = '';
+  $router_item['page_id'] = '';
+  // Load the menu item
+  $router_item += menu_get_item($path);
+
+  // Get all args
+  $args = arg($path);
+  // Prevent array warnings
+  $args[0] = empty($args[0]) ? '' : $args[0];
+  $args[1] = empty($args[1]) ? '' : $args[1];
+  $args[2] = empty($args[2]) ? '' : $args[2];
+  $router_item['args'] = $args;
+
+  // Get extra arguments
+  $menu_args = arg(NULL, $router_item['path']);
+  foreach ($args as $key => $value) {
+    if (!empty($value) && $value !== $menu_args[$key] && $menu_args[$key] !== '%') {
+      $diff[] = $value;
+    }
+  }
+  $router_item['extra_arguments'] = implode('/', $diff);
+  $router_item['query'] = $query;
+  $router_item['page_number'] = $page;
+
+  // Invoke hook_boost_menu_router($router_item)
+  $modules = module_implements('boost_menu_router');
+  // Make boosts built in hook the last one.
+  $pos = array_search('boost', $modules);
+  if ($pos !== FALSE) {
+    $temp = $modules[$pos];
+    unset($modules[$pos]);
+    $modules[] = $temp;
+  }
+  foreach ($modules as $module) {
+    if (($result = module_invoke($module, 'boost_menu_router', $router_item)) !== NULL) {
+      $menu_router[$index] = $result;
+      if ($path === NULL) {
+        $GLOBALS['_boost_router_item'] = $menu_router[$index];
+      }
+      return $menu_router[$index];
+    }
+  }
 }
 
 /**
