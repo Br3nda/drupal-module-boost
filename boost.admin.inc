@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.154 2010/09/08 18:46:44 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.155 2010/09/08 21:02:13 mikeytown2 Exp $
 
 /**
  * @file
@@ -1424,8 +1424,9 @@ function boost_update_robots_txt($enable, $verbose = TRUE) {
       $result = file_put_contents($filename, $text . "\n" . $payload . "\n");
       if ($verbose) {
         drupal_set_message($result ?
-                           t('robots.txt patched for usage with boost') :
-                           t('Unable to write to robots.txt'));
+          t('robots.txt patched for usage with boost') :
+          t('Unable to write to robots.txt')
+        );
       }
     }
     elseif (!$enable && stristr($text, $payload)) {
