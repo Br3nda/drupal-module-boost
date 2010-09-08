@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.377 2010/09/08 18:45:29 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.378 2010/09/08 18:46:45 mikeytown2 Exp $
 
 /**
  * @file
@@ -64,6 +64,7 @@ define('BOOST_PRE_PROCESS_FUNCTION', variable_get('boost_pre_process_function', 
 define('BOOST_EXIT_IN_HOOK_EXIT',    variable_get('boost_exit_in_hook_exit', TRUE));
 define('BOOST_FLUSH_ALL_MULTISITE',  variable_get('boost_flush_all_multisite', TRUE));
 define('BOOST_ONLY_ASCII_PATH',      variable_get('boost_only_ascii_path', TRUE));
+define('BOOST_SET_FILE_ENCODING',    variable_get('boost_set_file_encoding', ''));
 define('BOOST_AGGRESSIVE_COOKIE',     variable_get('boost_aggressive_cookie', TRUE));
 define('BOOST_ASYNCHRONOUS_OUTPUT',  variable_get('boost_asynchronous_output', TRUE));
 define('BOOST_FLUSH_DIR',            variable_get('boost_flush_dir', FALSE));
@@ -3724,6 +3725,9 @@ function boost_cache_write($filename, $buffer) {
       $data = $buffer;
     }
     foreach ($values as $filename) {
+      if (!empty(BOOST_SET_FILE_ENCODING)) {
+        $filename = iconv("UTF-8", BOOST_SET_FILE_ENCODING, $filename);
+      }
       if (!_boost_mkdir_p(dirname($filename))) {
         if (BOOST_VERBOSE >= 3) {
           watchdog('boost', 'Unable to create directory: %dir<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%dir' => dirname($filename), '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);

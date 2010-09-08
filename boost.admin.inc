@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.153 2010/09/05 05:16:13 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.154 2010/09/08 18:46:44 mikeytown2 Exp $
 
 /**
  * @file
@@ -186,6 +186,12 @@ function boost_admin_boost_performance_page() {
     '#title'         => t('Only allow ASCII characters in path'),
     '#default_value' => BOOST_ONLY_ASCII_PATH,
     '#description'   => t('Only allowing ACSII characters is a safe way to cache pages. It severely limits i18n support so this can be turned off. Fair warning, disabling this may cause "page not found" errors depending on your url structure (spaces are bad, ect...). If you follow RFC 3986 you should be ok.'),
+  );
+  $form['cacheability']['boost_set_file_encoding'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Convert the filename to this encoding'),
+    '#default_value' => BOOST_SET_FILE_ENCODING,
+    '#description'   => t('Use iconv to change the filename before its saved to disk. Odds are you will not need to set this. Example: CP1255 !link', array('!link' => l('http://php.net/iconv', 'http://php.net/iconv'))),
   );
 
   // Assumes fatal errors are fatal, thus the script will never get past the error.
