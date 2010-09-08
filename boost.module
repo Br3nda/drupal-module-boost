@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.376 2010/09/08 18:43:47 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.377 2010/09/08 18:45:29 mikeytown2 Exp $
 
 /**
  * @file
@@ -525,6 +525,109 @@ function boost_init() {
 }
 
 /**
+ * Grabs drupal_goto requests via boost_exit and looks for redirects.
+ *
+ * Looks at the current page and the destination, seeing if the internal name
+ * is the same; node/8 == node/8.
+ *
+ * @param $destination
+ *   URL that user will be sent to soon.
+ */
+function boost_redirect_handler($destination) {
+  global $base_path, $base_root;
+  if (empty($destination)) {
+    return;
+  }
+  $source = $base_root . request_uri();
+
+  // Parse the URLs
+  $new_parts = parse_url($destination);
+  $current_parts = parse_url($source);
+
+  // Get paths
+  $current_path = ltrim($current_parts['path'], $base_path);
+  $current_path_system = $_GET['q'];
+  $new_path = ltrim($new_parts['path'], $base_path);
+  $new_path_system = drupal_get_normal_path($new_path);
+
+  // Build alt source url
+  $alt_parts = $current_parts;
+  $alt_parts['path'] = $current_path_system;
+  $alt_src = boost_glue_url($alt_parts);
+  $urls = array($alt_src, $source);
+
+  // Handle domain alias redirects
+  if (   module_exists('domain_alias')
+      && isset($_domain['redirect'])
+      && $_domain['redirect'] == TRUE
+         ) {
+    boost_cache_kill_url($urls);
+    return;
+  }
+  // Bail out if redirect is not to the same domain
+  elseif (strcmp($new_parts['host'], $current_parts['host']) != 0) {
+    return;
+  }
+
+  // Check for globalredirect internal to alias redirect
+  if (strcmp($current_path, $new_path_system) == 0) {
+    boost_cache_kill_url($urls);
+    return;
+  }
+
+  // Check for globalredirect alias to alias redirect (deslashing)
+  // Also grabs not clean to clean redirects
+  if (strcmp($current_path, $_REQUEST['q']) != 0) {
+    if (strcmp($current_path_system, $new_path_system) == 0) {
+      boost_cache_kill_url($urls);
+      return;
+    }
+  }
+
+  if (module_exists('path_redirect')) {
+    // Check for normal path_redirect alias to alias redirect
+    $path_redirects = boost_path_redirect_load(array('source' => $current_path));
+    if (isset($path_redirects)) {
+      foreach ($path_redirects as $path_redirect) {
+        $current_path_system = $path_redirect['redirect'];
+        break;
+      }
+    }
+    if (strcmp($current_path_system, $new_path_system) == 0) {
+      boost_cache_kill_url($urls);
+      return;
+    }
+
+    // Check for alt path_redirect alias to alias redirect
+    $path_redirects = boost_path_redirect_load(array('source' => $current_path_system));
+    if (isset($path_redirects)) {
+      foreach ($path_redirects as $path_redirect) {
+        $current_path_system = $path_redirect['redirect'];
+        break;
+      }
+    }
+    if (strcmp($current_path_system, $new_path_system) == 0) {
+      boost_cache_kill_url($urls);
+      return;
+    }
+  }
+
+  // Last attempt of getting a "match" for this redirect
+  $result = db_query("SELECT page_callback, page_type, page_id FROM {boost_cache} WHERE expire = 0 AND (hash_url = '%s' OR hash_url = '%s')", md5($source),  md5($alt_src));
+  watchdog('testd', $source . ' ' . $alt_src);
+  while($row = db_fetch_array($result)) {
+    // Handle node redirects
+    if ($row['page_callback'] == 'node') {
+      $current_path_system = $row['page_callback'] . '/' . $row['page_id'];
+      if (strcmp($current_path_system, $new_path_system) == 0) {
+        boost_cache_kill_url($urls);
+        return;
+      }
+    }
+  }
+}
+
+/**
  * Implementation of hook_exit(). Performs cleanup tasks.
  *
  * For POST requests by anonymous visitors, this adds a dummy query string
@@ -536,33 +639,39 @@ function boost_init() {
  * It's necessary, though, in order for any session messages set on form
  * submission to actually show up on the next page if that page has been
  * cached by Boost.
+ *
+ * @param $destination
+ *   URL that user will be sent to soon.
  */
 function boost_exit($destination = NULL) {
-  global $_boost;
+  global $_boost, $user;
+  if (!empty($destination) && $_SERVER['REQUEST_METHOD'] != 'POST') {
+    boost_redirect_handler($destination);
+  }
+
   // Check that hook_exit() was invoked by drupal_goto() for a POST request:
-  if (!empty($destination) && $_SERVER['REQUEST_METHOD'] == 'POST') {
+  // Check that we're dealing with an anonymous visitor. and that some
+  // session messages have actually been set during this page request:
+  if (   !empty($destination)
+      && $_SERVER['REQUEST_METHOD'] == 'POST'
+      && empty($user->uid)
+      && $messages = drupal_set_message()
+          ) {
+    $query_parts = parse_url($destination);
+    // Add a nocache parameter to query. Such pages will never be cached
+    $query_parts['query'] .= (empty($query_parts['query']) ? '' : '&') . 'nocache=1';
 
-    // Check that we're dealing with an anonymous visitor. and that some
-    // session messages have actually been set during this page request:
-    global $user;
-    if (empty($user->uid) && ($messages = drupal_set_message())) {
+    // Rebuild the URL with the new query string.  Do not use url() since
+    // destination has presumably already been run through url().
+    $destination = boost_glue_url($query_parts);
+
+    // Do what drupal_goto() would do if we were to return to it:
+    if (BOOST_EXIT_IN_HOOK_EXIT) {
       // FIXME: call any remaining exit hooks since we're about to terminate?
-
-      $query_parts = parse_url($destination);
-      // Add a nocache parameter to query. Such pages will never be cached
-      $query_parts['query'] .= (empty($query_parts['query']) ? '' : '&') . 'nocache=1';
-
-      // Rebuild the URL with the new query string.  Do not use url() since
-      // destination has presumably already been run through url().
-      $destination = boost_glue_url($query_parts);
-
-      // Do what drupal_goto() would do if we were to return to it:
-      if (BOOST_EXIT_IN_HOOK_EXIT) {
-        exit(header('Location: ' . $destination));
-      }
-      else {
-        header('Location: ' . $destination);
-      }
+      exit(header('Location: ' . $destination));
+    }
+    else {
+      header('Location: ' . $destination);
     }
   }
   // Set watchdog error if headers already sent
@@ -2111,81 +2220,12 @@ function _boost_ob_handler() {
       }
     }
   }
-  // Remove dead items from the cache (file & db)
+
+  // Remove dead items from the cache (file & db); 404 & 403
   if ($filename) {
     $files = array(array('filename' => $filename));
     boost_cache_kill($files, TRUE);
     //boost_remove_db($files);
-  }
-
-  // Remove cached items when a redirect happens
-  if (boost_headers_contain('Location: ')) {
-    $types = boost_get_content_type();
-    $types = array_pop($types);
-
-    // Get Location path from headers; New URL
-    $new_path_system = '?';
-    foreach (headers_list() as $value) {
-      $url = explode('Location: ', $value);
-      if (!isset($url[1])) {
-        continue;
-      }
-      $url = $url[1];
-      $parts = parse_url($url);
-      $new_path = ltrim($parts['path'], '/');
-      $new_path_system = drupal_lookup_path('source', $new_path);
-      break;
-    }
-
-    // Get Redirect from DB for current path; Old URL.
-    $old_path_system = $GLOBALS['_boost_path'];
-    if ($new_path_system === $old_path_system) {
-      // drupal goto was a false redirect, do nothing in short.
-      $old_path_system .= '?';
-    }
-    if (module_exists('path_redirect')) {
-      $path_redirects = boost_path_redirect_load(array('source' => $GLOBALS['_boost_path']));
-      if (isset($path_redirects)) {
-        foreach ($path_redirects as $path_redirect) {
-          $old_path_system = $path_redirect['redirect'];
-          break;
-        }
-      }
-    }
-
-    // Set filename
-    if (stristr($types, 'text/javascript')) {
-      $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_JSON_EXTENSION);
-    }
-    elseif (stristr($types, 'application/rss') || stristr($types, 'text/xml') || stristr($types, 'application/rss+xml')) {
-      $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_XML_EXTENSION);
-    }
-    elseif (stristr($types, 'text/html')) {
-      $filename = boost_file_path($GLOBALS['_boost_path'], TRUE, BOOST_FILE_EXTENSION);
-    }
-
-    // Remove dead items from the cache (file & db)
-    if ($filename) {
-      $files = array(array('filename' => $filename));
-      boost_cache_kill($files, TRUE);
-      // If the same, then nuke old entry in boost cache table.
-      if ($old_path_system === $new_path_system) {
-        boost_remove_db($files);
-      }
-      // If domain level redirect, kill old file
-      if (strcmp($parts['host'], $_SERVER['HTTP_HOST']) != 0) {
-        boost_remove_db($files);
-      }
-    }
-
-    if (BOOST_VERBOSE >= 7 && isset($_boost['verbose_option_selected']['boost_ob_handler_redirect'])) {
-      watchdog('boost', 'Debug: _boost_ob_handler() <br />HTTP Info: Location redirect for !types <br />Path: !path', array(
-        '!status' => $status,
-        '!types' => $type . ', ' . implode(', ', $types),
-        '!path' => $filename,
-        )
-      );
-    }
   }
 }
 
@@ -2679,7 +2719,6 @@ function boost_cache_flush_by_filename($filenames, $force_flush = FALSE) {
   }
 }
 
-
 /**
  * Expires the static file cache for the given router items.
  *
@@ -2791,6 +2830,51 @@ function boost_cache_expire_router($router_items, $force_flush = FALSE, $remove_
   }
   else {
     return $files;
+  }
+}
+
+/**
+ * Deletes cached page from file system & database.
+ *
+ * @param array $urls
+ *   list of urls to remove from the boost cache
+ * @param boolean $force_flush = TRUE
+ *   Override BOOST_EXPIRE_NO_FLUSH setting.
+ */
+function boost_cache_kill_url($urls, $force_flush = TRUE) {
+  global $base_path;
+  foreach ($urls as $value) {
+    $decoded = urldecode($value);
+    if ($decoded != $value) {
+      $urls[] = $decoded;
+    }
+
+    $raw = rawurldecode($value);
+    if ($raw != $decoded) {
+      $urls[] = $decoded;
+    }
+  }
+  $urls = array_unique($urls);
+
+  $hashes = array_map('md5', $urls);
+  $parts = array_map('parse_url', $urls);
+
+  $files = array();
+  foreach ($parts as $part) {
+    $files[]['filename'] = boost_file_path(ltrim($part['path'], $base_path), TRUE, BOOST_FILE_EXTENSION);
+  }
+  $result = boost_db_multi_select_in('boost_cache', 'hash_url', "'%s'", $hashes);
+  while ($row = db_fetch_array($result)) {
+    $files[] = array('filename' => $row['filename'], 'hash' => $row['hash']);
+  }
+  if (!empty($files)) {
+    watchdog('test', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($files, TRUE)))));
+    boost_cache_kill($files, $force_flush);
+    boost_remove_db($files);
+    return TRUE;
+  }
+  else {
+    return FALSE;
   }
 }
 
