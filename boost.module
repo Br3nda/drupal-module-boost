@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.385 2010/09/10 22:20:18 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.386 2010/09/10 22:27:05 mikeytown2 Exp $
 
 /**
  * @file
@@ -4519,7 +4519,10 @@ function _boost_get_menu_router($path = NULL, $get_array = NULL, $reset = FALSE)
   $router_item['page_type'] = '';
   $router_item['page_id'] = '';
   // Load the menu item
-  $router_item += menu_get_item($path);
+  $item = menu_get_item($path);
+  if (is_array($item)) {
+    $router_item += $item;
+  }
 
   // Get all args
   $args = arg($path);
