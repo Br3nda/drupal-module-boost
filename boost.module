@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.388 2010/09/15 05:33:49 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.389 2010/09/15 22:44:09 mikeytown2 Exp $
 
 /**
  * @file
@@ -1190,6 +1190,10 @@ function _boost_view_insert($debug = FALSE, $nid = FALSE) {
       if (!is_object($view)) {
         continue;
       }
+      // Only work with node views
+      if ($view->base_table != 'node') {
+        continue;
+      }
 
       $domains = array();
       $domain_filter = FALSE;
@@ -1212,6 +1216,7 @@ function _boost_view_insert($debug = FALSE, $nid = FALSE) {
         $domains = array(0 => 0);
       }
       $first = TRUE;
+      $view_checked = FALSE;
       foreach ($domains as $key => $domain_id) {
         // View has to be reloaded inorder for hook_views_query_substitutions
         // to work correctly because this is in a loop
@@ -1224,6 +1229,41 @@ function _boost_view_insert($debug = FALSE, $nid = FALSE) {
         }
         $first = FALSE;
         $view->set_display($boost['page_id']);
+
+        // Make sure view is valid
+        if (!$view_checked) {
+          $h = $view->display[$boost['page_id']]->handler->default_display->options;
+          $broken = FALSE;
+          if (!empty($h)) {
+            foreach ($h as $type => $rows) {
+              if (empty($rows)) {
+                continue;
+              }
+              if ($type == 'sorts' || $type == 'fields' || $type == 'arguments' || $type == 'filters' || $type == 'relationships') {
+                $type = rtrim($type, 's');
+                foreach ($rows as $id => $row) {
+                  $table = $row['table'];
+                  $field = $row['field'];
+                  $data = views_fetch_data($table);
+                  if (empty($data)) {
+                    $broken = TRUE;
+                    break 2;
+                  }
+                  if (!isset($data[$field][$type])) {
+                    $broken = TRUE;
+                    break 2;
+                  }
+                }
+              }
+            }
+          }
+          unset($h);
+          if ($broken) {
+            break;
+          }
+          $view_checked = TRUE;
+        }
+
         // Filter to just this nid
         $view->add_item($boost['page_id'], 'filter', 'node', 'nid', $options);
         // Set ***CURRENT_DOMAIN*** variable
@@ -1262,6 +1302,7 @@ function _boost_view_insert($debug = FALSE, $nid = FALSE) {
             }
           }
         }
+        unset($view);
       }
       if ($domain_filter) {
         domain_reset_domain(TRUE);
