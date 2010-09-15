@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.387 2010/09/14 19:45:34 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.388 2010/09/15 05:33:49 mikeytown2 Exp $
 
 /**
  * @file
@@ -620,7 +620,6 @@ function boost_redirect_handler($destination) {
 
   // Last attempt of getting a "match" for this redirect
   $result = db_query("SELECT page_callback, page_type, page_id FROM {boost_cache} WHERE expire = 0 AND (hash_url = '%s' OR hash_url = '%s')", md5($source),  md5($alt_src));
-  watchdog('testd', $source . ' ' . $alt_src);
   while ($row = db_fetch_array($result)) {
     // Handle node redirects
     if ($row['page_callback'] == 'node') {
@@ -2909,7 +2908,6 @@ function boost_cache_kill_url($urls, $force_flush = TRUE) {
     $files[] = array('filename' => $row['filename'], 'hash' => $row['hash']);
   }
   if (!empty($files)) {
-    watchdog('test', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($files, TRUE)))));
     boost_cache_kill($files, $force_flush);
     boost_remove_db($files);
     return TRUE;
