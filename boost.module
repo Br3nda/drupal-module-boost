@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.392 2010/09/19 00:50:26 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.393 2010/09/19 16:32:35 mikeytown2 Exp $
 
 /**
  * @file
@@ -5539,7 +5539,7 @@ function boost_crawler_add_alias_to_table() {
     // Get maximum packet size for mysql
     $result = @db_query("SHOW VARIABLES WHERE Variable_name = 'max_allowed_packet'");
     if ($result) {
-      $result = db_fetch_array();
+      $result = db_fetch_array($result);
       $max_packet = (int)$result['Value'];
     }
     else {
@@ -5567,10 +5567,19 @@ function boost_crawler_add_alias_to_table() {
   $chunks = 0;
   $loop_counter = 0;
 
-  $total = db_result(db_query("SELECT COUNT(*) FROM {url_alias} AS ua LEFT JOIN {node} AS n ON n.nid = CAST(substring(ua.src, 6) AS UNSIGNED) WHERE n.status = 1 OR n.status IS NULL"));
+  // Don't crawl user pages if anonymous can't access them
+  $hit_users = db_result(db_query("SELECT * FROM {permission} INNER JOIN {role} USING (rid) WHERE (name = 'anonymous user' OR rid = 1) AND perm LIKE '%%access user profiles%%'"));
+  if (!$hit_users) {
+    $extra = "AND ua.src NOT LIKE 'user/%%'";
+  }
+  else {
+    $extra = '';
+  }
+
+  $total = db_result(db_query("SELECT COUNT(*) FROM {url_alias} AS ua LEFT JOIN {node} AS n ON n.nid = CAST(substring(ua.src, 6) AS UNSIGNED) WHERE (n.status = 1 OR n.status IS NULL) $extra"));
   $loaded = variable_get('boost_crawler_loaded_count_alias', 0);
   if ($total > $loaded) {
-    $list = db_query_range("SELECT dst FROM {url_alias} AS ua LEFT JOIN {node} AS n ON n.nid = CAST(substring(ua.src, 6) AS UNSIGNED) WHERE n.status = 1 OR n.status IS NULL", $loaded, $count);
+    $list = db_query_range("SELECT dst FROM {url_alias} AS ua LEFT JOIN {node} AS n ON n.nid = CAST(substring(ua.src, 6) AS UNSIGNED) WHERE (n.status = 1 OR n.status IS NULL) $extra", $loaded, $count);
     $data = array();
     while ($url = db_result($list)) {
       $url = $base_url . '/' . $url;
