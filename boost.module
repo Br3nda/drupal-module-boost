@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.391 2010/09/19 00:45:53 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.392 2010/09/19 00:50:26 mikeytown2 Exp $
 
 /**
  * @file
@@ -3143,6 +3143,10 @@ function boost_get_all_filenames($filename, $base_dir = NULL) {
 
   // Generate gzip filenames
   foreach ($namesB as $name) {
+    if (BOOST_SET_FILE_ENCODING != '') {
+      $name = iconv("UTF-8", BOOST_SET_FILE_ENCODING, $name);
+    }
+
     $filenames['normal'][] = $name;
     if (BOOST_GZIP) {
       // Replace the correct dir with the gzip version for the given base dir.
@@ -3802,9 +3806,6 @@ function boost_cache_write($filename, $buffer) {
       $data = $buffer;
     }
     foreach ($values as $filename) {
-      if (BOOST_SET_FILE_ENCODING != '') {
-        $filename = iconv("UTF-8", BOOST_SET_FILE_ENCODING, $filename);
-      }
       if (!_boost_mkdir_p(dirname($filename))) {
         if (BOOST_VERBOSE >= 3) {
           watchdog('boost', 'Unable to create directory: %dir<br /> Group ID: %gid<br /> User ID: %uid<br /> Current script owner: %user<br />', array('%dir' => dirname($filename), '%gid' => getmygid(), '%uid' => getmyuid(), '%user' => get_current_user()), WATCHDOG_WARNING);
