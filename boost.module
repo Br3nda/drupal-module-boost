@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.390 2010/09/16 18:01:48 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.391 2010/09/19 00:45:53 mikeytown2 Exp $
 
 /**
  * @file
@@ -5536,17 +5536,31 @@ function boost_crawler_add_alias_to_table() {
   }
   else {
     // Get maximum packet size for mysql
-    $max_packet = db_fetch_array(db_query("SHOW VARIABLES WHERE Variable_name = 'max_allowed_packet'"));
-    // default to 1/2 MB
-    $max_packet = (int)$max_packet['Value'] > 524288 ? (int)$max_packet['Value'] : 524288;
+    $result = @db_query("SHOW VARIABLES WHERE Variable_name = 'max_allowed_packet'");
+    if ($result) {
+      $result = db_fetch_array();
+      $max_packet = (int)$result['Value'];
+    }
+    else {
+       // default to 1/2 MB
+      $max_packet = 524288;
+    }
 
     // Get bulk insert buffer size
-    $insert_buffer_size = db_fetch_array(db_query("SHOW VARIABLES WHERE Variable_name = 'bulk_insert_buffer_size'"));
-    // default to 1/2 MB
-    $insert_buffer_size = (int)$insert_buffer_size['Value'] > 524288 ? (int)$insert_buffer_size['Value'] : 524288;
+    $result = @db_query("SHOW VARIABLES WHERE Variable_name = 'bulk_insert_buffer_size'");
+    if ($result) {
+      $result = db_fetch_array($result);
+      $insert_buffer_size = (int)$insert_buffer_size['Value'];
+    }
+    else {
+       // default to 1/2 MB
+      $insert_buffer_size = 524288;
+    }
 
     // Set max
     $max_packet = $max_packet > $insert_buffer_size ? $insert_buffer_size : $max_packet;
+    // Make sure its over 128K
+    $max_packet = $max_packet > 131072 ? $max_packet : 131072;
   }
   $max_chunk = $max_packet/512;
   $chunks = 0;
