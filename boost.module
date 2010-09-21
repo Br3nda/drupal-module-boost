@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.400 2010/09/21 17:21:45 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.401 2010/09/21 17:24:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -2573,6 +2573,174 @@ function boost_cache_delete($flush = FALSE) {
   foreach (_boost_copy_file_get_domains(BOOST_PERM_GZIP_FILE_PATH) as $dir) {
     _boost_write_file_chmod($dir . '/' . BOOST_ROOT_FILE, $dir);
   }
+
+  // Make sure cache dir has htaccess rules
+  boost_htaccess_cache_dir_put();
+}
+
+function boost_htaccess_cache_dir_put() {
+  // Server is not apache; do nothing
+  if (stristr($_SERVER["SERVER_SOFTWARE"], 'apache') == FALSE) {
+    return TRUE;
+  }
+
+  // Get some info
+  $cache_dir = BOOST_ROOT_CACHE_DIR;
+  $filename = $cache_dir . '/.htaccess';
+  $generated = boost_htaccess_cache_dir_generate();
+  $htaccess = file_exists($filename) ? file_get_contents($filename) : FALSE;
+
+  // htaccess exists and has the correct contents
+  if ($htaccess && strcmp($htaccess, $generated) === 0) {
+    return TRUE;
+  }
+
+  // cache dir doesn't exist, try to create it; if no go, bail out.
+  if (!is_dir($cache_dir) && !_boost_mkdir_p($cache_dir)) {
+    return FALSE;
+  }
+
+  // cache dir htaccess is not there, create it.
+  $result = file_put_contents($filename, $generated);
+  if ($result) {
+    return $result;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+function boost_htaccess_cache_dir_generate() {
+  Global $base_path;
+
+  // no dot
+  $_html = str_replace('.', '', BOOST_FILE_EXTENSION);
+  $_xml  = str_replace('.', '', BOOST_XML_EXTENSION);
+  $_css  = str_replace('.', '', BOOST_CSS_EXTENSION);
+  $_js   = str_replace('.', '', BOOST_JS_EXTENSION);
+  $_json = str_replace('.', '', BOOST_JSON_EXTENSION);
+  $_gz   = str_replace('.', '', BOOST_GZIP_EXTENSION);
+  // with a \ slash
+  $gz   = str_replace('.', '\\.', BOOST_GZIP_EXTENSION);
+
+
+  $string = '';
+  if (BOOST_CACHE_HTML) {
+    if (variable_get('boost_force_utf8', TRUE)) {
+      $string .= "AddDefaultCharset utf-8\n";
+    }
+  }
+    switch (variable_get('boost_apache_etag', 0)) {
+      case 0:
+        break;
+      case 1:
+        $string .= "FileETag None\n";
+        break;
+      case 2:
+        $string .= "FileETag All\n";
+        break;
+      case 3:
+        $string .= "FileETag MTime Size\n";
+        break;
+    }
+  if (!BOOST_DISABLE_CLEAN_URL && (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON)) {
+    $files = array();
+    if (BOOST_CACHE_HTML) {
+      $files[] = $_html;
+    }
+    if (BOOST_CACHE_XML) {
+      $files[] = $_xml;
+    }
+    if (BOOST_CACHE_JSON) {
+      $files[] = $_json;
+    }
+    $files = '(' . implode('|' , $files) . ')';
+    if (BOOST_GZIP) {
+      $files = "$files|($files$gz)";
+    }
+    $string .= "<FilesMatch \"\.($files)$\">\n";
+    $string .= "  <IfModule mod_expires.c>\n";
+    $string .= "    ExpiresDefault A1\n";
+    $string .= "  </IfModule>\n";
+    $string .= "  <IfModule mod_headers.c>\n";
+    $string .= "    Header set Expires \"Sun, 19 Nov 1978 05:00:00 GMT\"\n";
+    $string .= "    Header set Cache-Control \"no-store, no-cache, must-revalidate, post-check=0, pre-check=0\"\n";
+    if (variable_get('boost_apache_xheader', 0) > 0) {
+      $string .= "    Header set X-Header \"Boost Citrus 1.8\"\n";
+    }
+    $string .= "  </IfModule>\n";
+    $string .= "</FilesMatch>\n";
+  }
+  if (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_CSS || BOOST_CACHE_JS || BOOST_CACHE_JSON) {
+    $string .= "<IfModule mod_mime.c>\n";
+    $string .= BOOST_CACHE_HTML ? "  AddCharset utf-8 .$_html\n" : '';
+    $string .= BOOST_CACHE_XML ?  "  AddCharset utf-8 .$_xml\n" : '';
+    $string .= BOOST_CACHE_CSS ?  "  AddCharset utf-8 .$_css\n" : '';
+    $string .= BOOST_CACHE_JS ?   "  AddCharset utf-8 .$_js\n" : '';
+    $string .= BOOST_CACHE_JSON ? "  AddCharset utf-8 .$_json\n" : '';
+    $string .= BOOST_GZIP ?       "  AddEncoding gzip .$_gz\n" : '';
+    $string .= "</IfModule>\n";
+  }
+  // Fix for versions of apache that do not respect the T='' RewriteRule
+  $files = '';
+  if (BOOST_CACHE_HTML) {
+    $files .= "$_html|";
+    if (BOOST_GZIP) {
+      $files .= "$_html$gz|";
+    }
+    $files = trim($files, '|');
+    $string .= "<FilesMatch \"\.($files)$\">\n";
+    $string .= "  ForceType text/html\n";
+    $string .= "</FilesMatch>\n";
+  }
+  $files = '';
+  if (BOOST_CACHE_XML) {
+    $files .= "$_xml|";
+    if (BOOST_GZIP) {
+      $files .= "$_xml$gz|";
+    }
+    $files = trim($files, '|');
+    $string .= "<FilesMatch \"\.($files)$\">\n";
+    $string .= "  ForceType text/xml\n";
+    $string .= "</FilesMatch>\n";
+  }
+  $files = '';
+  if (BOOST_CACHE_JSON) {
+    $files .= "$_json|";
+    if (BOOST_GZIP) {
+      $files .= "$_json$gz|";
+    }
+  }
+  if (BOOST_CACHE_JS) {
+    $files .= "$_js|";
+    if (BOOST_GZIP) {
+      $files .= "$_js$gz|";
+    }
+  }
+  if ($files != '') {
+    $files = trim($files, '|');
+    $string .= "<FilesMatch \"\.($files)$\">\n";
+    $string .= "  ForceType text/javascript\n";
+    $string .= "</FilesMatch>\n";
+  }
+  $files = '';
+  if (BOOST_CACHE_CSS) {
+    $files .= "$_css|";
+    if (BOOST_GZIP) {
+      $files .= "$_css$gz|";
+    }
+    $files = trim($files, '|');
+    $string .= "<FilesMatch \"\.($files)$\">\n";
+    $string .= "  ForceType text/css\n";
+    $string .= "</FilesMatch>\n";
+  }
+  $string .= "\n";
+  $string .= "SetHandler Drupal_Security_Do_Not_Remove_See_SA_2006_006\n";
+  $string .= "Options None\n";
+  $string .= "Options +FollowSymLinks\n";
+  $string .= "\n";
+
+  return $string;
 }
 
 /**

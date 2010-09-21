@@ -1,34 +1,4 @@
   ### BOOST START ###
-  AddDefaultCharset utf-8
-  <FilesMatch "\.((html|xml|json)|((html|xml|json)\.gz))$">
-    <IfModule mod_expires.c>
-      ExpiresDefault A1
-    </IfModule>
-    <IfModule mod_headers.c>
-      Header set Expires "Sun, 19 Nov 1978 05:00:00 GMT"
-      Header set Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
-    </IfModule>
-  </FilesMatch>
-  <IfModule mod_mime.c>
-    AddCharset utf-8 .html
-    AddCharset utf-8 .xml
-    AddCharset utf-8 .json
-    AddCharset utf-8 .css
-    AddCharset utf-8 .js
-    AddEncoding gzip .gz
-  </IfModule>
-  <FilesMatch "\.(html|html\.gz)$">
-    ForceType text/html
-  </FilesMatch>
-  <FilesMatch "\.(xml|xml\.gz)$">
-    ForceType text/xml
-  </FilesMatch>
-  <FilesMatch "\.((json|js)|((json|js)\.gz))$">
-    ForceType text/javascript
-  </FilesMatch>
-  <FilesMatch "\.(css|css\.gz)$">
-    ForceType text/css
-  </FilesMatch>
 
   # Gzip Cookie Test
   RewriteRule ^(.*)boost-gzip-cookie-test\.html cache/perm/boost-gzip-cookie-test\.html\.gz [L,T=text/html,E=no-gzip:1]
@@ -77,4 +47,4 @@
 
   ### BOOST END ###
 
-# $Id: boosted1.txt,v 1.1.2.29 2010/09/05 05:16:13 mikeytown2 Exp $
+# $Id: boosted1.txt,v 1.1.2.30 2010/09/21 17:24:31 mikeytown2 Exp $

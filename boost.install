@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.100 2010/09/20 03:49:54 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.101 2010/09/21 17:24:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -112,7 +112,7 @@ function boost_requirements($phase) {
       else {
         $robots = FALSE;
       }
-
+      boost_htaccess_cache_dir_put();
       foreach ($cache_directories as $cache_directory) {
         if (_boost_mkdir_p($cache_directory)) {
           $root_file = file_put_contents($cache_directory . '/' . variable_get('boost_root_file', '.boost'), $cache_directory);

@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.155 2010/09/08 21:02:13 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.156 2010/09/21 17:24:31 mikeytown2 Exp $
 
 /**
  * @file
@@ -862,7 +862,7 @@ function boost_admin_boost_performance_page() {
   }
 
   // Apache .htaccess settings generation
-  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{HTTP_HOST}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
+  $htaccess = boost_admin_generate_htaccess();
   $form['htaccess'] = array(
     '#type'          => 'fieldset',
     '#title'         => t('Boost Apache .htaccess settings generation'),
@@ -982,6 +982,8 @@ function boost_admin_boost_performance_page() {
  * submit boost_admin_boost_performance_page form submissions.
  */
 function boost_admin_boost_performance_page_submit($form, &$form_state) {
+  boost_htaccess_cache_dir_put();
+
   // Skip if views not enabled
   if (module_exists('views')) {
     $key = 'boost_views_list_custom';
@@ -1137,7 +1139,7 @@ function boost_admin_htaccess_page() {
   }
 
   // Generated .htaccess output
-  $htaccess = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{HTTP_HOST}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
+  $htaccess = boost_admin_generate_htaccess();
   $form['boost_generated'] = array(
     '#type'          => 'textarea',
     '#title'         => t('Generated Rules'),
@@ -1155,19 +1157,14 @@ function boost_admin_htaccess_page() {
  * Generate htaccess code.
  *
  * http://www.askapache.com/htaccess/mod_rewrite-variables-cheatsheet.html
- * @param $server_name
- *   %{SERVER_NAME} [OR] %{HTTP_HOST} [OR] www.example.com
- * @param $document_root
- *   %{DOCUMENT_ROOT} [OR] getcwd() [OR] path to webroot from ~/
- * @param $cache_dir
- *   cache dir
- * @param $gzip_dir
- *   gz dir
- * @param $html
- *   html document file extension
+ *
+ * @return string
+ *   htaccess code
  */
-function boost_admin_generate_htaccess($server_name = '%{HTTP_HOST}', $document_root = '%{DOCUMENT_ROOT}') {
+function boost_admin_generate_htaccess() {
   Global $base_path;
+  $server_name = variable_get('boost_server_name_http_host', '%{HTTP_HOST}');
+  $document_root = variable_get('boost_document_root', '%{DOCUMENT_ROOT}');
   $drupal_subdir = rtrim($base_path, '/');
 
   // Various dir's
@@ -1185,14 +1182,6 @@ function boost_admin_generate_htaccess($server_name = '%{HTTP_HOST}', $document_
   $json = str_replace('.', '\\.', BOOST_JSON_EXTENSION);
   $gz   = str_replace('.', '\\.', BOOST_GZIP_EXTENSION);
 
-  // no dot
-  $_html = str_replace('.', '', BOOST_FILE_EXTENSION);
-  $_xml  = str_replace('.', '', BOOST_XML_EXTENSION);
-  $_css  = str_replace('.', '', BOOST_CSS_EXTENSION);
-  $_js   = str_replace('.', '', BOOST_JS_EXTENSION);
-  $_json = str_replace('.', '', BOOST_JSON_EXTENSION);
-  $_gz   = str_replace('.', '', BOOST_GZIP_EXTENSION);
-
   $char = BOOST_CHAR;
   $permanent_char = BOOST_PERM_CHAR;
   $server_ip = str_replace('.', '\\.', $_SERVER['SERVER_ADDR']);
@@ -1200,115 +1189,6 @@ function boost_admin_generate_htaccess($server_name = '%{HTTP_HOST}', $document_
 
   // Generate the rules
   $string  = "  ### BOOST START ###\n";
-  if (BOOST_CACHE_HTML) {
-    if (variable_get('boost_force_utf8', TRUE)) {
-      $string .= "  AddDefaultCharset utf-8\n";
-    }
-  }
-    switch (variable_get('boost_apache_etag', 0)) {
-      case 0:
-        break;
-      case 1:
-        $string .= "  FileETag None\n";
-        break;
-      case 2:
-        $string .= "  FileETag All\n";
-        break;
-      case 3:
-        $string .= "  FileETag MTime Size\n";
-        break;
-    }
-  if (!BOOST_DISABLE_CLEAN_URL && (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_JSON)) {
-    $files = array();
-    if (BOOST_CACHE_HTML) {
-      $files[] = $_html;
-    }
-    if (BOOST_CACHE_XML) {
-      $files[] = $_xml;
-    }
-    if (BOOST_CACHE_JSON) {
-      $files[] = $_json;
-    }
-    $files = '(' . implode('|' , $files) . ')';
-    if (BOOST_GZIP) {
-      $files = "$files|($files$gz)";
-    }
-    $string .= "  <FilesMatch \"\.($files)$\">\n";
-    $string .= "    <IfModule mod_expires.c>\n";
-    $string .= "      ExpiresDefault A1\n";
-    $string .= "    </IfModule>\n";
-    $string .= "    <IfModule mod_headers.c>\n";
-    $string .= "      Header set Expires \"Sun, 19 Nov 1978 05:00:00 GMT\"\n";
-    $string .= "      Header set Cache-Control \"no-store, no-cache, must-revalidate, post-check=0, pre-check=0\"\n";
-    if (variable_get('boost_apache_xheader', 0) > 0) {
-      $string .= "      Header set X-Header \"Boost Citrus 1.8\"\n";
-    }
-    $string .= "    </IfModule>\n";
-    $string .= "  </FilesMatch>\n";
-  }
-  if (BOOST_CACHE_HTML || BOOST_CACHE_XML || BOOST_CACHE_CSS || BOOST_CACHE_JS || BOOST_CACHE_JSON) {
-    $string .= "  <IfModule mod_mime.c>\n";
-    $string .= BOOST_CACHE_HTML ? "    AddCharset utf-8 .$_html\n" : '';
-    $string .= BOOST_CACHE_XML ?  "    AddCharset utf-8 .$_xml\n" : '';
-    $string .= BOOST_CACHE_CSS ?  "    AddCharset utf-8 .$_css\n" : '';
-    $string .= BOOST_CACHE_JS ?   "    AddCharset utf-8 .$_js\n" : '';
-    $string .= BOOST_CACHE_JSON ? "    AddCharset utf-8 .$_json\n" : '';
-    $string .= BOOST_GZIP ?       "    AddEncoding gzip .$_gz\n" : '';
-    $string .= "  </IfModule>\n";
-  }
-  // Fix for versions of apache that do not respect the T='' RewriteRule
-  $files = '';
-  if (BOOST_CACHE_HTML) {
-    $files .= "$_html|";
-    if (BOOST_GZIP) {
-      $files .= "$_html$gz|";
-    }
-    $files = trim($files, '|');
-    $string .= "  <FilesMatch \"\.($files)$\">\n";
-    $string .= "    ForceType text/html\n";
-    $string .= "  </FilesMatch>\n";
-  }
-  $files = '';
-  if (BOOST_CACHE_XML) {
-    $files .= "$_xml|";
-    if (BOOST_GZIP) {
-      $files .= "$_xml$gz|";
-    }
-    $files = trim($files, '|');
-    $string .= "  <FilesMatch \"\.($files)$\">\n";
-    $string .= "    ForceType text/xml\n";
-    $string .= "  </FilesMatch>\n";
-  }
-  $files = '';
-  if (BOOST_CACHE_JSON) {
-    $files .= "$_json|";
-    if (BOOST_GZIP) {
-      $files .= "$_json$gz|";
-    }
-  }
-  if (BOOST_CACHE_JS) {
-    $files .= "$_js|";
-    if (BOOST_GZIP) {
-      $files .= "$_js$gz|";
-    }
-  }
-  if ($files != '') {
-    $files = trim($files, '|');
-    $string .= "  <FilesMatch \"\.($files)$\">\n";
-    $string .= "    ForceType text/javascript\n";
-    $string .= "  </FilesMatch>\n";
-  }
-  $files = '';
-  if (BOOST_CACHE_CSS) {
-    $files .= "$_css|";
-    if (BOOST_GZIP) {
-      $files .= "$_css$gz|";
-    }
-    $files = trim($files, '|');
-    $string .= "  <FilesMatch \"\.($files)$\">\n";
-    $string .= "    ForceType text/css\n";
-    $string .= "  </FilesMatch>\n";
-  }
   if (BOOST_AGGRESSIVE_GZIP) {
     $string .= "\n";
     $string .= "  # Gzip Cookie Test\n";
@@ -1463,10 +1343,11 @@ function boost_update_htaccess($enable = TRUE, $verbose = TRUE) {
 
   // Inject the rules before '# Rewrite URLs of the form'
   if ($enable) {
-    $rules = boost_admin_generate_htaccess(variable_get('boost_server_name_http_host', '%{HTTP_HOST}'), variable_get('boost_document_root', '%{DOCUMENT_ROOT}'));
+    $rules = boost_admin_generate_htaccess();
     $text = preg_replace('/^[^#]*# Rewrite URLs of the form/im', "\n" . $rules . "$0", $text);
   }
 
+  boost_htaccess_cache_dir_put();
   $result = file_put_contents($filename, $text);
   if ($verbose) {
     if ($result) {
