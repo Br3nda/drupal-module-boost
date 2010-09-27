@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.module,v 1.3.2.2.2.5.2.403 2010/09/25 00:55:52 mikeytown2 Exp $
+// $Id: boost.module,v 1.3.2.2.2.5.2.404 2010/09/27 21:29:50 mikeytown2 Exp $
 
 /**
  * @file
@@ -2381,6 +2381,7 @@ function boost_headers_contain($text) {
  * uses $GLOBALS['_boost_query'] as well
  */
 function boost_is_cacheable($path) {
+  global $base_root;
   $is_front = FALSE;
   if (empty($path)) {
     $is_front = TRUE;
@@ -2397,6 +2398,7 @@ function boost_is_cacheable($path) {
   $decoded = $decoded2;
   unset($decoded2);
   unset($decoded1);
+  $url = $base_root . request_uri();
 
   // Never cache
   //  the user login/registration/password/reset pages
@@ -2433,7 +2435,7 @@ function boost_is_cacheable($path) {
   if (!BOOST_CACHE_XML && (preg_match('!/feed$!', $normal_path) || preg_match('!\.xml$!', $normal_path))) {
     return FALSE;
   }
-  if (!BOOST_CACHE_QUERY && $GLOBALS['_boost_query'] != BOOST_CHAR) {
+  if (!BOOST_CACHE_QUERY && ($GLOBALS['_boost_query'] != BOOST_CHAR || strstr($url, '?') !== FALSE)) {
     return FALSE;
   }
 
