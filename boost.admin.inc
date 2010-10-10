@@ -1,133 +1,129 @@
 <?php
-// $Id: boost.admin.inc,v 1.1 2006/11/21 03:39:19 arto Exp $
+// $Id: boost.admin.inc,v 1.2 2010/10/10 05:01:46 mikeytown2 Exp $
 
 /**
  * @file
- * All the code for the Boost module's administrative interface.
+ * Admin page callbacks for the boost module.
  */
-
-//////////////////////////////////////////////////////////////////////////////
-// DRUPAL SYSTEM SETTINGS
 
 /**
- * Performs alterations to the system settings form before it is rendered.
+ * Form builder; Configure boost settings.
  *
- * Called from hook_form_alter().
+ * @ingroup forms
+ * @see system_settings_form()
  */
-function boost_system_settings_form($form = array()) {
-  $form['cache'] = array('#type' => 'hidden','#value' => CACHE_DISABLED);
-  $form['boost'] = array(
-    '#type'          => 'radios',
-    '#title'         => t('Static page cache'),
-    '#default_value' => variable_get('boost', CACHE_DISABLED),
-    '#options'       => array(CACHE_DISABLED => t('Disabled'),
-                              CACHE_ENABLED  => t('Enabled')),
-    '#description'   => t('Static page caching is a mechanism which stores dynamically generated web pages as HTML files in a special cache directory located under the Drupal installation directory. By caching a web page in this manner, the web server can serve it out in the fastest possible manner, without invoking PHP or Drupal at all. While this does provide a significant performance and scalability boost, you should note that it could have negative usability side-effects unless your site is targeted at an audience consisting mostly of "anonymous" visitors.'),
+function boost_admin_settings() {
+  drupal_add_js(drupal_get_path('module', 'system') . '/system.js');
+  $types = boost_get_storage_types();
+  $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 64800, 86400, 2*86400, 3*86400, 4*86400, 5*86400, 6*86400, 604800, 2*604800, 3*604800, 4*604800, 8*604800, 16*604800, 52*604800), 'format_interval');
+
+  $form['cache_types'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Boost cache type settings'),
   );
-  $lifetime = &$form['cache_lifetime'];
-  $lifetime['#description'] = t('On high-traffic sites it can become necessary to enforce a minimum cache lifetime. The minimum cache lifetime is the minimum amount of time that will go by before the cache is emptied and recreated. A larger minimum cache lifetime offers better performance, but users will not see new content for a longer period of time.');
-  unset($form['cache_lifetime']);
-  $form['cache_lifetime'] = &$lifetime;
-  $form['boost_file_path'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Cache file path'),
-    '#default_value' => BOOST_FILE_PATH,
-    '#size'          => 60,
-    '#maxlength'     => 255,
-    '#required'      => TRUE,
-    '#description'   => t('A file system path where the cache files will be stored. This directory has to exist and be writable by Drupal. The default setting is to store the files in a directory named \'cache\' under the Drupal installation directory. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
-  );
-  return $form;
-}
+  foreach ($types as $title => $content_types) {
+    $form['cache_types'][$title] = array(
+      '#type'          => 'fieldset',
+      '#title'         => t('@title settings', array('@title' => $title)),
+      '#collapsible' => TRUE,
+    );
+    $collapsed = TRUE;
+    foreach ($content_types as $type => $values) {
+      $form['cache_types'][$title][$type] = array(
+        '#type'           => 'fieldset',
+        '#title'          => t('@type settings', array('@type' => $type)),
+        '#description'    => t('Cache @description of type @type',
+          array(
+            '@description' => $values['description'],
+            '@type' => $type,
+          )
+        ),
+      );
+      // This content type enabled?
+      $form['cache_types'][$title][$type]['boost_enabled_' . $type] = array(
+        '#type'          => 'checkbox',
+        '#title'         => t('Cache Enabled'),
+        '#default_value' => $values['enabled'],
+      );
 
-//////////////////////////////////////////////////////////////////////////////
-// BOOST SETTINGS
+      // Content type extension
+      $form['cache_types'][$title][$type]['boost_extension_' . $type] = array(
+        '#type'          => 'textfield',
+        '#title'         => t('Filename Extension',
+          array(
+            '@title' => $title,
+            '@description' => $values['description'],
+            '@type' => $type,
+          )
+        ),
+        '#default_value' => $values['extension'],
+      );
 
-/**
- * Declares administrative settings for the Boost module.
- *
- * Called from hook_settings().
- */
-function boost_settings_form($form = array()) {
-  //_boost_check_htaccess(); // TODO
+      // Maximum cache lifetime
+      $form['cache_types'][$title][$type]['boost_lifetime_max_' . $type] = array(
+        '#type'          => 'select',
+        '#options' => $period,
+        '#title'         => t('@type - Maximum Cache Lifetime',
+          array(
+            '@title' => $title,
+            '@description' => $values['description'],
+            '@type' => $type,
+          )
+        ),
+        '#default_value' => $values['lifetime_max'],
+      );
 
-  $options = array(t('Cache every page except the listed pages.'), t('Cache only the listed pages.'));
-  $description = t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are '%blog' for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => theme('placeholder', 'blog'), '%blog-wildcard' => theme('placeholder', 'blog/*'), '%front' => theme('placeholder', '<front>')));
-  if (user_access('use PHP for block visibility')) {
-    $options[] = t('Cache pages for which the following PHP code returns <code>TRUE</code> (PHP-mode, experts only).');
-    $description .= t('If the PHP-mode is chosen, enter PHP code between %php. Note that executing incorrect PHP-code can severely break your Drupal site.', array('%php' => theme('placeholder', '<?php ?>')));
+      // Minimum cache lifetime
+      $form['cache_types'][$title][$type]['boost_lifetime_min_' . $type] = array(
+        '#type'          => 'select',
+        '#options' => $period,
+        '#title'         => t('@type - Minimum Cache Lifetime',
+          array(
+            '@title' => $title,
+            '@description' => $values['description'],
+            '@type' => $type,
+          )
+        ),
+        '#default_value' => $values['lifetime_min'],
+      );
+      if ($values['enabled']) {
+        $collapsed = !$values['enabled'];
+      }
+    }
+    $form['cache_types'][$title]['#collapsed'] = $collapsed;
   }
+
   $form['cacheability'] = array(
     '#type'          => 'fieldset',
-    '#title'         => t('Cacheability settings'),
-    '#collapsible'   => FALSE,
+    '#title'         => t('Boost cacheability settings'),
   );
+  // See http://api.drupal.org/api/function/block_admin_configure/7
+  $access = user_access('use PHP for settings');
+  $options = array(
+    BLOCK_VISIBILITY_NOTLISTED => t('All pages except those listed'),
+    BLOCK_VISIBILITY_LISTED => t('Only the listed pages'),
+  );
+  $description = t("Specify pages by using their paths. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
+  if (module_exists('php') && $access) {
+    $options += array(BLOCK_VISIBILITY_PHP => t('Pages on which this PHP code returns <code>TRUE</code> (experts only)'));
+    $title = t('Pages or PHP code');
+    $description .= ' ' . t('If the PHP option is chosen, enter PHP code between %php. Note that executing incorrect PHP code can break your Drupal site.', array('%php' => '<?php ?>'));
+  }
+  else {
+    $title = t('Pages');
+  }
   $form['cacheability']['boost_cacheability_option'] = array(
-    '#type'          => 'radios',
-    '#title'         => t('Cache specific pages'),
-    '#options'       => $options,
-    '#default_value' => BOOST_CACHEABILITY_OPTION,
+    '#type' => 'radios',
+    '#title' => t('Cache specific pages'),
+    '#options' => $options,
+    '#default_value' => variable_get('boost_cacheability_option', BLOCK_VISIBILITY_NOTLISTED),
   );
   $form['cacheability']['boost_cacheability_pages'] = array(
-    '#type'          => 'textarea',
-    '#title'         => t('Pages'),
-    '#default_value' => BOOST_CACHEABILITY_PAGES,
-    '#description'   => $description,
+    '#type' => 'textarea',
+    '#title' => '<span class="element-invisible">' . $title . '</span>',
+    '#default_value' => variable_get('boost_cacheability_pages', BOOST_CACHEABILITY_PAGES),
+    '#description' => $description,
   );
 
-  // TODO
-  /*$form['throttle'] = array(
-    '#type'          => 'fieldset',
-    '#title'         => t('Throttle settings'),
-    '#collapsible'   => FALSE,
-  );
-  $form['throttle']['boost_cron_limit'] = array(
-    '#type'          => 'select',
-    '#title'         => t('Pages to update per cron run'),
-    '#default_value' => BOOST_CRON_LIMIT,
-    '#options'       => drupal_map_assoc(array(10, 20, 50, 100, 200, 500, 1000)),
-    '#description'   => t('The maximum number of static pages that will be built or rebuilt in one cron run. Set this number lower if your cron is timing out or if PHP is running out of memory.'),
-  );*/
-
-  $form['advanced'] = array(
-    '#type'          => 'fieldset',
-    '#title'         => t('Advanced settings'),
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
-  );
-  $form['advanced']['boost_file_extension'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Cache file extension'),
-    '#default_value' => BOOST_FILE_EXTENSION,
-    '#size'          => 10,
-    '#maxlength'     => 32,
-    '#required'      => TRUE,
-    '#description'   => t('The file extension to append to the file name of the generated cache files. Note that this setting is of no relevance to any public URLs, and it is strongly recommended to leave this as the default \'.html\' unless you know what you are doing. If you change this, you must also change the URL rewrite rules in your web server configuration (.htaccess for Apache, lighttpd.conf for Lighttpd), or caching will not work.'),
-  );
-  $form['advanced']['boost_fetch_method'] = array(
-    '#type'          => 'select',
-    '#title'         => t('Page fetch method'),
-    '#default_value' => BOOST_FETCH_METHOD,
-    '#options'       => array('php' => t('PHP fopen() wrapper'), 'wget' => t('Wget shell command'), 'curl' => t('curl shell command')),
-    '#description'   => t('The method used to retrieve the contents of the Drupal pages to be cached. The default should work in most cases.'),
-  );
-  $form['advanced']['boost_pre_process_function'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Pre-process function'),
-    '#default_value' => BOOST_PRE_PROCESS_FUNCTION,
-    '#maxlength'     => 255,
-    '#description'   => t('The name of a PHP function used to pre-process the contents of each page before writing them out to static files. The function is called with the contents of the page passed as a string argument, and its return value is used as the data written out to the disk.'),
-  );
-  // TODO:
-  /*$form['advanced']['boost_post_update_command'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Post-update shell command'),
-    '#default_value' => BOOST_POST_UPDATE_COMMAND,
-    '#maxlength'     => 255,
-    '#description'   => t('If you are synchronizing the generated static cache files to an external server through some means such as SFTP or rsync, you can enter a shell command to be executed following a successful cron-triggered cache update. Note that this is an advanced setting that should normally be left blank.'),
-  );*/
-
-  return $form;
+  return system_settings_form($form);
 }
-
-//////////////////////////////////////////////////////////////////////////////
