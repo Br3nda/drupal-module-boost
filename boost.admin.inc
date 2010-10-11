@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.156 2010/09/21 17:24:31 mikeytown2 Exp $
+// $Id: boost.admin.inc,v 1.1.2.1.2.3.2.157 2010/10/11 05:16:27 mikeytown2 Exp $
 
 /**
  * @file
@@ -902,7 +902,7 @@ function boost_admin_boost_performance_page() {
   }
   elseif (!isset($best)) {
     $best = $document_root;
-    $description_extra = t('Please open an boost issue on Drupal.org, since apache and php are not configured correctly.');
+    $description_extra = t('Please <a href="!link">open an boost issue on Drupal.org</a>, since apache and php might not be configured correctly.', array('!link' => url('http://drupal.org/node/add/project-issue/boost')));
   }
   $description = t('Value of %best is recommended for this server.', array('%best' => $best)) . ' ' . $description_extra;
   $form['htaccess']['boost_document_root'] = array(
