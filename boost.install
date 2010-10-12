@@ -1,5 +1,5 @@
 <?php
-// $Id: boost.install,v 1.2.2.1.2.3.2.101 2010/09/21 17:24:31 mikeytown2 Exp $
+// $Id: boost.install,v 1.2.2.1.2.3.2.102 2010/10/12 02:44:43 mikeytown2 Exp $
 
 /**
  * @file
@@ -259,7 +259,7 @@ function boost_requirements($phase) {
         if (!in_array('mod_headers', $modules)) {
           $requirements['boost_apache_headers'] = array(
             'title'       => $t('Boost'),
-            'description' => $t('The Apache module "mod_headers" is not available.  You must enable <a href="!link">mod_headers</a> for Apache.', array('!link' => 'http://httpd.apache.org/docs/trunk/mod/mod_headers.html')),
+            'description' => $t('The Apache module "mod_headers" is not available. Enable <a href="!link">mod_headers</a> for Apache if at all possible.', array('!link' => 'http://httpd.apache.org/docs/trunk/mod/mod_headers.html')),
             'severity'    => REQUIREMENT_WARNING,
             'value'       => $t('Apache module "mod_headers" is not installed.'),
           );
